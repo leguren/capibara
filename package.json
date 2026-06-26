@@ -4,7 +4,7 @@
   "description": "Plataforma B2B de datos geoespaciales por coordenada",
   "private": true,
   "engines": {
-    "node": "18.x"
+    "node": "24.x"
   },
   "dependencies": {
     "@libsql/client": "0.5.6"
