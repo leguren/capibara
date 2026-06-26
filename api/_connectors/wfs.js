@@ -220,6 +220,11 @@ module.exports = makeConnector({
     console.log('[wfs.getLayers] xml length:', xml.length, 'sample:', xml.slice(0, 200));
     const { featureTypes } = parseCapabilities(xml);
     console.log('[wfs.getLayers] featureTypes found:', featureTypes.length);
+    console.log('[wfs.getLayers] has <FeatureType>:', xml.includes('<FeatureType>'));
+    console.log('[wfs.getLayers] has <wfs:FeatureType>:', xml.includes('<wfs:FeatureType>'));
+    // Loguear el primer FeatureType que aparezca en el XML
+    const ftIdx = xml.indexOf('FeatureType>');
+    if (ftIdx > 0) console.log('[wfs.getLayers] first FeatureType context:', xml.slice(Math.max(0,ftIdx-20), ftIdx+80));
 
     return featureTypes.map(ft => ({
       name:  ft.name,
