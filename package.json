@@ -4,10 +4,10 @@
   "description": "Plataforma B2B de datos geoespaciales por coordenada",
   "private": true,
   "engines": {
-    "node": ">=18"
+    "node": "18.x"
   },
   "dependencies": {
-    "@libsql/client": "^0.6.0"
+    "@libsql/client": "0.5.6"
   },
   "scripts": {
     "dev": "vercel dev"
