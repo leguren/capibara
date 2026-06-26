@@ -211,11 +211,15 @@ module.exports = makeConnector({
       VERSION: params.version || '1.1.0',
     });
 
+    console.log('[wfs.getLayers] url:', url);
     const res = await fetchWithTimeout(url);
+    console.log('[wfs.getLayers] status:', res.status);
     if (!res.ok) throw new Error(`HTTP ${res.status} al obtener capabilities`);
 
     const xml          = await res.text();
+    console.log('[wfs.getLayers] xml length:', xml.length, 'sample:', xml.slice(0, 200));
     const { featureTypes } = parseCapabilities(xml);
+    console.log('[wfs.getLayers] featureTypes found:', featureTypes.length);
 
     return featureTypes.map(ft => ({
       name:  ft.name,
