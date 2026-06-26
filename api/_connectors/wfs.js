@@ -89,26 +89,25 @@ function parseCapabilities(xml) {
   const abstract = extract([/<ows:Abstract>([^<]+)<\/ows:Abstract>/, /<Service>[\s\S]*?<Abstract>([^<]+)<\/Abstract>/]);
   const provider = extract([/<ows:ProviderName>([^<]+)<\/ows:ProviderName>/]);
 
-  // Extraer lista de capas: <FeatureType> o <wfs:FeatureType>
+  // Extraer lista de capas usando split — más robusto que regex greedy
+  // El IGN usa <FeatureType> sin namespace, con contenido mixto ows: adentro
   const featureTypes = [];
-  const ftRegex      = /<(?:wfs:)?FeatureType>([\s\S]*?)<\/(?:wfs:)?FeatureType>/g;
-  let   match;
+  const parts = xml.split(/<FeatureType>|<wfs:FeatureType>/);
 
-  while ((match = ftRegex.exec(xml)) !== null) {
-    const block     = match[1];
-    const nameMatch = block.match(/<(?:wfs:)?Name>([^<]+)<\/(?:wfs:)?Name>/);
-    const titleMatch = block.match(/<(?:wfs:)?Title>([^<]+)<\/(?:wfs:)?Title>/);
-    const srsMatch  = block.match(/<(?:wfs:)?DefaultSRS>([^<]+)<\/(?:wfs:)?DefaultSRS>|<(?:wfs:)?DefaultCRS>([^<]+)<\/(?:wfs:)?DefaultCRS>/);
+  for (let i = 1; i < parts.length; i++) {
+    const block = parts[i].split(/<\/FeatureType>|<\/wfs:FeatureType>/)[0];
 
-    // Bounding box OGC 1.1.0+
-    const bboxMatch = block.match(/LowerCorner>([^<]+)<|minx="([^"]+)"/);
+    const nameMatch  = block.match(/<(?:[^:>]+:)?Name>([^<]+)<\/(?:[^:>]+:)?Name>/);
+    const titleMatch = block.match(/<(?:[^:>]+:)?Title>([^<]+)<\/(?:[^:>]+:)?Title>/);
+    const srsMatch   = block.match(/<(?:[^:>]+:)?DefaultSRS>([^<]+)<\/(?:[^:>]+:)?DefaultSRS>/) ||
+                       block.match(/<(?:[^:>]+:)?DefaultCRS>([^<]+)<\/(?:[^:>]+:)?DefaultCRS>/);
 
     if (nameMatch?.[1]) {
       featureTypes.push({
         name:  nameMatch[1].trim(),
         title: titleMatch?.[1]?.trim() || null,
-        srs:   (srsMatch?.[1] || srsMatch?.[2] || 'EPSG:4326').trim(),
-        hasBbox: !!bboxMatch,
+        srs:   (srsMatch?.[1] || 'EPSG:4326').trim().replace('urn:x-ogc:def:crs:EPSG:', 'EPSG:').replace('urn:ogc:def:crs:EPSG::', 'EPSG:'),
+        hasBbox: false,
       });
     }
   }
