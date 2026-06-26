@@ -1,0 +1,212 @@
+/* style/base.css — Tokens de diseño, reset y componentes globales de Capibara
+ *
+ * ÚNICA fuente de verdad para colores, tipografía, radios y espaciado.
+ * Todo valor que aparezca en más de un archivo vive aquí como variable CSS.
+ * NUNCA hardcodear colores, fuentes ni tamaños en otros archivos CSS.
+ *
+ * Debe cargarse ANTES que cualquier otro CSS en todas las páginas.
+ */
+
+/* ── Google Fonts ──────────────────────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
+
+/* ── Reset ─────────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* ── Tokens de diseño ──────────────────────────────────────────────────── */
+:root {
+  /* Paleta Capibara — tonos tierra protagonistas */
+  --brown:       #A56A43;   /* marrón capibara — color identitario */
+  --brown-dark:  #4B3328;   /* contornos, títulos oscuros */
+  --brown-light: #C89070;   /* hover sobre brown, tono más suave */
+
+  /* Fondos — cream como base */
+  --bg:          #F7F3EC;   /* fondo principal */
+  --bg2:         #EFE9DF;   /* superficies secundarias, cards */
+  --bg3:         #E5DDD2;   /* hover, active, bordes sutiles */
+  --bg4:         #D8CDBE;   /* bordes más marcados */
+
+  /* Texto */
+  --text:        #2E1F17;   /* texto principal */
+  --text2:       rgba(46, 31, 23, 0.55);   /* texto secundario, muted */
+  --text3:       rgba(46, 31, 23, 0.35);   /* texto muy secundario, disabled */
+
+  /* Acento tecnológico — único color frío */
+  --accent:      #4F8EF7;   /* azul nube — botones primary, links, focus */
+  --accent-dark: #3A6FD0;   /* hover sobre accent */
+
+  /* Estados semánticos */
+  --ok:          #3BAA7E;   /* conectado, éxito */
+  --error:       #C0392B;   /* error, peligro */
+  --warning:     #D4870A;   /* advertencia */
+  --degraded:    #E8A020;   /* degradado — conecta con errores parciales */
+
+  /* Tipografía */
+  --font:        'Nunito Sans', system-ui, sans-serif;
+  --font-mono:   'DM Mono', 'Fira Mono', monospace;
+
+  /* Radios — formas redondeadas en todo */
+  --radius-sm:   6px;
+  --radius:      10px;
+  --radius-md:   12px;
+  --radius-lg:   16px;
+  --radius-full: 999px;
+
+  /* Sombras */
+  --shadow-sm:   0 1px 2px rgba(46, 31, 23, 0.08);
+  --shadow:      0 2px 8px rgba(46, 31, 23, 0.10);
+  --shadow-lg:   0 4px 20px rgba(46, 31, 23, 0.14);
+
+  /* Bordes */
+  --border:      var(--bg4);
+  --border-color: var(--bg4);
+
+  /* Transiciones */
+  --transition:  0.15s ease;
+
+  /* Layout */
+  --navbar-h:    56px;
+  --sidebar-w:   280px;
+  --content-max: 1100px;
+}
+
+/* ── Base tipográfica ───────────────────────────────────────────────────── */
+html {
+  font-size: 14px;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  font-family:             var(--font);
+  font-size:               14px;
+  line-height:             1.5;
+  background:              var(--bg);
+  color:                   var(--text);
+  -webkit-font-smoothing:  antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+a {
+  color:           inherit;
+  text-decoration: none;
+}
+
+/* ── Mono — para IDs, conteos, URLs, valores técnicos ─────────────────── */
+code, pre, .mono {
+  font-family: var(--font-mono);
+  font-size:   0.875em;
+}
+
+/* ── Focus visible — accesibilidad ───────────────────────────────────────── */
+:focus-visible {
+  outline:        2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius:  var(--radius-sm);
+}
+
+/* ── Scrollbar custom (Webkit) ──────────────────────────────────────────── */
+::-webkit-scrollbar       { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg2); }
+::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: var(--radius-full); }
+::-webkit-scrollbar-thumb:hover { background: var(--brown-light); }
+
+/* ── Status dots ────────────────────────────────────────────────────────── */
+/* Usados en source-card para indicar el estado de conexión */
+.dot {
+  display:       inline-block;
+  width:         8px;
+  height:        8px;
+  border-radius: 50%;
+  flex-shrink:   0;
+}
+.dot-ok         { background: var(--ok); }
+.dot-error      { background: var(--error); }
+.dot-degraded   { background: var(--degraded); }
+.dot-warning    { background: var(--warning); }
+.dot-unverified { background: var(--text3); }
+.dot-deprecated { background: var(--text3); border: 1px solid var(--text2); }
+
+/* ── Pills ──────────────────────────────────────────────────────────────── */
+/* Pills de formato de datos y dominios — diseño homogéneo */
+.pill {
+  display:       inline-flex;
+  align-items:   center;
+  gap:           4px;
+  padding:       2px 8px;
+  border-radius: var(--radius-full);
+  font-size:     11px;
+  font-weight:   600;
+  font-family:   var(--font-mono);
+  letter-spacing: 0.02em;
+  white-space:   nowrap;
+}
+
+/* Formatos de datos */
+.pill-wfs         { background: #E8F0FE; color: #3A6FD0; }
+.pill-arcgis-rest { background: #FEF3E8; color: #B5620A; }
+.pill-csv         { background: #E8FAF3; color: #1A7A57; }
+.pill-geojson     { background: #F3E8FE; color: #7A3AC0; }
+.pill-json        { background: #FEF9E8; color: #8A6A0A; }
+.pill-default     { background: var(--bg3); color: var(--text2); }
+
+/* Estados */
+.pill-ok         { background: #E8FAF3; color: #1A7A57; }
+.pill-error      { background: #FEE8E8; color: #961A1A; }
+.pill-degraded   { background: #FEF5E8; color: #9A5A0A; }
+.pill-unverified { background: var(--bg3); color: var(--text2); }
+.pill-deprecated { background: var(--bg3); color: var(--text3); }
+
+/* ── Skeletons de carga ─────────────────────────────────────────────────── */
+.skeleton {
+  background:   linear-gradient(90deg, var(--bg3) 25%, var(--bg2) 50%, var(--bg3) 75%);
+  background-size: 200% 100%;
+  animation:    skeleton-shimmer 1.4s ease infinite;
+  border-radius: var(--radius-sm);
+}
+
+@keyframes skeleton-shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ── Layout base ────────────────────────────────────────────────────────── */
+.page-layout {
+  display:    grid;
+  grid-template-rows: var(--navbar-h) 1fr;
+  min-height: 100vh;
+}
+
+.page-content {
+  padding:   24px;
+  max-width: var(--content-max);
+  margin:    0 auto;
+  width:     100%;
+}
+
+/* ── Dividers ────────────────────────────────────────────────────────────── */
+.divider {
+  height:     1px;
+  background: var(--border);
+  margin:     16px 0;
+}
+
+/* ── Empty state ────────────────────────────────────────────────────────── */
+.empty-state {
+  display:         flex;
+  flex-direction:  column;
+  align-items:     center;
+  justify-content: center;
+  gap:             12px;
+  padding:         48px 24px;
+  color:           var(--text2);
+  text-align:      center;
+}
+.empty-state-title {
+  font-size:   16px;
+  font-weight: 600;
+  color:       var(--text);
+}
+.empty-state-desc {
+  font-size: 13px;
+  max-width: 320px;
+}

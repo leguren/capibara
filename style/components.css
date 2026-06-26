@@ -1,0 +1,318 @@
+/* style/components.css — Componentes de UI reutilizables
+ *
+ * Navbar, inputs, selects, cards, tablas, modales.
+ * Importar después de base.css y buttons.css.
+ */
+
+/* ── Navbar ─────────────────────────────────────────────────────────────── */
+.navbar {
+  position:        sticky;
+  top:             0;
+  z-index:         100;
+  height:          var(--navbar-h);
+  background:      var(--brown-dark);
+  display:         flex;
+  align-items:     center;
+  padding:         0 20px;
+  gap:             16px;
+}
+
+.navbar-brand {
+  display:     flex;
+  align-items: center;
+  gap:         8px;
+  color:       #fff;
+  font-size:   16px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  text-decoration: none;
+}
+.navbar-brand .capibara-icon {
+  width:  28px;
+  height: 28px;
+  /* SVG inline del capibara en el HTML */
+}
+
+.navbar-nav {
+  display:     flex;
+  align-items: center;
+  gap:         2px;
+  margin-left: 8px;
+}
+.navbar-link {
+  padding:       0 12px;
+  height:        34px;
+  display:       flex;
+  align-items:   center;
+  border-radius: var(--radius);
+  color:         rgba(255,255,255,0.72);
+  font-size:     13px;
+  font-weight:   500;
+  transition:    background var(--transition), color var(--transition);
+}
+.navbar-link:hover      { background: rgba(255,255,255,0.1); color: #fff; }
+.navbar-link.is-active  { background: rgba(255,255,255,0.15); color: #fff; }
+
+.navbar-spacer { flex: 1; }
+
+.navbar-user {
+  display:     flex;
+  align-items: center;
+  gap:         8px;
+  color:       rgba(255,255,255,0.85);
+  font-size:   13px;
+}
+.navbar-avatar {
+  width:         28px;
+  height:        28px;
+  border-radius: 50%;
+  background:    var(--brown);
+  overflow:      hidden;
+  display:       flex;
+  align-items:   center;
+  justify-content: center;
+  font-size:     12px;
+  font-weight:   700;
+  color:         #fff;
+  flex-shrink:   0;
+}
+.navbar-avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+/* ── Page header ─────────────────────────────────────────────────────────── */
+.page-header {
+  display:         flex;
+  align-items:     center;
+  justify-content: space-between;
+  gap:             16px;
+  margin-bottom:   24px;
+  flex-wrap:       wrap;
+}
+.page-title {
+  font-size:      20px;
+  font-weight:    700;
+  color:          var(--brown-dark);
+  letter-spacing: -0.01em;
+}
+.page-subtitle {
+  font-size:   13px;
+  color:       var(--text2);
+  margin-top:  4px;
+}
+.page-actions { display: flex; align-items: center; gap: 8px; }
+
+/* ── Inputs y selects ───────────────────────────────────────────────────── */
+.input, .select, .textarea {
+  width:         100%;
+  padding:       0 12px;
+  height:        36px;
+  background:    var(--bg);
+  border:        1.5px solid var(--border);
+  border-radius: var(--radius);
+  font-family:   var(--font);
+  font-size:     13px;
+  color:         var(--text);
+  transition:    border-color var(--transition);
+  outline:       none;
+}
+.input:focus, .select:focus, .textarea:focus {
+  border-color: var(--accent);
+}
+.input::placeholder { color: var(--text3); }
+
+.textarea { height: auto; padding: 10px 12px; resize: vertical; }
+
+.input-mono { font-family: var(--font-mono); font-size: 12px; }
+
+.select {
+  appearance:    none;
+  cursor:        pointer;
+  background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%23A56A43' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat:   no-repeat;
+  background-position: right 12px center;
+  padding-right: 32px;
+}
+
+/* Form group */
+.form-group { display: flex; flex-direction: column; gap: 6px; }
+.form-label { font-size: 12px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 0.04em; }
+.form-hint  { font-size: 11px; color: var(--text3); }
+.form-error { font-size: 11px; color: var(--error); }
+
+/* Grid de formulario 2 columnas */
+.form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.form-grid-2 .span-2 { grid-column: 1 / -1; }
+
+/* ── Cards ──────────────────────────────────────────────────────────────── */
+.card {
+  background:    var(--bg2);
+  border:        1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding:       20px;
+}
+.card-tight  { padding: 12px 16px; }
+.card-header {
+  display:         flex;
+  align-items:     center;
+  justify-content: space-between;
+  gap:             12px;
+  margin-bottom:   16px;
+}
+.card-title {
+  font-size:   15px;
+  font-weight: 700;
+  color:       var(--brown-dark);
+}
+
+/* ── Tabla ──────────────────────────────────────────────────────────────── */
+.table-wrap {
+  background:    var(--bg2);
+  border:        1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow:      hidden;
+}
+.table {
+  width:           100%;
+  border-collapse: collapse;
+  font-size:       13px;
+}
+.table th {
+  padding:        10px 16px;
+  text-align:     left;
+  font-size:      11px;
+  font-weight:    600;
+  color:          var(--text2);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  background:     var(--bg2);
+  border-bottom:  1px solid var(--border);
+  white-space:    nowrap;
+}
+.table td {
+  padding:       10px 16px;
+  border-bottom: 1px solid var(--bg3);
+  vertical-align: middle;
+}
+.table tr:last-child td { border-bottom: none; }
+.table tbody tr:hover td { background: var(--bg); }
+
+/* ── Modal ──────────────────────────────────────────────────────────────── */
+.modal-overlay {
+  position:        fixed;
+  inset:           0;
+  background:      rgba(46, 31, 23, 0.4);
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  z-index:         200;
+  padding:         24px;
+  backdrop-filter: blur(2px);
+  animation:       fade-in 0.15s ease;
+}
+.modal {
+  background:    var(--bg);
+  border-radius: var(--radius-lg);
+  width:         100%;
+  max-width:     520px;
+  max-height:    90vh;
+  overflow-y:    auto;
+  box-shadow:    var(--shadow-lg);
+  animation:     slide-up 0.15s ease;
+}
+.modal-header {
+  display:         flex;
+  align-items:     center;
+  justify-content: space-between;
+  padding:         20px 20px 0;
+  margin-bottom:   16px;
+}
+.modal-title { font-size: 16px; font-weight: 700; color: var(--brown-dark); }
+.modal-body  { padding: 0 20px; }
+.modal-footer {
+  display:         flex;
+  justify-content: flex-end;
+  gap:             8px;
+  padding:         20px;
+}
+
+@keyframes fade-in  { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slide-up { from { transform: translateY(8px); opacity: 0; } to { transform: none; opacity: 1; } }
+
+/* ── Stat cards ─────────────────────────────────────────────────────────── */
+.stats-grid {
+  display:               grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap:                   12px;
+  margin-bottom:         24px;
+}
+.stat-card {
+  background:    var(--bg2);
+  border:        1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding:       16px;
+}
+.stat-label {
+  font-size:      11px;
+  font-weight:    600;
+  color:          var(--text2);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom:  6px;
+}
+.stat-value {
+  font-size:   24px;
+  font-weight: 700;
+  color:       var(--brown-dark);
+  font-family: var(--font-mono);
+}
+.stat-sub {
+  font-size:  11px;
+  color:      var(--text3);
+  margin-top: 2px;
+}
+
+/* ── Code blocks ────────────────────────────────────────────────────────── */
+.code-block {
+  background:    var(--brown-dark);
+  color:         #E5DDD2;
+  padding:       14px 16px;
+  border-radius: var(--radius-md);
+  font-family:   var(--font-mono);
+  font-size:     12px;
+  line-height:   1.6;
+  overflow-x:    auto;
+  position:      relative;
+}
+.code-block-copy {
+  position:      absolute;
+  top:           8px;
+  right:         8px;
+  background:    rgba(255,255,255,0.1);
+  border:        none;
+  border-radius: var(--radius-sm);
+  color:         rgba(255,255,255,0.7);
+  padding:       4px 8px;
+  font-size:     11px;
+  cursor:        pointer;
+  transition:    background var(--transition);
+}
+.code-block-copy:hover { background: rgba(255,255,255,0.2); color: #fff; }
+
+/* ── Section dividers ───────────────────────────────────────────────────── */
+.section { margin-bottom: 32px; }
+.section-title {
+  font-size:     11px;
+  font-weight:   600;
+  color:         var(--text2);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 12px;
+  display:       flex;
+  align-items:   center;
+  gap:           8px;
+}
+.section-title::after {
+  content:    '';
+  flex:       1;
+  height:     1px;
+  background: var(--border);
+}

@@ -1,0 +1,49 @@
+/* style/dashboard.css — Panel de usuario */
+
+.dashboard-layout {
+  display:               grid;
+  grid-template-columns: 1fr 320px;
+  gap:                   24px;
+  align-items:           start;
+}
+
+.api-key-row {
+  display:       flex;
+  align-items:   center;
+  gap:           12px;
+  padding:       12px 16px;
+  background:    var(--bg2);
+  border:        1px solid var(--border);
+  border-radius: var(--radius-md);
+  margin-bottom: 8px;
+}
+.api-key-label     { font-weight: 600; font-size: 13px; flex: 1; }
+.api-key-type      { font-size: 11px; font-family: var(--font-mono); color: var(--text2); }
+.api-key-used      { font-size: 11px; color: var(--text3); white-space: nowrap; }
+.api-key-token-box {
+  background:    var(--brown-dark);
+  color:         #E5DDD2;
+  font-family:   var(--font-mono);
+  font-size:     12px;
+  padding:       10px 14px;
+  border-radius: var(--radius);
+  word-break:    break-all;
+  margin:        12px 0;
+  position:      relative;
+}
+.api-key-warning {
+  font-size:     12px;
+  color:         var(--warning);
+  margin-bottom: 12px;
+}
+
+.usage-chart-placeholder {
+  background:    var(--bg3);
+  border-radius: var(--radius-md);
+  height:        120px;
+  display:       flex;
+  align-items:   center;
+  justify-content: center;
+  color:         var(--text3);
+  font-size:     12px;
+}

@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Capibara — Admin</title>
+  <link rel="stylesheet" href="/style/base.css">
+  <link rel="stylesheet" href="/style/buttons.css">
+  <link rel="stylesheet" href="/style/components.css">
+  <link rel="stylesheet" href="/style/toast.css">
+  <link rel="stylesheet" href="/style/admin.css">
+</head>
+<body>
+
+<!-- Navbar -->
+<nav class="navbar">
+  <a href="/admin" class="navbar-brand">
+    <svg width="26" height="26" viewBox="0 0 40 40" fill="none">
+      <rect width="40" height="40" rx="10" fill="#A56A43"/>
+      <ellipse cx="20" cy="22" rx="11" ry="8" fill="#F7F3EC"/>
+      <ellipse cx="14" cy="20" rx="3" ry="4.5" fill="#EFE9DF"/>
+      <ellipse cx="26" cy="20" rx="3" ry="4.5" fill="#EFE9DF"/>
+      <circle cx="16" cy="16" r="2" fill="#2E1F17"/>
+      <circle cx="24" cy="16" r="2" fill="#2E1F17"/>
+    </svg>
+    Capibara
+  </a>
+  <nav class="navbar-nav">
+    <a href="/admin" class="navbar-link is-active">Fuentes</a>
+    <a href="/publish" class="navbar-link">Publicar</a>
+  </nav>
+  <div class="navbar-spacer"></div>
+  <div class="navbar-user" id="nav-user">
+    <div class="skeleton" style="width:80px;height:20px;border-radius:4px"></div>
+  </div>
+</nav>
+
+<!-- Contenido principal -->
+<main class="page-content" style="max-width:1200px">
+
+  <div class="page-header">
+    <div>
+      <div class="page-title">Fuentes de datos</div>
+      <div class="page-subtitle">Conectá servicios externos y configurá qué capas y campos sirve la API.</div>
+    </div>
+    <div class="page-actions">
+      <button class="btn btn-primary" id="btn-new-source">+ Nueva fuente</button>
+    </div>
+  </div>
+
+  <!-- Stats globales -->
+  <div class="stats-grid" id="stats-grid">
+    <div class="stat-card">
+      <div class="stat-label">Fuentes</div>
+      <div class="stat-value skeleton" style="width:40px;height:32px">&nbsp;</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Capas activas</div>
+      <div class="stat-value skeleton" style="width:40px;height:32px">&nbsp;</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Campos activos</div>
+      <div class="stat-value skeleton" style="width:40px;height:32px">&nbsp;</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Conectadas</div>
+      <div class="stat-value skeleton" style="width:40px;height:32px">&nbsp;</div>
+    </div>
+  </div>
+
+  <!-- Toolbar de filtros -->
+  <div class="toolbar">
+    <input class="input toolbar-search" id="search-input" placeholder="Buscar por nombre, proveedor…">
+    <select class="select" id="filter-status" style="width:140px">
+      <option value="">Todos los estados</option>
+      <option value="ok">Conectadas</option>
+      <option value="error">Con error</option>
+      <option value="unverified">Sin verificar</option>
+    </select>
+    <select class="select" id="filter-format" style="width:140px">
+      <option value="">Todos los formatos</option>
+      <option value="wfs">WFS</option>
+      <option value="arcgis_rest">ArcGIS REST</option>
+      <option value="csv">CSV</option>
+      <option value="geojson">GeoJSON</option>
+      <option value="json">JSON</option>
+    </select>
+  </div>
+
+  <!-- Grid de source cards -->
+  <div class="sources-grid" id="sources-grid">
+    <!-- Loading skeleton -->
+    ${Array(3).fill().map(() => `<div class="card skeleton" style="height:160px"></div>`).join('')}
+  </div>
+
+</main>
+
+<!-- Panel lateral de detalle de fuente -->
+<div class="detail-panel" id="detail-panel" style="display:none">
+  <div class="detail-panel-header">
+    <button class="btn btn-ghost btn-icon" id="close-panel">←</button>
+    <div style="flex:1">
+      <div id="panel-title" style="font-weight:700;color:var(--brown-dark)"></div>
+      <div id="panel-sub" style="font-size:12px;color:var(--text2)"></div>
+    </div>
+  </div>
+  <div class="detail-panel-body" id="panel-body"></div>
+</div>
+
+<!-- Scripts: orden importante — config → vocab → src -->
+<script src="/config/app.js"></script>
+<script src="/vocab/status.js"></script>
+<script src="/vocab/formats.js"></script>
+<script src="/src/api.js"></script>
+<script src="/src/toast.js"></script>
+<script src="/src/utils.js"></script>
+<script src="/src/auth.js"></script>
+<script src="/src/source-card.js"></script>
+<script src="/src/sources.js"></script>
+
+<script>
+(async () => {
+  'use strict';
+
+  const UTILS   = window.CAPIBARA_UTILS;
+  const SOURCES = window.CAPIBARA_SOURCES;
+  const CARD    = window.CAPIBARA_SOURCE_CARD;
+  const AUTH    = window.CAPIBARA_AUTH;
+  const API     = window.CAPIBARA_API;
+  const TOAST   = window.CAPIBARA_TOAST;
+
+  // Verificar sesión admin
+  const user = await AUTH.requireAdmin();
+  if (!user) return;
+  AUTH.renderNavUser(document.getElementById('nav-user'), user);
+
+  // Cargar y renderizar fuentes
+  SOURCES.onUpdate(renderSources);
+  await SOURCES.load();
+
+  // Nueva fuente
+  document.getElementById('btn-new-source').addEventListener('click', () => {
+    SOURCES.openCreateModal();
+  });
+
+  // Filtros
+  const searchInput  = document.getElementById('search-input');
+  const filterStatus = document.getElementById('filter-status');
+  const filterFormat = document.getElementById('filter-format');
+
+  [searchInput, filterStatus, filterFormat].forEach(el => {
+    el.addEventListener('input', () => renderSources(window._sources));
+  });
+
+  function renderSources(sources) {
+    window._sources = sources;
+    const grid    = document.getElementById('sources-grid');
+    const q       = searchInput.value.toLowerCase();
+    const status  = filterStatus.value;
+    const format  = filterFormat.value;
+
+    const filtered = sources.filter(s => {
+      const name = ((s.name_alias || s.name_source || '') + ' ' + (s.provider_alias || s.provider_source || '')).toLowerCase();
+      if (q && !name.includes(q)) return false;
+      if (status && s.status !== status) return false;
+      if (format && s.data_format !== format) return false;
+      return true;
+    });
+
+    // Stats
+    const stats = document.getElementById('stats-grid');
+    stats.innerHTML = `
+      <div class="stat-card">
+        <div class="stat-label">Fuentes</div>
+        <div class="stat-value">${sources.length}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Capas activas</div>
+        <div class="stat-value">${sources.reduce((a, s) => a + (s.layers_included || 0), 0)}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Campos activos</div>
+        <div class="stat-value">${sources.reduce((a, s) => a + (s.fields_included || 0), 0)}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Conectadas</div>
+        <div class="stat-value">${sources.filter(s => s.status === 'ok').length}</div>
+      </div>
+    `;
+
+    if (!filtered.length) {
+      grid.innerHTML = `
+        <div class="empty-state" style="grid-column:1/-1">
+          <div class="empty-state-title">Sin fuentes</div>
+          <div class="empty-state-desc">Creá tu primera fuente de datos con el botón de arriba.</div>
+        </div>`;
+      return;
+    }
+
+    grid.innerHTML = '';
+    for (const source of filtered) {
+      const card = CARD.render(source);
+
+      card.addEventListener('click', e => {
+        // Solo abrir panel si no clickearon un botón
+        if (!e.target.closest('button')) openDetailPanel(source);
+      });
+
+      card.querySelector('.js-connect').addEventListener('click', e => {
+        e.stopPropagation();
+        SOURCES.connect(source.id, e.currentTarget);
+      });
+      card.querySelector('.js-discover').addEventListener('click', e => {
+        e.stopPropagation();
+        SOURCES.discoverLayers(source.id, e.currentTarget);
+      });
+      card.querySelector('.js-delete').addEventListener('click', e => {
+        e.stopPropagation();
+        SOURCES.deleteSource(source.id);
+      });
+
+      grid.appendChild(card);
+    }
+  }
+
+  // Panel de detalle lateral
+  document.getElementById('close-panel').addEventListener('click', () => {
+    document.getElementById('detail-panel').style.display = 'none';
+  });
+
+  async function openDetailPanel(source) {
+    const panel = document.getElementById('detail-panel');
+    const body  = document.getElementById('panel-body');
+    panel.style.display = 'block';
+    document.getElementById('panel-title').textContent = UTILS.displayName(source);
+    document.getElementById('panel-sub').textContent   = source.data_format + ' · ' + (source.status || '—');
+
+    body.innerHTML = '<div class="skeleton" style="height:200px;border-radius:8px"></div>';
+
+    const { data, ok, error } = await API.getSource(source.id);
+    if (!ok) { body.innerHTML = `<div style="color:var(--error);padding:16px">${error}</div>`; return; }
+
+    const src = data.source;
+    body.innerHTML = `
+      <div class="section">
+        <div class="section-title">Capas (${src.layers?.length || 0})</div>
+        <div class="layer-list" id="panel-layers"></div>
+        <button class="btn btn-secondary btn-sm js-discover" data-id="${src.id}" style="margin-top:8px">
+          Descubrir capas
+        </button>
+      </div>
+    `;
+
+    const layerList = body.querySelector('#panel-layers');
+    const LAYER_ROW = window.CAPIBARA_LAYER_ROW;
+
+    if (!src.layers?.length) {
+      layerList.innerHTML = '<div style="font-size:12px;color:var(--text3);padding:8px 0">Sin capas descubiertas.</div>';
+    } else {
+      const table = document.createElement('table');
+      table.className = 'table';
+      table.innerHTML = `<thead><tr>
+        <th style="width:40px"></th><th>Nombre</th><th>Dominio</th><th>Frecuencia</th>
+        <th>Features</th><th></th>
+      </tr></thead><tbody id="layers-tbody"></tbody>`;
+      layerList.appendChild(table);
+      const tbody = table.querySelector('#layers-tbody');
+      for (const layer of src.layers) {
+        const tr = LAYER_ROW.render(layer);
+        const discoverBtn = tr.querySelector('.js-discover-fields');
+        if (discoverBtn) {
+          discoverBtn.addEventListener('click', async e => {
+            e.currentTarget.classList.add('btn-loading');
+            const { data: dData, ok: dOk } = await API.discoverFields(layer.id);
+            e.currentTarget.classList.remove('btn-loading');
+            if (dOk) TOAST.ok('Campos descubiertos', `${dData.added} nuevos.`);
+            else TOAST.error('Error', dData?.error || 'Error al descubrir campos');
+          });
+        }
+        tbody.appendChild(tr);
+      }
+    }
+
+    body.querySelector('.js-discover')?.addEventListener('click', async e => {
+      await SOURCES.discoverLayers(src.id, e.currentTarget);
+      openDetailPanel(src);
+    });
+  }
+})();
+</script>
+
+</body>
+</html>

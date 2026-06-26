@@ -1,0 +1,15 @@
+{
+  "name": "capibara",
+  "version": "0.1.0",
+  "description": "Plataforma B2B de datos geoespaciales por coordenada",
+  "private": true,
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@libsql/client": "^0.6.0"
+  },
+  "scripts": {
+    "dev": "vercel dev"
+  }
+}

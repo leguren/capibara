@@ -1,0 +1,163 @@
+/* style/buttons.css — Sistema de botones de Capibara
+ *
+ * Todas las variantes de botones. Importar después de base.css.
+ *
+ * Clases base:
+ *   .btn           → base (requerida en todo botón)
+ *   .btn-primary   → acción principal (accent azul)
+ *   .btn-secondary → acción secundaria (bg3, texto oscuro)
+ *   .btn-danger    → destrucción / eliminar (error rojo)
+ *   .btn-ghost     → acción terciaria sin fondo
+ *   .btn-sm        → tamaño pequeño (tablas, headers)
+ *   .btn-icon      → solo ícono, cuadrado
+ */
+
+.btn {
+  display:         inline-flex;
+  align-items:     center;
+  justify-content: center;
+  gap:             6px;
+  padding:         0 16px;
+  height:          36px;
+  border:          1.5px solid transparent;
+  border-radius:   var(--radius);
+  font-family:     var(--font);
+  font-size:       13px;
+  font-weight:     600;
+  line-height:     1;
+  cursor:          pointer;
+  user-select:     none;
+  white-space:     nowrap;
+  transition:      background var(--transition), border-color var(--transition),
+                   color var(--transition), opacity var(--transition),
+                   box-shadow var(--transition);
+  text-decoration: none;
+}
+
+.btn:disabled,
+.btn[aria-disabled="true"] {
+  opacity:        0.45;
+  cursor:         not-allowed;
+  pointer-events: none;
+}
+
+/* Primary — acción principal (publicar, conectar, guardar) */
+.btn-primary {
+  background:   var(--accent);
+  border-color: var(--accent);
+  color:        #fff;
+}
+.btn-primary:hover:not(:disabled)  { background: var(--accent-dark); border-color: var(--accent-dark); }
+.btn-primary:active:not(:disabled) { opacity: 0.88; }
+
+/* Secondary — acción neutra (cancelar, cerrar) */
+.btn-secondary {
+  background:   var(--bg2);
+  border-color: var(--border);
+  color:        var(--text);
+}
+.btn-secondary:hover:not(:disabled)  { background: var(--bg3); }
+.btn-secondary:active:not(:disabled) { background: var(--bg4); }
+
+/* Danger — destrucción (eliminar fuente, revocar key) */
+.btn-danger {
+  background:   transparent;
+  border-color: var(--error);
+  color:        var(--error);
+}
+.btn-danger:hover:not(:disabled)  { background: var(--error); color: #fff; }
+.btn-danger:active:not(:disabled) { opacity: 0.88; }
+
+/* Brown — acciones identitarias (publicar config) */
+.btn-brown {
+  background:   var(--brown);
+  border-color: var(--brown);
+  color:        #fff;
+}
+.btn-brown:hover:not(:disabled)  { background: var(--brown-dark); border-color: var(--brown-dark); }
+.btn-brown:active:not(:disabled) { opacity: 0.88; }
+
+/* Ghost — sin fondo, solo texto */
+.btn-ghost {
+  background:   transparent;
+  border-color: transparent;
+  color:        var(--text2);
+}
+.btn-ghost:hover:not(:disabled)  { background: var(--bg2); color: var(--text); }
+.btn-ghost:active:not(:disabled) { background: var(--bg3); }
+
+/* Tamaño pequeño — filas de tabla, headers */
+.btn-sm {
+  height:    28px;
+  padding:   0 10px;
+  font-size: 12px;
+  gap:       4px;
+  border-radius: var(--radius-sm);
+}
+
+/* Solo ícono — cuadrado */
+.btn-icon {
+  padding: 0;
+  width:   36px;
+}
+.btn-icon.btn-sm { width: 28px; }
+
+/* Loading state */
+.btn-loading {
+  position:       relative;
+  pointer-events: none;
+  color:          transparent;
+}
+.btn-loading::after {
+  content:       '';
+  position:      absolute;
+  width:         14px;
+  height:        14px;
+  border:        2px solid currentColor;
+  border-color:  rgba(255,255,255,0.3) rgba(255,255,255,0.3) #fff #fff;
+  border-radius: 50%;
+  animation:     btn-spin 0.6s linear infinite;
+}
+.btn-primary.btn-loading::after,
+.btn-brown.btn-loading::after   { border-color: rgba(255,255,255,0.3) rgba(255,255,255,0.3) #fff #fff; }
+.btn-secondary.btn-loading::after,
+.btn-ghost.btn-loading::after   { border-color: rgba(46,31,23,0.2) rgba(46,31,23,0.2) var(--text) var(--text); }
+
+@keyframes btn-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Toggle — incluido/excluido (switches en filas de capas y campos) */
+.toggle {
+  position:  relative;
+  width:     36px;
+  height:    20px;
+  flex-shrink: 0;
+  cursor:    pointer;
+}
+.toggle input {
+  opacity:  0;
+  width:    0;
+  height:   0;
+  position: absolute;
+}
+.toggle-track {
+  position:       absolute;
+  inset:          0;
+  background:     var(--bg4);
+  border-radius:  var(--radius-full);
+  transition:     background var(--transition);
+}
+.toggle input:checked ~ .toggle-track { background: var(--accent); }
+.toggle-thumb {
+  position:      absolute;
+  top:           2px;
+  left:          2px;
+  width:         16px;
+  height:        16px;
+  background:    #fff;
+  border-radius: 50%;
+  transition:    transform var(--transition);
+  box-shadow:    var(--shadow-sm);
+}
+.toggle input:checked ~ .toggle-track .toggle-thumb { transform: translateX(16px); }
