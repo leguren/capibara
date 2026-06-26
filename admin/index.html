@@ -136,16 +136,7 @@
   if (!user) return;
   AUTH.renderNavUser(document.getElementById('nav-user'), user);
 
-  // Cargar y renderizar fuentes
-  SOURCES.onUpdate(renderSources);
-  await SOURCES.load();
-
-  // Nueva fuente
-  document.getElementById('btn-new-source').addEventListener('click', () => {
-    SOURCES.openCreateModal();
-  });
-
-  // Filtros
+  // Filtros — declarados antes de renderSources que los referencia
   const searchInput  = document.getElementById('search-input');
   const filterStatus = document.getElementById('filter-status');
   const filterFormat = document.getElementById('filter-format');
@@ -153,6 +144,15 @@
   [searchInput, filterStatus, filterFormat].forEach(el => {
     el.addEventListener('input', () => renderSources(window._sources));
   });
+
+  // Nueva fuente
+  document.getElementById('btn-new-source').addEventListener('click', () => {
+    SOURCES.openCreateModal();
+  });
+
+  // Cargar y renderizar fuentes
+  SOURCES.onUpdate(renderSources);
+  await SOURCES.load();
 
   function renderSources(sources) {
     window._sources = sources;
