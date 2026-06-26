@@ -59,10 +59,20 @@ module.exports = async function handler(req, res) {
     const srcResult = await db.execute({ sql: 'SELECT * FROM sources WHERE id = ? LIMIT 1', args: [sid] });
     if (!srcResult.rows.length) return err(res, 404, 'Fuente no encontrada');
     const source = srcResult.rows[0];
+    console.log('[discover] format:', source.data_format);
+    console.log('[discover] connection_params:', source.connection_params);
     const entry  = getConnector(source.data_format);
     if (!entry?.implemented) return err(res, 400, `Conector no disponible: ${source.data_format}`);
     const params = safeJson(source.connection_params, {});
-    const layers = await entry.connector.getLayers(params);
+    console.log('[discover] params parsed:', JSON.stringify(params));
+    let layers;
+    try {
+      layers = await entry.connector.getLayers(params);
+      console.log('[discover] layers found:', layers?.length);
+    } catch(e) {
+      console.error('[discover] getLayers error:', e.message);
+      return err(res, 500, e.message);
+    }
     if (!layers?.length) return ok(res, { ok: true, total: 0, added: 0, skipped: 0 });
     const existingResult = await db.execute({ sql: 'SELECT id, name_source FROM layers WHERE source_id = ?', args: [sid] });
     const existingMap = new Map(existingResult.rows.map(r => [r.name_source, r.id]));
