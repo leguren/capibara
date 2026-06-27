@@ -14,11 +14,13 @@ window.CAPIBARA_API = (() => {
    * request(path, options?) → Promise<{ data, ok, error }>
    *
    * Wrapper sobre fetch que siempre devuelve { data, ok, error }.
+   * cache: 'no-store' — fuerza request real cada vez, evita 304/ETag del browser.
    * Nunca lanza — todos los errores se capturan y devuelven en .error.
    */
   async function request(path, options = {}) {
     try {
       const res = await fetch(path, {
+        cache:   'no-store',
         headers: { 'Content-Type': 'application/json', ...options.headers },
         ...options,
         body: options.body ? JSON.stringify(options.body) : undefined,
@@ -43,10 +45,10 @@ window.CAPIBARA_API = (() => {
     }
   }
 
-  const get  = (path)         => request(path, { method: 'GET' });
-  const post = (path, body)   => request(path, { method: 'POST', body });
-  const patch = (path, body)  => request(path, { method: 'PATCH', body });
-  const del  = (path)         => request(path, { method: 'DELETE' });
+  const get   = (path)       => request(path, { method: 'GET' });
+  const post  = (path, body) => request(path, { method: 'POST', body });
+  const patch = (path, body) => request(path, { method: 'PATCH', body });
+  const del   = (path)       => request(path, { method: 'DELETE' });
 
   return {
     // Auth
@@ -77,9 +79,9 @@ window.CAPIBARA_API = (() => {
     publish:         (body)       => post(`${ADMIN_API}/publish`, body),
 
     // User
-    getKeys:    () => get(`${USER_API}/keys`),
-    createKey:  (body) => post(`${USER_API}/keys`, body),
+    getKeys:    ()         => get(`${USER_API}/keys`),
+    createKey:  (body)     => post(`${USER_API}/keys`, body),
     updateKey:  (id, body) => patch(`${USER_API}/keys?id=${id}`, body),
-    deleteKey:  (id) => del(`${USER_API}/keys?id=${id}`),
+    deleteKey:  (id)       => del(`${USER_API}/keys?id=${id}`),
   };
 })();
