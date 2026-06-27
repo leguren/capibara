@@ -76,15 +76,9 @@ module.exports = async function handler(req, res) {
     if (!layers?.length) return ok(res, { ok: true, total: 0, added: 0, skipped: 0 });
     const existingResult = await db.execute({ sql: 'SELECT id, name_source FROM layers WHERE source_id = ?', args: [sid] });
     const existingMap = new Map(existingResult.rows.map(r => [r.name_source, r.id]));
+    // getCount() omitido en discover — puede tardar minutos con fuentes grandes.
+    // El feature_count se puede actualizar manualmente por capa desde el panel.
     const counts = {};
-    if (typeof entry.connector.getCount === 'function') {
-      const chunks = [];
-      for (let i = 0; i < layers.length; i += 5) chunks.push(layers.slice(i, i + 5));
-      for (const chunk of chunks) {
-        const results = await Promise.allSettled(chunk.map(async l => ({ name: l.name, count: await entry.connector.getCount(params, l.name) })));
-        for (const r of results) { if (r.status === 'fulfilled') counts[r.value.name] = r.value.count; }
-      }
-    }
     let added = 0, skipped = 0;
     const ts = now();
     for (const layer of layers) {
