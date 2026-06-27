@@ -24,27 +24,30 @@
 
   <h1 class="admin-title">Gestión de fuentes</h1>
 
-  <!-- Buscador -->
-  <div class="search-wrap">
-    <input class="admin-search" id="search-input" placeholder="Buscar fuentes…">
-    <button class="search-clear" id="search-clear" title="Borrar búsqueda">×</button>
-  </div>
-
-  <!-- Filtros de estado + nueva fuente -->
-  <div class="filter-row" style="margin-top:20px">
-    <div class="filter-pills" id="status-pills">
-      <button class="filter-pill" data-value="ok">
-        <span class="dot dot-ok"></span><span id="count-ok">0</span> conectadas
-      </button>
-      <button class="filter-pill" data-value="error">
-        <span class="dot dot-error"></span><span id="count-error">0</span> con error
-      </button>
-      <button class="filter-pill" data-value="unverified">
-        <span class="dot dot-unverified"></span><span id="count-unverified">0</span> sin verificar
-      </button>
+  <!-- Buscador + acciones principales -->
+  <div class="search-row">
+    <div class="search-wrap">
+      <input class="admin-search" id="search-input" placeholder="Buscar fuentes…">
+      <button class="search-clear" id="search-clear" title="Borrar búsqueda">×</button>
     </div>
     <button class="filter-pill primary" id="btn-new-source">Nueva fuente</button>
     <a href="/admin/publish" class="filter-pill">Publicar</a>
+  </div>
+
+  <!-- Filtros de estado + actualizar -->
+  <div class="filter-row" style="margin-top:20px">
+    <div class="filter-pills" id="status-pills">
+      <button class="filter-pill" data-value="ok">
+        <span class="dot dot-ok"></span> <span id="count-ok">0</span> conectadas
+      </button>
+      <button class="filter-pill" data-value="error">
+        <span class="dot dot-error"></span> <span id="count-error">0</span> con error
+      </button>
+      <button class="filter-pill" data-value="unverified">
+        <span class="dot dot-unverified"></span> <span id="count-unverified">0</span> sin verificar
+      </button>
+    </div>
+    <button class="filter-pill" id="btn-refresh" title="Actualizar">↻ Actualizar</button>
   </div>
 
   <!-- Filtros de formato -->
@@ -133,6 +136,15 @@
   document.getElementById('btn-new-source').addEventListener('click', () =>
     SOURCES.openCreateModal()
   );
+
+  document.getElementById('btn-refresh').addEventListener('click', async () => {
+    const btn = document.getElementById('btn-refresh');
+    btn.textContent = '↻';
+    btn.disabled = true;
+    await SOURCES.load();
+    btn.textContent = '↻ Actualizar';
+    btn.disabled = false;
+  });
 
   SOURCES.onUpdate(renderSources);
   await SOURCES.load();
