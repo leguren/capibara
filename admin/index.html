@@ -212,9 +212,10 @@
         e.stopPropagation();
         SOURCES.connect(source.id, e.currentTarget);
       });
-      card.querySelector('.js-discover').addEventListener('click', e => {
+      card.querySelector('.js-discover').addEventListener('click', async e => {
         e.stopPropagation();
-        SOURCES.discoverLayers(source.id, e.currentTarget);
+        await SOURCES.discoverLayers(source.id, e.currentTarget);
+        openDetailPanel(source);
       });
       card.querySelector('.js-delete').addEventListener('click', e => {
         e.stopPropagation();
