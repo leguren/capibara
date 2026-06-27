@@ -5,12 +5,12 @@
  * Importado por todos los handlers que necesiten estas funciones.
  *
  * Contenido:
- *   id(prefix)     → genera un ID con nanoid: 'src_xK9mZ3...'
+ *   id(prefix)     → genera un ID con 12 dígitos numéricos: 'src_847293019284'
  *   now()          → ISO 8601 UTC del momento actual
  *   ok(res, data)  → respuesta 200 JSON
  *   err(res, status, message) → respuesta de error JSON estandarizada
  *   safeJson(str)  → parsea JSON sin lanzar excepción
- *   requireBody(req, res, fields) → valida campos requeridos en el body
+ *   requireFields(obj, fields) → valida campos requeridos en el body
  */
 
 const crypto = require('crypto');
@@ -20,34 +20,11 @@ const crypto = require('crypto');
 // ---------------------------------------------------------------------------
 
 /**
- * NANOID_ALPHABET — alfabeto URL-safe sin caracteres ambiguos.
- * Excluye: 0, O (confundibles), I, l (confundibles en tipografías).
- * 62 caracteres → ~7.2 bits de entropía por carácter.
- * Con 12 caracteres: ~86 bits de entropía → colisiones negligibles.
- */
-const NANOID_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz123456789';
-
-/**
- * nanoid(size) → string
- *
- * Genera un string aleatorio criptográficamente seguro.
- * Usa crypto.getRandomValues() (disponible en Node 15+).
- */
-function nanoid(size = 12) {
-  const bytes  = crypto.randomBytes(size);
-  const result = [];
-  for (let i = 0; i < size; i++) {
-    result.push(NANOID_ALPHABET[bytes[i] % NANOID_ALPHABET.length]);
-  }
-  return result.join('');
-}
-
-/**
  * id(prefix) → string
  *
- * Genera un ID con prefijo para identificar la entidad en logs y URLs.
- * Ejemplos: id('src') → 'src_xK9mZ3YqWp2B'
- *           id('lyr') → 'lyr_AbC3dEfGhJ4K'
+ * Genera un ID con prefijo y 12 dígitos numéricos aleatorios seguros.
+ * Ejemplos: id('src') → 'src_847293019284'
+ *           id('lyr') → 'lyr_029384756102'
  *
  * Prefijos establecidos:
  *   'usr' → users
@@ -58,7 +35,10 @@ function nanoid(size = 12) {
  *   'pub' → publications
  */
 function id(prefix) {
-  return `${prefix}_${nanoid(12)}`;
+  // 12 dígitos decimales criptográficamente seguros
+  const bytes  = crypto.randomBytes(12);
+  const digits = Array.from(bytes, b => String(b % 10)).join('').slice(0, 12);
+  return `${prefix}_${digits}`;
 }
 
 // ---------------------------------------------------------------------------
