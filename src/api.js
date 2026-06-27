@@ -55,7 +55,7 @@ window.CAPIBARA_API = (() => {
 
     // Admin — Sources
     getSources:      ()           => get(`${ADMIN_API}/sources`),
-    getSource:       (id)         => get(`${ADMIN_API}/sources?id=${id}`),
+    getSource:       (id)         => get(`${ADMIN_API}/sources?id=${id}&_=${Date.now()}`),
     createSource:    (body)       => post(`${ADMIN_API}/sources`, body),
     updateSource:    (id, body)   => patch(`${ADMIN_API}/sources?id=${id}`, body),
     deleteSource:    (id)         => del(`${ADMIN_API}/sources?id=${id}`),
