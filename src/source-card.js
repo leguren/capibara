@@ -1,7 +1,9 @@
 /**
- * src/source-card.js — Componente de tarjeta de fuente
+ * src/source-card.js — Componente de tarjeta de fuente (solo informativa)
  *
- * window.CAPIBARA_SOURCE_CARD — factory que crea el HTML de una source card.
+ * Las cards son únicamente informativas. Los botones de acción
+ * (conectar, descubrir, eliminar) viven en el panel lateral.
+ * Click en la card → abre el panel.
  */
 
 window.CAPIBARA_SOURCE_CARD = (() => {
@@ -19,33 +21,24 @@ window.CAPIBARA_SOURCE_CARD = (() => {
     const provider = source.provider_alias || source.provider_source || '';
     const el       = document.createElement('div');
 
-    el.className   = `source-card${!source.included ? ' is-disabled' : ''}`;
-    el.dataset.id  = source.id;
-    el.innerHTML   = `
+    el.className  = `source-card${!source.included ? ' is-disabled' : ''}`;
+    el.dataset.id = source.id;
+    el.innerHTML  = `
       <div class="source-card-header">
-        <span class="dot source-card-dot ${STATUS.get(source.status).dotClass}"
+        <span class="dot ${STATUS.get(source.status).dotClass}"
               title="${STATUS.get(source.status).label}"></span>
-        <div class="source-card-meta">
+        <div style="min-width:0;flex:1">
           <div class="source-card-name" title="${UTILS.escHtml(name)}">${UTILS.escHtml(name)}</div>
           ${provider ? `<div class="source-card-provider">${UTILS.escHtml(provider)}</div>` : ''}
         </div>
       </div>
       <div class="source-card-pills">
         ${FMTS.pillHtml(source.data_format)}
-        ${source.countries?.map(c => `<span class="pill pill-default">${c}</span>`).join('') || ''}
+        ${(source.countries || []).map(c => `<span class="pill pill-default">${c}</span>`).join('')}
       </div>
       <div class="source-card-counts">
-        <span class="source-card-count">
-          <strong>${UTILS.formatNumber(source.layers_included)}</strong>/${UTILS.formatNumber(source.layers_total)} capas
-        </span>
-        <span class="source-card-count">
-          <strong>${UTILS.formatNumber(source.fields_included)}</strong>/${UTILS.formatNumber(source.fields_total)} campos
-        </span>
-      </div>
-      <div class="source-card-actions">
-        <button class="btn btn-secondary btn-sm js-connect" data-id="${source.id}">Conectar</button>
-        <button class="btn btn-secondary btn-sm js-discover" data-id="${source.id}">Descubrir capas</button>
-        <button class="btn btn-ghost btn-sm js-delete" data-id="${source.id}" style="margin-left:auto;color:var(--error)">Eliminar</button>
+        <span><strong>${UTILS.formatNumber(source.layers_included)}</strong>/${UTILS.formatNumber(source.layers_total)} capas</span>
+        <span><strong>${UTILS.formatNumber(source.fields_included)}</strong>/${UTILS.formatNumber(source.fields_total)} campos</span>
       </div>
     `;
 
@@ -57,7 +50,10 @@ window.CAPIBARA_SOURCE_CARD = (() => {
 
 
 /**
- * src/layer-row.js — Fila de capa en la tabla de layers
+ * src/layer-row.js — Fila de capa en el accordion del panel lateral
+ *
+ * Renderiza una fila expandible por capa dentro del panel de detalle de fuente.
+ * No usa tabla — usa divs flexbox para evitar scroll horizontal.
  */
 window.CAPIBARA_LAYER_ROW = (() => {
   'use strict';
@@ -69,121 +65,157 @@ window.CAPIBARA_LAYER_ROW = (() => {
   const TOAST = window.CAPIBARA_TOAST;
 
   function render(layer) {
-    const tr = document.createElement('tr');
-    tr.dataset.id = layer.id;
-    tr.innerHTML = `
-      <td>
-        <label class="toggle" title="${layer.included ? 'Incluida' : 'Excluida'}">
+    const item = document.createElement('div');
+    item.className  = 'layer-item';
+    item.dataset.id = layer.id;
+
+    item.innerHTML = `
+      <div class="layer-summary">
+        <label class="toggle" title="${layer.included ? 'Incluida en API' : 'Excluida de API'}">
           <input type="checkbox" class="js-toggle-layer" data-id="${layer.id}" ${layer.included ? 'checked' : ''}>
           <span class="toggle-track"><span class="toggle-thumb"></span></span>
         </label>
-      </td>
-      <td>
-        <div class="field-table-name">${UTILS.escHtml(layer.name_source)}</div>
-        ${layer.name_alias ? `<div class="field-table-alias">${UTILS.escHtml(layer.name_alias)}</div>` : ''}
-      </td>
-      <td>
-        <select class="select" style="width:100%;height:28px;font-size:12px" data-id="${layer.id}" data-field="domain">
-          <option value="">— sin dominio —</option>
-          ${DOM.options()}
-        </select>
-      </td>
-      <td>
-        <select class="select" style="width:100%;height:28px;font-size:12px" data-id="${layer.id}" data-field="update_frequency">
-          ${FREQ.options()}
-        </select>
-      </td>
-      <td class="mono" style="color:var(--text2)">${UTILS.formatNumber(layer.feature_count) || '—'}</td>
-      <td>
-        <button class="btn btn-secondary btn-sm js-discover-fields" data-id="${layer.id}">Descubrir campos</button>
-      </td>
+        <span class="layer-name" title="${UTILS.escHtml(layer.name_source)}">${UTILS.escHtml(layer.name_source)}</span>
+        ${layer.name_alias ? `<span class="layer-alias">→ ${UTILS.escHtml(layer.name_alias)}</span>` : ''}
+        <span class="layer-geom">${(layer.geometry_type || 'UNKNOWN').toUpperCase()}</span>
+        <button class="layer-expand-btn" aria-label="Expandir">▸</button>
+      </div>
+      <div class="layer-detail" hidden>
+        <div class="layer-form-row">
+          <span class="layer-form-label">Alias</span>
+          <input class="input js-layer-alias" value="${UTILS.escHtml(layer.name_alias || '')}" placeholder="Nombre legible para la API">
+        </div>
+        <div class="layer-form-row">
+          <span class="layer-form-label">Dominio</span>
+          <select class="select js-layer-domain" style="width:180px">
+            <option value="">— sin dominio —</option>
+            ${DOM.options()}
+          </select>
+        </div>
+        <div class="layer-form-row">
+          <span class="layer-form-label">Frecuencia</span>
+          <select class="select js-layer-freq" style="width:180px">
+            ${FREQ.options()}
+          </select>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;margin-top:4px">
+          <button class="btn btn-secondary btn-sm js-discover-fields">Descubrir campos</button>
+          <span class="js-fields-count" style="font-size:11px;color:var(--text2)"></span>
+        </div>
+        <div class="fields-mini js-fields-mini" hidden></div>
+      </div>
     `;
 
     // Setear valores actuales en selects
-    tr.querySelector(`[data-field="domain"]`).value = layer.domain || '';
-    tr.querySelector(`[data-field="update_frequency"]`).value = layer.update_frequency || 'unknown';
+    item.querySelector('.js-layer-domain').value = layer.domain || '';
+    item.querySelector('.js-layer-freq').value   = layer.update_frequency || 'unknown';
+
+    // Toggle expand/collapse
+    item.querySelector('.layer-summary').addEventListener('click', e => {
+      if (e.target.closest('.toggle') || e.target.closest('.js-discover-fields')) return;
+      const detail = item.querySelector('.layer-detail');
+      const btn    = item.querySelector('.layer-expand-btn');
+      const open   = detail.hidden;
+      detail.hidden = !open;
+      btn.textContent = open ? '▾' : '▸';
+      item.classList.toggle('is-open', open);
+    });
 
     // Toggle included
-    tr.querySelector('.js-toggle-layer').addEventListener('change', async e => {
+    item.querySelector('.js-toggle-layer').addEventListener('change', async e => {
+      e.stopPropagation();
       const { ok, error } = await API.updateLayer(layer.id, { included: e.target.checked ? 1 : 0 });
       if (!ok) { TOAST.error('Error', error); e.target.checked = !e.target.checked; }
     });
 
-    // Cambio de dominio o frecuencia
-    tr.querySelectorAll('select[data-field]').forEach(sel => {
-      sel.addEventListener('change', async e => {
-        const field = e.target.dataset.field;
-        await API.updateLayer(layer.id, { [field]: e.target.value || null });
+    // Alias
+    const aliasInput = item.querySelector('.js-layer-alias');
+    let aliasTimer;
+    aliasInput.addEventListener('input', e => {
+      clearTimeout(aliasTimer);
+      aliasTimer = setTimeout(async () => {
+        await API.updateLayer(layer.id, { name_alias: e.target.value.trim() || null });
+      }, 800);
+    });
+
+    // Domain
+    item.querySelector('.js-layer-domain').addEventListener('change', async e => {
+      await API.updateLayer(layer.id, { domain: e.target.value || null });
+    });
+
+    // Frequency
+    item.querySelector('.js-layer-freq').addEventListener('change', async e => {
+      await API.updateLayer(layer.id, { update_frequency: e.target.value || 'unknown' });
+    });
+
+    // Discover fields
+    item.querySelector('.js-discover-fields').addEventListener('click', async e => {
+      e.stopPropagation();
+      const btn = e.currentTarget;
+      btn.classList.add('btn-loading');
+      const { data, ok, error } = await API.discoverFields(layer.id);
+      btn.classList.remove('btn-loading');
+      if (!ok) { TOAST.error('Error', error); return; }
+      TOAST.ok('Campos descubiertos', `${data.added} nuevos, ${data.skipped} ya existían.`);
+      // Cargar y mostrar los campos
+      loadFields(item, layer.id);
+    });
+
+    return item;
+  }
+
+  async function loadFields(item, layerId) {
+    const mini  = item.querySelector('.js-fields-mini');
+    const count = item.querySelector('.js-fields-count');
+    mini.hidden = false;
+    mini.innerHTML = '<div class="skeleton" style="height:60px;border-radius:4px;margin-top:8px"></div>';
+
+    const { data, ok } = await API.getLayerFields(layerId);
+    if (!ok || !data?.fields?.length) {
+      mini.innerHTML = '<div style="font-size:11px;color:var(--text3);padding:6px 0">Sin campos descubiertos.</div>';
+      return;
+    }
+
+    count.textContent = `${data.fields.filter(f => f.included).length}/${data.fields.length} campos activos`;
+
+    const rows = data.fields.map(f => {
+      const meta = typeof f.metadata === 'string' ? JSON.parse(f.metadata || '{}') : (f.metadata || {});
+      return `
+        <div class="field-mini-row">
+          <label class="toggle" style="flex-shrink:0">
+            <input type="checkbox" class="js-toggle-field" data-id="${f.id}" ${f.included ? 'checked' : ''}>
+            <span class="toggle-track"><span class="toggle-thumb"></span></span>
+          </label>
+          <span class="field-mini-name" title="${UTILS.escHtml(f.name_source)}">${UTILS.escHtml(f.name_source)}</span>
+          <span class="field-mini-type">${f.type || '?'}</span>
+          <span class="field-mini-alias">
+            <input class="input js-field-alias" data-id="${f.id}" value="${UTILS.escHtml(f.name_alias || '')}" placeholder="Alias">
+          </span>
+        </div>
+      `;
+    }).join('');
+
+    mini.innerHTML = rows;
+
+    // Toggle field included
+    mini.querySelectorAll('.js-toggle-field').forEach(cb => {
+      cb.addEventListener('change', async e => {
+        const { ok, error } = await API.updateField(e.target.dataset.id, { included: e.target.checked ? 1 : 0 });
+        if (!ok) { TOAST.error('Error', error); e.target.checked = !e.target.checked; }
       });
     });
 
-    return tr;
-  }
-
-  return { render };
-})();
-
-
-/**
- * src/field-row.js — Fila de campo en la tabla de fields
- */
-window.CAPIBARA_FIELD_ROW = (() => {
-  'use strict';
-
-  const UTILS = window.CAPIBARA_UTILS;
-  const API   = window.CAPIBARA_API;
-  const TOAST = window.CAPIBARA_TOAST;
-
-  const TYPE_LABELS = {
-    string: 'texto', integer: 'entero', float: 'decimal',
-    boolean: 'booleano', geometry: 'geometría', unknown: '?',
-  };
-
-  function render(field) {
-    const meta = typeof field.metadata === 'string'
-      ? JSON.parse(field.metadata || '{}')
-      : (field.metadata || {});
-
-    const tr = document.createElement('tr');
-    tr.dataset.id = field.id;
-    tr.innerHTML = `
-      <td>
-        <label class="toggle">
-          <input type="checkbox" class="js-toggle-field" data-id="${field.id}" ${field.included ? 'checked' : ''}>
-          <span class="toggle-track"><span class="toggle-thumb"></span></span>
-        </label>
-      </td>
-      <td class="field-table-name">${UTILS.escHtml(field.name_source)}</td>
-      <td>
-        <input class="input field-alias-input" value="${UTILS.escHtml(field.name_alias || '')}"
-               placeholder="Alias legible…" data-id="${field.id}" data-original="${UTILS.escHtml(field.name_alias || '')}">
-      </td>
-      <td style="color:var(--text2);font-size:12px">${TYPE_LABELS[field.type] || field.type}</td>
-      <td class="mono" style="font-size:11px;color:var(--text3)">${UTILS.escHtml(meta.sample_value || '—')}</td>
-      <td>
-        <button class="btn btn-ghost btn-sm js-sample" data-id="${field.id}">Sample</button>
-      </td>
-    `;
-
-    // Toggle included
-    tr.querySelector('.js-toggle-field').addEventListener('change', async e => {
-      const { ok, error } = await API.updateField(field.id, { included: e.target.checked ? 1 : 0 });
-      if (!ok) { TOAST.error('Error', error); e.target.checked = !e.target.checked; }
+    // Field alias
+    mini.querySelectorAll('.js-field-alias').forEach(inp => {
+      let t;
+      inp.addEventListener('input', e => {
+        clearTimeout(t);
+        t = setTimeout(async () => {
+          await API.updateField(e.target.dataset.id, { name_alias: e.target.value.trim() || null });
+        }, 800);
+      });
     });
-
-    // Alias: guardar al perder foco o presionar Enter
-    const aliasInput = tr.querySelector('.field-alias-input');
-    const saveAlias = UTILS.debounce(async (e) => {
-      const val = e.target.value.trim();
-      if (val === e.target.dataset.original) return;
-      const { ok, error } = await API.updateField(field.id, { name_alias: val || null });
-      if (ok) { e.target.dataset.original = val; }
-      else TOAST.error('Error al guardar alias', error);
-    }, 800);
-    aliasInput.addEventListener('input', saveAlias);
-
-    return tr;
   }
 
-  return { render };
+  return { render, loadFields };
 })();
