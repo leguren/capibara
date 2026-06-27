@@ -1,3 +1,20 @@
+/* ── Breadcrumb ───────────────────────────────────────────────────── */
+.breadcrumb {
+  display:       flex;
+  align-items:   center;
+  gap:           6px;
+  font-size:     13px;
+  margin-bottom: 20px;
+}
+.breadcrumb-link {
+  color:           var(--text2);
+  text-decoration: none;
+  transition:      color var(--transition);
+}
+.breadcrumb-link:hover { color: var(--text); }
+.breadcrumb-sep     { color: var(--text3); }
+.breadcrumb-current { color: var(--text); font-weight: 500; }
+
 /* style/admin.css — Panel de administración */
 
 /* ── Wrapper ──────────────────────────────────────────────────────── */
