@@ -59,16 +59,13 @@ module.exports = async function handler(req, res) {
     const srcResult = await db.execute({ sql: 'SELECT * FROM sources WHERE id = ? LIMIT 1', args: [sid] });
     if (!srcResult.rows.length) return err(res, 404, 'Fuente no encontrada');
     const source = srcResult.rows[0];
-    console.log('[discover] format:', source.data_format);
-    console.log('[discover] connection_params:', source.connection_params);
+
     const entry  = getConnector(source.data_format);
     if (!entry?.implemented) return err(res, 400, `Conector no disponible: ${source.data_format}`);
     const params = safeJson(source.connection_params, {});
-    console.log('[discover] params parsed:', JSON.stringify(params));
     let layers;
     try {
       layers = await entry.connector.getLayers(params);
-      console.log('[discover] layers found:', layers?.length);
     } catch(e) {
       console.error('[discover] getLayers error:', e.message);
       return err(res, 500, e.message);
@@ -104,7 +101,6 @@ module.exports = async function handler(req, res) {
     for (let i = 0; i < allStmts.length; i += BATCH_SIZE) {
       try {
         await db.batch(allStmts.slice(i, i + BATCH_SIZE), 'write');
-        console.log('[discover] batch OK, stmts', i, '-', Math.min(i + BATCH_SIZE, allStmts.length));
       } catch(e) {
         console.error('[discover] batch FAILED at', i, ':', e.message);
         // Fallback: ejecutar uno por uno
@@ -113,7 +109,6 @@ module.exports = async function handler(req, res) {
         }
       }
     }
-    console.log('[discover] done, added:', added, 'skipped:', skipped);
 
     return ok(res, { ok: true, total: layers.length, added, skipped });
   }
@@ -121,12 +116,16 @@ module.exports = async function handler(req, res) {
   // ── GET/PATCH/DELETE por ID ──────────────────────────────────────────────
   if (sid) {
     if (req.method === 'GET') {
+      // no-store: evita que el browser cachee el detalle de una fuente
+      res.setHeader('Cache-Control', 'no-store');
       const srcResult = await db.execute({ sql: 'SELECT * FROM sources WHERE id = ? LIMIT 1', args: [sid] });
       if (!srcResult.rows.length) return err(res, 404, 'Fuente no encontrada');
       const source = srcResult.rows[0];
+      // Países
       const cResult = await db.execute({ sql: 'SELECT country FROM source_countries WHERE source_id = ?', args: [sid] });
       source.countries = cResult.rows.map(r => r.country);
-      const layersResult = await db.execute({ sql: `SELECT l.id, l.name_source, l.name_alias, l.abstract, l.domain, l.update_frequency, l.geometry_type, l.srs, l.feature_count, l.min_lat, l.max_lat, l.min_lon, l.max_lon, l.included, l.metadata, l.notes, l.discovered_at, COUNT(DISTINCT f.id) AS fields_total, COUNT(DISTINCT CASE WHEN f.included = 1 THEN f.id END) AS fields_included FROM layers l LEFT JOIN fields f ON f.layer_id = l.id WHERE l.source_id = ? GROUP BY l.id ORDER BY l.discovered_at ASC`, args: [sid] });
+      // Capas — query simple sin JOIN a fields (evita timeout con 192+ capas)
+      const layersResult = await db.execute({ sql: 'SELECT id, name_source, name_alias, abstract, domain, update_frequency, geometry_type, srs, feature_count, min_lat, max_lat, min_lon, max_lon, included, metadata, notes, discovered_at FROM layers WHERE source_id = ? ORDER BY name_source ASC', args: [sid] });
       source.layers = layersResult.rows;
       return ok(res, { source });
     }
