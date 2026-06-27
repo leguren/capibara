@@ -15,7 +15,7 @@
 <nav class="navbar">
   <a href="/admin" class="navbar-brand">Capibara</a>
   <nav class="navbar-nav">
-    <a href="/admin" class="navbar-link is-active">Fuentes</a>
+    <a href="/admin"   class="navbar-link is-active">Fuentes</a>
     <a href="/publish" class="navbar-link">Publicar</a>
   </nav>
   <div class="navbar-spacer"></div>
@@ -28,31 +28,22 @@
 
   <!-- Stats -->
   <div class="stats-row" id="stats-row">
-    <div class="stat-card">
-      <div class="stat-value" id="stat-connected">—</div>
-      <div class="stat-label">fuentes conectadas</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-value" id="stat-active">—</div>
-      <div class="stat-label">fuentes activas</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-value" id="stat-layers">—</div>
-      <div class="stat-label">capas activas</div>
-    </div>
+    <div class="stat-chip"><span class="stat-n" id="stat-connected">—</span> fuentes conectadas</div>
+    <div class="stat-chip"><span class="stat-n" id="stat-active">—</span> fuentes activas</div>
+    <div class="stat-chip"><span class="stat-n" id="stat-layers">—</span> capas activas</div>
   </div>
 
   <!-- Buscador -->
   <input class="input admin-search" id="search-input" placeholder="Buscar fuentes…">
 
-  <!-- Filtros de estado + botón nueva fuente -->
+  <!-- Filtros de estado + nueva fuente -->
   <div class="filter-row">
     <div class="filter-pills" id="status-pills">
-      <button class="filter-pill" data-value="ok">Conectadas</button>
-      <button class="filter-pill" data-value="error">Con error</button>
-      <button class="filter-pill" data-value="unverified">Sin verificar</button>
+      <button class="filter-pill" data-value="ok">conectadas</button>
+      <button class="filter-pill" data-value="error">con error</button>
+      <button class="filter-pill" data-value="unverified">sin verificar</button>
     </div>
-    <button class="btn btn-primary" id="btn-new-source">Nueva fuente</button>
+    <button class="action-btn primary" id="btn-new-source">Nueva fuente</button>
   </div>
 
   <!-- Filtros de formato -->
@@ -66,22 +57,10 @@
     </div>
   </div>
 
-  <!-- Lista de fuentes -->
+  <!-- Lista de fuentes en cascada -->
   <div class="sources-list" id="sources-list"></div>
 
 </main>
-
-<!-- Panel lateral -->
-<div class="detail-panel" id="detail-panel" style="display:none">
-  <div class="detail-panel-header">
-    <button class="btn btn-ghost btn-icon" id="close-panel" title="Cerrar">←</button>
-    <div style="flex:1;min-width:0">
-      <div class="panel-title" id="panel-title"></div>
-      <div class="panel-subtitle" id="panel-sub"></div>
-    </div>
-  </div>
-  <div class="detail-panel-body" id="panel-body"></div>
-</div>
 
 <script src="/config/app.js"></script>
 <script src="/vocab/status.js"></script>
@@ -92,30 +71,36 @@
 <script src="/src/toast.js"></script>
 <script src="/src/utils.js"></script>
 <script src="/src/auth.js"></script>
-<script src="/src/source-card.js"></script>
 <script src="/src/sources.js"></script>
 
 <script>
 (async () => {
   'use strict';
 
-  const UTILS     = window.CAPIBARA_UTILS;
-  const SOURCES   = window.CAPIBARA_SOURCES;
-  const CARD      = window.CAPIBARA_SOURCE_CARD;
-  const AUTH      = window.CAPIBARA_AUTH;
-  const API       = window.CAPIBARA_API;
-  const TOAST     = window.CAPIBARA_TOAST;
-  const STATUS    = window.CAPIBARA_STATUS;
-  const LAYER_ROW = window.CAPIBARA_LAYER_ROW;
+  const UTILS   = window.CAPIBARA_UTILS;
+  const SOURCES = window.CAPIBARA_SOURCES;
+  const AUTH    = window.CAPIBARA_AUTH;
+  const API     = window.CAPIBARA_API;
+  const TOAST   = window.CAPIBARA_TOAST;
+  const STATUS  = window.CAPIBARA_STATUS;
+  const DOM     = window.CAPIBARA_DOMAINS;
+  const FREQ    = window.CAPIBARA_FREQUENCIES;
+  const FMTS    = window.CAPIBARA_FORMATS;
 
   const user = await AUTH.requireAdmin();
   if (!user) return;
   AUTH.renderNavUser(document.getElementById('nav-user'), user);
 
-  // ── Filtros multi-select con pills ───────────────────────────────
+  // ── Estado de filtros (multi-select) ──────────────────────────────
 
   const activeStatuses = new Set();
   const activeFormats  = new Set();
+
+  // Fuentes expandidas (set de ids) y datos cargados (map id → data)
+  const openSources  = new Set();
+  const loadedSources = new Map(); // id → source detail data
+  const openLayers   = new Set();
+  const loadedFields = new Map();  // layerId → fields[]
 
   function bindPills(containerId, activeSet) {
     document.querySelectorAll(`#${containerId} .filter-pill`).forEach(btn => {
@@ -131,26 +116,18 @@
   bindPills('status-pills', activeStatuses);
   bindPills('format-pills', activeFormats);
 
-  // Buscador
   document.getElementById('search-input').addEventListener('input', () =>
     renderSources(window._adminSources)
   );
 
-  // Nueva fuente
   document.getElementById('btn-new-source').addEventListener('click', () =>
     SOURCES.openCreateModal()
   );
 
-  // Cerrar panel
-  document.getElementById('close-panel').addEventListener('click', () => {
-    document.getElementById('detail-panel').style.display = 'none';
-    document.querySelectorAll('.source-row.is-active').forEach(r => r.classList.remove('is-active'));
-  });
-
   SOURCES.onUpdate(renderSources);
   await SOURCES.load();
 
-  // ── renderSources ────────────────────────────────────────────────
+  // ── renderSources ─────────────────────────────────────────────────
 
   function renderSources(sources) {
     window._adminSources = sources;
@@ -171,102 +148,310 @@
     });
 
     if (!filtered.length) {
-      list.innerHTML = `<div style="text-align:center;padding:40px;color:var(--text2);font-size:14px">Sin fuentes${q || activeStatuses.size || activeFormats.size ? ' para los filtros aplicados' : ''}.</div>`;
+      list.innerHTML = `<div style="text-align:center;padding:40px;font-size:13px;color:var(--text2)">Sin fuentes${q || activeStatuses.size || activeFormats.size ? ' para los filtros aplicados' : ''}.</div>`;
       return;
     }
 
     list.innerHTML = '';
     for (const source of filtered) {
-      const row = CARD.render(source);
-      row.addEventListener('click', () => openDetailPanel(source));
-      list.appendChild(row);
+      list.appendChild(buildSourceBlock(source));
+    }
+
+    // Restaurar estado abierto
+    for (const id of openSources) {
+      const block = document.querySelector(`.source-block[data-id="${id}"]`);
+      if (block && loadedSources.has(id)) {
+        block.classList.add('open');
+        renderSourceBody(block, loadedSources.get(id));
+      }
     }
   }
 
-  // ── Panel de detalle ─────────────────────────────────────────────
+  // ── Source block ──────────────────────────────────────────────────
 
-  let _currentSourceId = null;
+  function buildSourceBlock(source) {
+    const name     = UTILS.displayName(source);
+    const provider = source.provider_alias || source.provider_source || '';
+    const stClass  = `status-${source.status}`;
 
-  async function openDetailPanel(source) {
-    document.querySelectorAll('.source-row.is-active').forEach(r => r.classList.remove('is-active'));
-    document.querySelector(`.source-row[data-id="${source.id}"]`)?.classList.add('is-active');
+    const block = document.createElement('div');
+    block.className  = `source-block ${stClass}`;
+    block.dataset.id = source.id;
+    block.innerHTML  = `
+      <div class="source-header">
+        <span class="dot ${STATUS.get(source.status).dotClass}"
+              title="${STATUS.get(source.status).label}"></span>
+        <div class="source-info">
+          <span class="source-name">
+            ${UTILS.escHtml(name)}
+            <span class="source-badge">${source.data_format || ''}</span>
+          </span>
+          ${provider ? `<span class="source-sub">${UTILS.escHtml(provider)}</span>` : ''}
+        </div>
+        <span class="source-meta-right">${source.layers_total || 0} capas</span>
+        <span class="source-arrow">▶</span>
+      </div>
+      <div class="source-body"></div>
+    `;
 
-    const panel = document.getElementById('detail-panel');
-    const body  = document.getElementById('panel-body');
-    panel.style.display = 'flex';
+    block.querySelector('.source-header').addEventListener('click', () => toggleSource(block, source));
+    return block;
+  }
 
-    document.getElementById('panel-title').textContent = UTILS.displayName(source);
-    document.getElementById('panel-sub').textContent   = `${source.data_format?.toUpperCase() || ''} · ${STATUS.get(source.status).label}`;
+  async function toggleSource(block, source) {
+    const isOpen = block.classList.toggle('open');
+    const body   = block.querySelector('.source-body');
 
-    _currentSourceId = source.id;
-    body.innerHTML   = '<div style="padding:20px;color:var(--text2);font-size:13px">Cargando…</div>';
+    if (!isOpen) { openSources.delete(source.id); return; }
+    openSources.add(source.id);
 
-    const { data, ok, error } = await API.getSource(source.id);
-    if (_currentSourceId !== source.id) return;
-    if (!ok) {
-      body.innerHTML = `<div style="padding:20px;color:var(--error);font-size:13px">${error}</div>`;
+    if (loadedSources.has(source.id)) {
+      renderSourceBody(block, loadedSources.get(source.id));
       return;
     }
 
-    renderPanel(body, data.source);
+    body.innerHTML = `<div class="inline-loading">Cargando…</div>`;
+
+    const { data, ok, error } = await API.getSource(source.id);
+    if (!ok) { body.innerHTML = `<div class="inline-loading" style="color:var(--error)">${error}</div>`; return; }
+
+    loadedSources.set(source.id, data.source);
+    renderSourceBody(block, data.source);
   }
 
-  function renderPanel(body, src) {
-    const connParams = (() => {
-      try { return typeof src.connection_params === 'string' ? JSON.parse(src.connection_params) : (src.connection_params || {}); }
-      catch { return {}; }
-    })();
+  function renderSourceBody(block, src) {
+    const body = block.querySelector('.source-body');
+    const connParams = (() => { try { return typeof src.connection_params === 'string' ? JSON.parse(src.connection_params) : (src.connection_params || {}); } catch { return {}; } })();
     const url = connParams?.url || '';
 
     const isConnected = src.status === 'ok';
     const hasLayers   = (src.layers?.length || 0) > 0;
 
-    const actionsHtml = `
-      ${!isConnected ? `<button class="btn btn-primary btn-sm js-connect">Conectar</button>` : ''}
-      ${isConnected  ? `<button class="btn btn-secondary btn-sm js-discover">${hasLayers ? 'Actualizar capas' : 'Descubrir capas'}</button>` : ''}
-      <button class="btn btn-ghost btn-sm js-delete" style="margin-left:auto;color:var(--error)">Eliminar</button>
-    `;
-
-    const infoHtml = `
-      ${url ? `<div class="panel-info-row"><span class="panel-info-label">URL</span><span class="panel-info-value">${UTILS.escHtml(url)}</span></div>` : ''}
-      ${src.last_checked ? `<div class="panel-info-row"><span class="panel-info-label">Último chequeo</span><span style="font-size:13px">${UTILS.formatDate(src.last_checked)}</span></div>` : ''}
-      ${src.error_message ? `<div class="panel-info-row"><span class="panel-info-label">Error</span><span style="color:var(--error);font-size:12px">${UTILS.escHtml(src.error_message)}</span></div>` : ''}
-    `;
-
-    const layers = src.layers || [];
-    const includedCount = layers.filter(l => l.included).length;
-
-    const layersHtml = layers.length === 0
-      ? `<div style="padding:16px 20px;font-size:13px;color:var(--text2)">Sin capas descubiertas.</div>`
-      : `<div class="layer-list-header"><span>${layers.length} capas</span><span>${includedCount} activas</span></div>
-         <div id="layers-accordion"></div>`;
+    const infoRows = [
+      url           ? `<div class="info-row"><span class="info-label">URL</span><span class="info-value">${UTILS.escHtml(url)}</span></div>` : '',
+      src.last_checked ? `<div class="info-row"><span class="info-label">último chequeo</span><span class="info-value">${UTILS.formatDate(src.last_checked)}</span></div>` : '',
+      src.error_message ? `<div class="info-row"><span class="info-label">error</span><span class="info-error">${UTILS.escHtml(src.error_message)}</span></div>` : '',
+    ].filter(Boolean).join('');
 
     body.innerHTML = `
-      <div class="panel-section"><div class="panel-actions">${actionsHtml}</div></div>
-      <div class="panel-section">${infoHtml}</div>
-      <div>${layersHtml}</div>
+      ${infoRows ? `<div class="source-info-section">${infoRows}</div>` : ''}
+      <div class="source-actions">
+        ${!isConnected ? `<button class="action-btn primary js-connect">Conectar</button>` : ''}
+        ${isConnected  ? `<button class="action-btn js-discover">${hasLayers ? 'Actualizar capas' : 'Descubrir capas'}</button>` : ''}
+        <button class="action-btn danger js-delete">Eliminar</button>
+      </div>
+      <div class="layers-section">
+        ${(src.layers?.length || 0) === 0
+          ? `<div class="inline-loading">Sin capas descubiertas.</div>`
+          : `<div class="layers-header"><span>${src.layers.length} capas</span><span>${src.layers.filter(l => l.included).length} activas</span></div>
+             <div class="layers-accordion" id="layers-${src.id}"></div>`}
+      </div>
     `;
 
+    // Bind acciones
     body.querySelector('.js-connect')?.addEventListener('click', async e => {
-      const ok = await SOURCES.connect(src.id, e.currentTarget);
-      if (ok) { const { data } = await API.getSource(src.id); if (data) renderPanel(body, data.source); }
+      const btn = e.currentTarget;
+      const ok  = await SOURCES.connect(src.id, btn);
+      if (ok) {
+        const { data } = await API.getSource(src.id);
+        if (data) { loadedSources.set(src.id, data.source); renderSourceBody(block, data.source); }
+      }
     });
 
     body.querySelector('.js-discover')?.addEventListener('click', async e => {
-      await SOURCES.discoverLayers(src.id, e.currentTarget);
+      const btn = e.currentTarget;
+      await SOURCES.discoverLayers(src.id, btn);
       const { data } = await API.getSource(src.id);
-      if (data) renderPanel(body, data.source);
+      if (data) { loadedSources.set(src.id, data.source); renderSourceBody(block, data.source); }
     });
 
     body.querySelector('.js-delete')?.addEventListener('click', () => {
+      openSources.delete(src.id);
+      loadedSources.delete(src.id);
       SOURCES.deleteSource(src.id);
-      document.getElementById('detail-panel').style.display = 'none';
     });
 
-    if (layers.length > 0) {
-      const accordion = body.querySelector('#layers-accordion');
-      for (const layer of layers) accordion.appendChild(LAYER_ROW.render(layer));
+    // Renderizar capas
+    const acc = body.querySelector(`#layers-${src.id}`);
+    if (acc && src.layers?.length) {
+      for (const layer of src.layers) {
+        acc.appendChild(buildLayerBlock(layer));
+      }
     }
+  }
+
+  // ── Layer block ───────────────────────────────────────────────────
+
+  function buildLayerBlock(layer) {
+    const block = document.createElement('div');
+    block.className  = 'layer-block';
+    block.dataset.id = layer.id;
+    block.innerHTML  = `
+      <div class="layer-header">
+        <label class="toggle" title="${layer.included ? 'Incluida en API' : 'Excluida'}">
+          <input type="checkbox" ${layer.included ? 'checked' : ''}>
+          <span class="toggle-track"><span class="toggle-thumb"></span></span>
+        </label>
+        <div class="layer-name-wrap">
+          <span class="layer-name">${UTILS.escHtml(layer.name_source)}</span>
+          ${layer.name_alias ? `<span class="layer-alias-sub">→ ${UTILS.escHtml(layer.name_alias)}</span>` : ''}
+        </div>
+        <span class="layer-geom-badge">${(layer.geometry_type || '').toUpperCase()}</span>
+        <span class="layer-arrow">▶</span>
+      </div>
+      <div class="layer-body"></div>
+    `;
+
+    const toggle = block.querySelector('input[type="checkbox"]');
+    toggle.addEventListener('change', async e => {
+      e.stopPropagation();
+      const { ok, error } = await API.updateLayer(layer.id, { included: e.target.checked ? 1 : 0 });
+      if (!ok) { TOAST.error('Error', error); e.target.checked = !e.target.checked; }
+      else { layer.included = e.target.checked ? 1 : 0; }
+    });
+
+    block.querySelector('.layer-header').addEventListener('click', e => {
+      if (e.target.closest('.toggle')) return;
+      toggleLayer(block, layer);
+    });
+
+    return block;
+  }
+
+  function toggleLayer(block, layer) {
+    const isOpen = block.classList.toggle('open');
+    const body   = block.querySelector('.layer-body');
+
+    if (!isOpen) { openLayers.delete(layer.id); body.innerHTML = ''; return; }
+    openLayers.add(layer.id);
+    renderLayerBody(body, layer);
+  }
+
+  function renderLayerBody(body, layer) {
+    body.innerHTML = `
+      <div class="layer-form-row">
+        <span class="layer-form-label">alias</span>
+        <input class="input js-layer-alias" value="${UTILS.escHtml(layer.name_alias || '')}" placeholder="Nombre legible">
+      </div>
+      <div class="layer-form-row">
+        <span class="layer-form-label">dominio</span>
+        <select class="select js-layer-domain" style="width:180px">
+          <option value="">— sin dominio —</option>
+          ${DOM.options()}
+        </select>
+      </div>
+      <div class="layer-form-row">
+        <span class="layer-form-label">frecuencia</span>
+        <select class="select js-layer-freq" style="width:180px">
+          ${FREQ.options()}
+        </select>
+      </div>
+      <div class="layer-actions">
+        <button class="action-btn js-discover-fields">Descubrir campos</button>
+        <span class="js-fields-info" style="font-size:11px;color:var(--text2)"></span>
+      </div>
+      <div class="fields-list js-fields-list" style="display:none"></div>
+    `;
+
+    body.querySelector('.js-layer-domain').value = layer.domain || '';
+    body.querySelector('.js-layer-freq').value   = layer.update_frequency || 'unknown';
+
+    // Alias
+    let t;
+    body.querySelector('.js-layer-alias').addEventListener('input', e => {
+      clearTimeout(t);
+      t = setTimeout(async () => {
+        await API.updateLayer(layer.id, { name_alias: e.target.value.trim() || null });
+      }, 800);
+    });
+
+    // Domain
+    body.querySelector('.js-layer-domain').addEventListener('change', async e => {
+      await API.updateLayer(layer.id, { domain: e.target.value || null });
+    });
+
+    // Freq
+    body.querySelector('.js-layer-freq').addEventListener('change', async e => {
+      await API.updateLayer(layer.id, { update_frequency: e.target.value || 'unknown' });
+    });
+
+    // Discover fields
+    body.querySelector('.js-discover-fields').addEventListener('click', async e => {
+      const btn = e.currentTarget;
+      btn.classList.add('btn-loading');
+      btn.disabled = true;
+
+      // Si ya hay campos cargados → solo mostrar; si no → descubrir
+      if (loadedFields.has(layer.id)) {
+        btn.classList.remove('btn-loading');
+        btn.disabled = false;
+        renderFields(body, layer.id);
+        return;
+      }
+
+      const { data, ok, error } = await API.discoverFields(layer.id);
+      btn.classList.remove('btn-loading');
+      btn.disabled = false;
+      if (!ok) { TOAST.error('Error', error); return; }
+      TOAST.ok('Campos descubiertos', `${data.added} nuevos, ${data.skipped} ya existían.`);
+      await loadAndShowFields(body, layer.id);
+    });
+  }
+
+  async function loadAndShowFields(body, layerId) {
+    const info    = body.querySelector('.js-fields-info');
+    const listEl  = body.querySelector('.js-fields-list');
+    if (info) info.textContent = 'Cargando campos…';
+
+    const { data, ok } = await API.getLayerFields(layerId);
+    if (!ok || !data?.fields?.length) {
+      if (info) info.textContent = 'Sin campos descubiertos.';
+      return;
+    }
+
+    loadedFields.set(layerId, data.fields);
+    renderFields(body, layerId);
+  }
+
+  function renderFields(body, layerId) {
+    const fields  = loadedFields.get(layerId) || [];
+    const info    = body.querySelector('.js-fields-info');
+    const listEl  = body.querySelector('.js-fields-list');
+
+    if (info) info.textContent = `${fields.filter(f => f.included).length}/${fields.length} campos activos`;
+
+    listEl.style.display = '';
+    listEl.innerHTML = fields.map(f => `
+      <div class="field-row" data-id="${f.id}">
+        <label class="toggle" title="${f.included ? 'Activo' : 'Inactivo'}">
+          <input type="checkbox" class="js-toggle-field" data-id="${f.id}" ${f.included ? 'checked' : ''}>
+          <span class="toggle-track"><span class="toggle-thumb"></span></span>
+        </label>
+        <span class="field-name" title="${UTILS.escHtml(f.name_source)}">${UTILS.escHtml(f.name_source)}</span>
+        <span class="field-type">${f.type || '?'}</span>
+        <input class="input field-alias-input js-field-alias" data-id="${f.id}"
+               value="${UTILS.escHtml(f.name_alias || '')}" placeholder="alias">
+      </div>
+    `).join('');
+
+    // Toggle field
+    listEl.querySelectorAll('.js-toggle-field').forEach(cb => {
+      cb.addEventListener('change', async e => {
+        const { ok, error } = await API.updateField(e.target.dataset.id, { included: e.target.checked ? 1 : 0 });
+        if (!ok) { TOAST.error('Error', error); e.target.checked = !e.target.checked; }
+      });
+    });
+
+    // Field alias
+    listEl.querySelectorAll('.js-field-alias').forEach(inp => {
+      let t;
+      inp.addEventListener('input', e => {
+        clearTimeout(t);
+        t = setTimeout(async () => {
+          await API.updateField(e.target.dataset.id, { name_alias: e.target.value.trim() || null });
+        }, 800);
+      });
+    });
   }
 
 })();
