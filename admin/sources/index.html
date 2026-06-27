@@ -24,25 +24,27 @@
 
   <h1 class="admin-title">Gestión de fuentes</h1>
 
-  <!-- Stats -->
-  <div class="stats-row" id="stats-row">
-    <div class="stat-chip"><span class="stat-n" id="stat-connected">—</span> fuentes conectadas</div>
-    <div class="stat-chip"><span class="stat-n" id="stat-active">—</span> fuentes activas</div>
-    <div class="stat-chip"><span class="stat-n" id="stat-layers">—</span> capas activas</div>
+  <!-- Buscador -->
+  <div class="search-wrap">
+    <input class="admin-search" id="search-input" placeholder="Buscar fuentes…">
+    <button class="search-clear" id="search-clear" title="Borrar búsqueda">×</button>
   </div>
 
-  <!-- Buscador -->
-  <input class="input admin-search" id="search-input" placeholder="Buscar fuentes…">
-
   <!-- Filtros de estado + nueva fuente -->
-  <div class="filter-row">
+  <div class="filter-row" style="margin-top:20px">
     <div class="filter-pills" id="status-pills">
-      <button class="filter-pill" data-value="ok">conectadas</button>
-      <button class="filter-pill" data-value="error">con error</button>
-      <button class="filter-pill" data-value="unverified">sin verificar</button>
+      <button class="filter-pill" data-value="ok">
+        <span class="dot dot-ok"></span><span id="count-ok">0</span> conectadas
+      </button>
+      <button class="filter-pill" data-value="error">
+        <span class="dot dot-error"></span><span id="count-error">0</span> con error
+      </button>
+      <button class="filter-pill" data-value="unverified">
+        <span class="dot dot-unverified"></span><span id="count-unverified">0</span> sin verificar
+      </button>
     </div>
-    <button class="action-btn primary" id="btn-new-source">Nueva fuente</button>
-    <a href="/admin/publish" class="action-btn">Publicar</a>
+    <button class="filter-pill primary" id="btn-new-source">Nueva fuente</button>
+    <a href="/admin/publish" class="filter-pill">Publicar</a>
   </div>
 
   <!-- Filtros de formato -->
@@ -113,9 +115,20 @@
   bindPills('status-pills', activeStatuses);
   bindPills('format-pills', activeFormats);
 
-  document.getElementById('search-input').addEventListener('input', () =>
-    renderSources(window._adminSources)
-  );
+  const searchInput = document.getElementById('search-input');
+  const searchClear = document.getElementById('search-clear');
+
+  searchInput.addEventListener('input', () => {
+    searchClear.style.display = searchInput.value ? 'flex' : 'none';
+    renderSources(window._adminSources);
+  });
+
+  searchClear.addEventListener('click', () => {
+    searchInput.value = '';
+    searchClear.style.display = 'none';
+    searchInput.focus();
+    renderSources(window._adminSources);
+  });
 
   document.getElementById('btn-new-source').addEventListener('click', () =>
     SOURCES.openCreateModal()
@@ -129,12 +142,12 @@
   function renderSources(sources) {
     window._adminSources = sources;
     const list = document.getElementById('sources-list');
-    const q    = document.getElementById('search-input').value.toLowerCase();
+    const q    = searchInput.value.toLowerCase();
 
-    // Stats
-    document.getElementById('stat-connected').textContent = sources.filter(s => s.status === 'ok').length;
-    document.getElementById('stat-active').textContent    = sources.filter(s => s.included).length;
-    document.getElementById('stat-layers').textContent    = sources.reduce((a, s) => a + (s.layers_included || 0), 0);
+    // Conteos en pills de estado
+    document.getElementById('count-ok').textContent         = sources.filter(s => s.status === 'ok').length;
+    document.getElementById('count-error').textContent      = sources.filter(s => s.status === 'error').length;
+    document.getElementById('count-unverified').textContent = sources.filter(s => s.status === 'unverified' || !s.status).length;
 
     const filtered = sources.filter(s => {
       const name = ((s.name_alias || s.name_source || '') + ' ' + (s.provider_alias || s.provider_source || '')).toLowerCase();
