@@ -107,6 +107,14 @@
 
 
 /* ── Buscador redondeado ──────────────────────────────────────────── */
+.search-row {
+  display:     flex;
+  align-items: center;
+  gap:         8px;
+  margin-bottom: 0;
+}
+.search-row .search-wrap { flex: 1; }
+
 .search-wrap {
   position:    relative;
   margin-bottom: 0;
@@ -132,25 +140,22 @@
 }
 .search-clear {
   position:    absolute;
-  right:       10px;
+  right:       12px;
   top:         50%;
   transform:   translateY(-50%);
   display:     none;
   align-items: center;
   justify-content: center;
-  width:       22px;
-  height:      22px;
   border:      none;
-  background:  var(--bg3);
-  border-radius: 999px;
-  color:       var(--text2);
-  font-size:   14px;
+  background:  transparent;
+  color:       var(--text3);
+  font-size:   16px;
   line-height: 1;
   cursor:      pointer;
   padding:     0;
-  transition:  background var(--transition);
+  transition:  color var(--transition);
 }
-.search-clear:hover { background: var(--bg4); color: var(--text); }
+.search-clear:hover { color: var(--text); }
 
 
 /* ── Dot variants dentro de pills ────────────────────────────────── */
