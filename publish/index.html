@@ -39,6 +39,39 @@
   <!-- Historial de publicaciones -->
   <div class="sources-list" id="publish-history" style="margin-top:20px"></div>
 
+  <!-- Info contextual -->
+  <div style="margin-top:24px;display:flex;flex-direction:column;gap:10px">
+
+    <div class="source-block">
+      <div class="source-header" style="cursor:default">
+        <div class="source-info">
+          <span class="source-name">¿Cómo funciona?</span>
+        </div>
+      </div>
+      <div class="source-body" style="display:flex">
+        <div class="source-info-section" style="border:none;line-height:1.6;color:var(--text2);font-size:13px">
+          <p style="margin-bottom:8px">La API pública no lee directamente de la base de datos de fuentes — lee el último snapshot publicado.</p>
+          <p style="margin-bottom:8px">Esto significa que podés agregar y modificar fuentes sin afectar a los clientes hasta que hagas una publicación.</p>
+          <p>Cada publicación tiene un <span style="font-family:var(--font-mono);font-size:11px">version_label</span> semántico (v1.0.0, v1.0.1…) y queda registrado con quién la hizo y cuándo.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="source-block">
+      <div class="source-header" style="cursor:default">
+        <div class="source-info">
+          <span class="source-name">Seguridad</span>
+        </div>
+      </div>
+      <div class="source-body" style="display:flex">
+        <div class="source-info-section" style="border:none;line-height:1.6;color:var(--text2);font-size:13px">
+          Las credenciales de conexión (tokens, contraseñas) se eliminan automáticamente del config antes de guardarlo. El snapshot es seguro para auditar.
+        </div>
+      </div>
+    </div>
+
+  </div>
+
 </main>
 
 <script src="/config/app.js"></script>
