@@ -105,6 +105,68 @@
 .filter-pill:hover    { background: var(--bg2); }
 .filter-pill.is-active { border-color: var(--accent); color: var(--accent); background: #fff; }
 
+
+/* ── Buscador redondeado ──────────────────────────────────────────── */
+.search-wrap {
+  position:    relative;
+  margin-bottom: 0;
+}
+.admin-search {
+  width:         100%;
+  height:        36px;
+  padding:       0 36px 0 16px;
+  border-radius: 999px;
+  border:        1px solid var(--border);
+  background:    #fff;
+  font-size:     13px;
+  font-family:   var(--font);
+  color:         var(--text);
+  box-shadow:    0 1px 3px rgba(0,0,0,0.07);
+  outline:       none;
+  transition:    border-color var(--transition), box-shadow var(--transition);
+  box-sizing:    border-box;
+}
+.admin-search:focus {
+  border-color: var(--accent);
+  box-shadow:   0 0 0 3px rgba(61,82,160,0.12);
+}
+.search-clear {
+  position:    absolute;
+  right:       10px;
+  top:         50%;
+  transform:   translateY(-50%);
+  display:     none;
+  align-items: center;
+  justify-content: center;
+  width:       22px;
+  height:      22px;
+  border:      none;
+  background:  var(--bg3);
+  border-radius: 999px;
+  color:       var(--text2);
+  font-size:   14px;
+  line-height: 1;
+  cursor:      pointer;
+  padding:     0;
+  transition:  background var(--transition);
+}
+.search-clear:hover { background: var(--bg4); color: var(--text); }
+
+
+/* ── Dot variants dentro de pills ────────────────────────────────── */
+.dot-ok         { background: var(--ok); }
+.dot-error      { background: var(--error); }
+.dot-unverified { background: #f4a261; }
+
+
+.filter-pill.primary {
+  background:   var(--accent);
+  border-color: var(--accent);
+  color:        #fff;
+  box-shadow:   none;
+}
+.filter-pill.primary:hover { background: var(--accent-dark); border-color: var(--accent-dark); }
+
 /* ── Sources list ─────────────────────────────────────────────────── */
 .sources-list {
   margin-top:     20px;
@@ -209,7 +271,7 @@
   justify-content: center;
   height:        32px;
   padding:       0 16px;
-  border-radius: 8px;
+  border-radius: 999px;
   border:        1px solid var(--border);
   background:    #fff;
   color:         var(--text);
