@@ -214,9 +214,7 @@
       });
       card.querySelector('.js-discover').addEventListener('click', async e => {
         e.stopPropagation();
-        const ok = await SOURCES.discoverLayers(source.id, e.currentTarget);
-        // Pequeño delay para que Vercel no cachee el GET anterior
-        setTimeout(() => openDetailPanel(source), 300);
+        await SOURCES.discoverLayers(source.id, e.currentTarget);
       });
       card.querySelector('.js-delete').addEventListener('click', e => {
         e.stopPropagation();
@@ -241,7 +239,7 @@
 
     body.innerHTML = '<div class="skeleton" style="height:200px;border-radius:8px"></div>';
 
-    const { data, ok, error } = await API.getSource(source.id);
+    const { data, ok, error } = await API.getSource(source.id + '&_=' + Date.now());
     if (!ok) { body.innerHTML = `<div style="color:var(--error);padding:16px">${error}</div>`; return; }
 
     const src = data.source;
