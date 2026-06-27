@@ -214,8 +214,9 @@
       });
       card.querySelector('.js-discover').addEventListener('click', async e => {
         e.stopPropagation();
-        await SOURCES.discoverLayers(source.id, e.currentTarget);
-        openDetailPanel(source);
+        const ok = await SOURCES.discoverLayers(source.id, e.currentTarget);
+        // Pequeño delay para que Vercel no cachee el GET anterior
+        setTimeout(() => openDetailPanel(source), 300);
       });
       card.querySelector('.js-delete').addEventListener('click', e => {
         e.stopPropagation();
