@@ -21,24 +21,21 @@ window.CAPIBARA_SOURCE_CARD = (() => {
     const provider = source.provider_alias || source.provider_source || '';
     const el       = document.createElement('div');
 
-    el.className  = `source-card${!source.included ? ' is-disabled' : ''}`;
+    el.className  = `source-row${!source.included ? ' is-disabled' : ''}`;
     el.dataset.id = source.id;
     el.innerHTML  = `
-      <div class="source-card-header">
-        <span class="dot ${STATUS.get(source.status).dotClass}"
-              title="${STATUS.get(source.status).label}"></span>
-        <div style="min-width:0;flex:1">
-          <div class="source-card-name" title="${UTILS.escHtml(name)}">${UTILS.escHtml(name)}</div>
-          ${provider ? `<div class="source-card-provider">${UTILS.escHtml(provider)}</div>` : ''}
-        </div>
+      <span class="dot source-row-dot ${STATUS.get(source.status).dotClass}"
+            title="${STATUS.get(source.status).label}"></span>
+      <div class="source-row-name">
+        <div class="source-row-title" title="${UTILS.escHtml(name)}">${UTILS.escHtml(name)}</div>
+        ${provider ? `<div class="source-row-provider">${UTILS.escHtml(provider)}</div>` : ''}
       </div>
-      <div class="source-card-pills">
+      <div class="source-row-meta">
         ${FMTS.pillHtml(source.data_format)}
         ${(source.countries || []).map(c => `<span class="pill pill-default">${c}</span>`).join('')}
-      </div>
-      <div class="source-card-counts">
-        <span><strong>${UTILS.formatNumber(source.layers_included)}</strong>/${UTILS.formatNumber(source.layers_total)} capas</span>
-        <span><strong>${UTILS.formatNumber(source.fields_included)}</strong>/${UTILS.formatNumber(source.fields_total)} campos</span>
+        <span class="source-row-counts">
+          ${UTILS.formatNumber(source.layers_included)}/${UTILS.formatNumber(source.layers_total)} capas
+        </span>
       </div>
     `;
 
