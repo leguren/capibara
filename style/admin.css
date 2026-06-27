@@ -28,18 +28,19 @@
   flex-wrap:       wrap;
 }
 .stat-chip {
-  display:       flex;
+  display:       inline-flex;
   align-items:   center;
   gap:           7px;
-  padding:       0 14px;
+  padding:       0 16px;
   height:        32px;
-  background:    transparent;
+  background:    #fff;
   border:        1px solid var(--border);
-  border-radius: 6px;
+  border-radius: 999px;
   font-size:     13px;
   font-weight:   500;
   color:         var(--text2);
   white-space:   nowrap;
+  box-shadow:    0 1px 3px rgba(0,0,0,0.07);
 }
 .stat-chip .stat-n {
   font-family: var(--font-mono);
@@ -68,21 +69,24 @@
 
 /* Pills de filtro — mismo tamaño que stat-chip y btn */
 .filter-pill {
+  display:       inline-flex;
+  align-items:   center;
   height:        32px;
-  padding:       0 14px;
-  border-radius: 6px;
+  padding:       0 16px;
+  border-radius: 999px;
   border:        1px solid var(--border);
-  background:    transparent;
-  color:         var(--text2);
+  background:    #fff;
+  color:         var(--text);
   font-size:     13px;
   font-weight:   500;
   cursor:        pointer;
-  transition:    background var(--transition), color var(--transition), border-color var(--transition);
+  transition:    background var(--transition), border-color var(--transition);
   font-family:   var(--font);
   white-space:   nowrap;
+  box-shadow:    0 1px 3px rgba(0,0,0,0.07);
 }
-.filter-pill:hover { background: var(--bg2); border-color: var(--bg4); color: var(--text); }
-.filter-pill.is-active { background: var(--accent); border-color: var(--accent); color: #fff; }
+.filter-pill:hover    { background: var(--bg2); }
+.filter-pill.is-active { border-color: var(--accent); color: var(--accent); background: #fff; }
 
 /* ── Sources list ─────────────────────────────────────────────────── */
 .sources-list {
@@ -102,12 +106,13 @@
   padding:      13px 16px;
   background:   #fff;
   border:       1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 12px;
   cursor:       pointer;
   user-select:  none;
-  transition:   border-color var(--transition);
+  transition:   border-color var(--transition), box-shadow var(--transition);
+  box-shadow:   0 1px 4px rgba(0,0,0,0.06);
 }
-.source-header:hover { border-color: rgba(26,24,20,0.28); }
+.source-header:hover { border-color: rgba(26,24,20,0.28); box-shadow: 0 2px 8px rgba(0,0,0,0.09); }
 
 /* Cuando abierta — esquinas inferiores cuadradas */
 .source-block.open .source-header {
@@ -144,8 +149,8 @@
   flex-direction:             column;
   border:                     1px solid var(--border);
   border-top:                 none;
-  border-bottom-left-radius:  8px;
-  border-bottom-right-radius: 8px;
+  border-bottom-left-radius:  12px;
+  border-bottom-right-radius: 12px;
   overflow:                   hidden;
   background:                 #fff;
 }
@@ -182,21 +187,26 @@
 
 /* Botones de acción — mismo tamaño que pills y stats */
 .action-btn {
+  display:       inline-flex;
+  align-items:   center;
+  justify-content: center;
   height:        32px;
-  padding:       0 14px;
-  border-radius: 6px;
+  padding:       0 16px;
+  border-radius: 8px;
   border:        1px solid var(--border);
-  background:    transparent;
+  background:    #fff;
   color:         var(--text);
   font-size:     13px;
   font-weight:   500;
   cursor:        pointer;
   font-family:   var(--font);
-  transition:    background var(--transition), border-color var(--transition);
+  transition:    background var(--transition), border-color var(--transition), color var(--transition);
   white-space:   nowrap;
+  text-decoration: none;
+  box-shadow:    0 1px 3px rgba(0,0,0,0.07);
 }
-.action-btn:hover { background: var(--bg2); border-color: var(--bg4); }
-.action-btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.action-btn:hover { background: var(--bg2); }
+.action-btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; box-shadow: none; }
 .action-btn.primary:hover { background: var(--accent-dark); border-color: var(--accent-dark); }
 .action-btn.danger  { color: var(--error); border-color: rgba(230,57,70,0.3); margin-left: auto; }
 .action-btn.danger:hover { background: rgba(230,57,70,0.05); border-color: rgba(230,57,70,0.5); }
