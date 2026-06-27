@@ -15,28 +15,28 @@
 
 /* ── Tokens de diseño ──────────────────────────────────────────────────── */
 :root {
-  /* Paleta Capibara — tonos tierra protagonistas */
-  --brown:       #A56A43;   /* marrón capibara — color identitario */
-  --brown-dark:  #4B3328;   /* contornos, títulos oscuros */
-  --brown-light: #C89070;   /* hover sobre brown, tono más suave */
-
-  /* Fondos — casi blanco, limpio */
-  --bg:          #ffffff;   /* fondo principal */
-  --bg2:         #f5f5f5;   /* superficies secundarias, cards */
-  --bg3:         #ebebeb;   /* hover, active, bordes sutiles */
-  --bg4:         #dedede;   /* bordes más marcados */
+  /* Paleta — inspirada en Casux modo claro, sin marrones */
+  --bg:          #ffffff;
+  --bg2:         #f6f5f3;
+  --bg3:         #eceae6;
+  --bg4:         #dddbd6;
 
   /* Texto */
-  --text:        #1a1a1a;   /* texto principal */
-  --text2:       #767676;   /* texto secundario, muted */
-  --text3:       #aaaaaa;   /* texto muy secundario, disabled */
+  --text:        #1a1814;
+  --text2:       rgba(26,24,20,0.55);
+  --text3:       rgba(26,24,20,0.30);
 
-  /* Acento tecnológico — único color frío */
-  --accent:      #4F8EF7;   /* azul nube — botones primary, links, focus */
-  --accent-dark: #3A6FD0;   /* hover sobre accent */
+  /* Acento — azul Casux */
+  --accent:      #3d52a0;
+  --accent-dark: #2e3f7f;
+
+  /* Compatibilidad: brown → accent (para componentes que lo usen) */
+  --brown:       #3d52a0;
+  --brown-dark:  #1a1814;
+  --brown-light: #5567b8;
 
   /* Estados semánticos */
-  --ok:          #3BAA7E;   /* conectado, éxito */
+  --ok:          #52b788;   /* conectado, éxito */
   --error:       #C0392B;   /* error, peligro */
   --warning:     #D4870A;   /* advertencia */
   --degraded:    #E8A020;   /* degradado — conecta con errores parciales */
@@ -58,8 +58,8 @@
   --shadow-lg:   0 4px 16px rgba(0,0,0,0.10);
 
   /* Bordes */
-  --border:      #e0e0e0;
-  --border-color: #e0e0e0;
+  --border:      rgba(26,24,20,0.14);
+  --border-color: rgba(26,24,20,0.14);
 
   /* Transiciones */
   --transition:  0.15s ease;
