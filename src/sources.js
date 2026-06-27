@@ -2,7 +2,7 @@
  * src/sources.js — Módulo principal del panel admin de fuentes
  *
  * window.CAPIBARA_SOURCES — gestión de fuentes en el panel admin.
- * Coordina: listado, creación, conexión, descubrimiento y eliminación.
+ * Coordina: listado, creación con auto-cascade, conexión, descubrimiento y eliminación.
  */
 
 window.CAPIBARA_SOURCES = (() => {
@@ -11,13 +11,12 @@ window.CAPIBARA_SOURCES = (() => {
   const API    = window.CAPIBARA_API;
   const TOAST  = window.CAPIBARA_TOAST;
   const UTILS  = window.CAPIBARA_UTILS;
-  const STATUS = window.CAPIBARA_STATUS;
   const FMTS   = window.CAPIBARA_FORMATS;
 
-  let _sources = [];
+  let _sources  = [];
   let _onUpdate = null;
 
-  // ── Listado ─────────────────────────────────────────────────────────────
+  // ── Listado ──────────────────────────────────────────────────────────────
 
   async function load() {
     const { data, ok, error } = await API.getSources();
@@ -29,26 +28,28 @@ window.CAPIBARA_SOURCES = (() => {
 
   function onUpdate(fn) { _onUpdate = fn; }
 
-  // ── Creación ─────────────────────────────────────────────────────────────
+  // ── Creación con cascade automático ──────────────────────────────────────
 
   /**
    * openCreateModal() → void
-   * Abre el modal de nueva fuente con detección automática de formato.
+   *
+   * Crea la fuente y luego auto-conecta. Si la conexión es exitosa,
+   * auto-descubre las capas. El usuario no necesita hacer nada manualmente.
    */
   function openCreateModal() {
     const overlay = document.createElement('div');
     overlay.className = 'modal-overlay';
     overlay.innerHTML = `
-      <div class="modal" style="max-width:560px">
+      <div class="modal" style="max-width:520px">
         <div class="modal-header">
           <div class="modal-title">Nueva fuente</div>
           <button class="btn btn-ghost btn-icon" id="modal-close">×</button>
         </div>
         <div class="modal-body">
-          <div class="form-group" style="margin-bottom:12px">
+          <div class="form-group" style="margin-bottom:14px">
             <label class="form-label">URL del servicio</label>
             <div style="display:flex;gap:8px">
-              <input class="input input-mono" id="src-url" placeholder="https://..." style="flex:1">
+              <input class="input input-mono" id="src-url" style="flex:1">
               <button class="btn btn-secondary" id="btn-detect">Detectar</button>
             </div>
             <span class="form-hint" id="detect-hint">Pegá la URL y hacé clic en Detectar para auto-completar el formato.</span>
@@ -66,26 +67,26 @@ window.CAPIBARA_SOURCES = (() => {
               </select>
             </div>
             <div class="form-group">
-              <label class="form-label">Nombre alias</label>
-              <input class="input" id="src-alias" placeholder="IGN — Provincias">
+              <label class="form-label">País (opcional)</label>
+              <input class="input" id="src-country" style="text-transform:uppercase">
             </div>
             <div class="form-group">
-              <label class="form-label">Proveedor alias</label>
-              <input class="input" id="src-provider" placeholder="IGN">
+              <label class="form-label">Nombre alias (opcional)</label>
+              <input class="input" id="src-alias">
             </div>
             <div class="form-group">
-              <label class="form-label">País</label>
-              <input class="input" id="src-country" placeholder="AR" style="text-transform:uppercase">
+              <label class="form-label">Proveedor alias (opcional)</label>
+              <input class="input" id="src-provider">
             </div>
           </div>
           <div class="form-group" style="margin-top:12px">
-            <label class="form-label">Notas internas</label>
-            <textarea class="textarea" id="src-notes" rows="2" placeholder="Opcional: contexto sobre la fuente..."></textarea>
+            <label class="form-label">Notas internas (opcional)</label>
+            <textarea class="textarea" id="src-notes" rows="2"></textarea>
           </div>
         </div>
         <div class="modal-footer">
           <button class="btn btn-secondary" id="modal-cancel">Cancelar</button>
-          <button class="btn btn-primary" id="modal-save">Crear fuente</button>
+          <button class="btn btn-primary" id="modal-save">Crear y conectar</button>
         </div>
       </div>
     `;
@@ -97,7 +98,7 @@ window.CAPIBARA_SOURCES = (() => {
     overlay.querySelector('#modal-cancel').addEventListener('click', close);
     overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
 
-    // Detección automática
+    // Detección automática de formato
     overlay.querySelector('#btn-detect').addEventListener('click', async () => {
       const url  = overlay.querySelector('#src-url').value.trim();
       const hint = overlay.querySelector('#detect-hint');
@@ -111,11 +112,11 @@ window.CAPIBARA_SOURCES = (() => {
         overlay.querySelector('#src-format').value = data.detected.format;
         hint.textContent = `Detectado: ${FMTS.get(data.detected.format).label} (confianza: ${data.detected.confidence})`;
       } else {
-        hint.textContent = 'No se pudo detectar el formato automáticamente. Seleccionalo manualmente.';
+        hint.textContent = 'No se pudo detectar el formato. Seleccionalo manualmente.';
       }
     });
 
-    // Guardar
+    // Guardar + cascade
     overlay.querySelector('#modal-save').addEventListener('click', async () => {
       const url    = overlay.querySelector('#src-url').value.trim();
       const format = overlay.querySelector('#src-format').value;
@@ -134,28 +135,54 @@ window.CAPIBARA_SOURCES = (() => {
 
       const saveBtn = overlay.querySelector('#modal-save');
       saveBtn.classList.add('btn-loading');
+      saveBtn.disabled = true;
 
-      const { ok, error } = await API.createSource(body);
-      saveBtn.classList.remove('btn-loading');
+      // 1. Crear fuente
+      const { data: createData, ok: createOk, error: createErr } = await API.createSource(body);
+      if (!createOk) {
+        saveBtn.classList.remove('btn-loading');
+        saveBtn.disabled = false;
+        TOAST.error('Error al crear fuente', createErr);
+        return;
+      }
 
-      if (!ok) { TOAST.error('Error al crear fuente', error); return; }
-
-      TOAST.ok('Fuente creada', 'Ahora conectá y descubrí sus capas.');
+      const sourceId = createData.source.id;
       close();
       await load();
+      TOAST.ok('Fuente creada', 'Conectando…');
+
+      // 2. Auto-conectar
+      const { data: connData, ok: connOk } = await API.connectSource(sourceId);
+      if (!connOk || !connData?.ok) {
+        TOAST.warn('Fuente creada', 'No se pudo conectar automáticamente. Usá el botón Conectar en el panel.');
+        await load();
+        return;
+      }
+
+      await load();
+      TOAST.ok('Conectada', 'Descubriendo capas…');
+
+      // 3. Auto-descubrir capas
+      const { data: discData, ok: discOk } = await API.discoverLayers(sourceId);
+      await load();
+      if (discOk) {
+        TOAST.ok('Listo', `${discData.added} capas descubiertas. Abrí la fuente para configurarlas.`);
+      } else {
+        TOAST.warn('Conectada', 'No se pudieron descubrir las capas automáticamente.');
+      }
     });
   }
 
   // ── Acciones sobre una fuente ────────────────────────────────────────────
 
   async function connect(sourceId, btn) {
-    if (btn) btn.classList.add('btn-loading');
+    if (btn) { btn.classList.add('btn-loading'); btn.disabled = true; }
     const { data, ok, error } = await API.connectSource(sourceId);
-    if (btn) btn.classList.remove('btn-loading');
+    if (btn) { btn.classList.remove('btn-loading'); btn.disabled = false; }
 
     if (!ok) { TOAST.error('Error de conexión', error); return false; }
     if (data.ok) {
-      TOAST.ok('Conectado', data.auto_populated?.length
+      TOAST.ok('Conectada', data.auto_populated?.length
         ? `Auto-completado: ${data.auto_populated.join(', ')}`
         : 'La fuente responde correctamente.');
     } else {
@@ -166,13 +193,17 @@ window.CAPIBARA_SOURCES = (() => {
   }
 
   async function discoverLayers(sourceId, btn) {
-    if (btn) btn.classList.add('btn-loading');
+    if (btn) { btn.classList.add('btn-loading'); btn.disabled = true; }
     const { data, ok, error } = await API.discoverLayers(sourceId);
-    if (btn) btn.classList.remove('btn-loading');
+    if (btn) { btn.classList.remove('btn-loading'); btn.disabled = false; }
 
-    if (!ok) { TOAST.error('Error al descubrir capas', error); return; }
-    TOAST.ok('Capas descubiertas', `${data.added} nuevas, ${data.skipped} ya existían.`);
+    if (!ok) { TOAST.error('Error al descubrir capas', error); return false; }
+    TOAST.ok(
+      data.added > 0 ? 'Capas descubiertas' : 'Capas actualizadas',
+      `${data.added} nuevas, ${data.skipped} ya existían.`
+    );
     await load();
+    return true;
   }
 
   async function deleteSource(sourceId) {
