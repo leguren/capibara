@@ -4,18 +4,12 @@
  * Implementa la interfaz completa para servicios WFS 1.0.0, 1.1.0 y 2.0.0.
  *
  * Operaciones:
- *   connect          → GetCapabilities — extrae versión, título, abstract, proveedor
- *   getLayers        → GetCapabilities — lista FeatureTypeList
- *   getFields        → DescribeFeatureType — analiza schema XSD
- *   getSample        → GetFeature con COUNT/maxFeatures + OUTPUTFORMAT=json
- *   getCount         → GetFeature con RESULTTYPE=hits
- *   getFeatureAtPoint → GetFeature con CQL_FILTER o BBOX para point-in-polygon
- *
- * Notas de implementación:
- *   - buildUrl() limpia query params existentes antes de construir cada request
- *     para evitar conflictos con URLs que ya vienen con ?request=GetCapabilities
- *   - Timeout: 30s para operaciones normales, 8s para getCount (informativo)
- *   - removeNSPrefix elimina namespaces arbitrarios del XML (ign:provincia → provincia)
+ *   connect           → GetCapabilities — extrae versión, título, abstract, proveedor
+ *   getLayers         → GetCapabilities — lista FeatureTypeList
+ *   getFields         → DescribeFeatureType — analiza schema XSD
+ *   getSample         → GetFeature con maxFeatures/count + OUTPUTFORMAT=json
+ *   getCount          → GetFeature con RESULTTYPE=hits
+ *   getFeatureAtPoint → GetFeature con BBOX para point-in-polygon
  */
 
 const { makeConnector } = require('./_interface');
@@ -35,7 +29,6 @@ const TIMEOUT_COUNT_MS = 8_000;
  */
 function buildUrl(base, params) {
   const u = new URL(base);
-  // Limpiar params existentes — los reconstruimos desde cero
   u.search = '';
   Object.entries(params).forEach(([k, v]) => {
     if (v !== null && v !== undefined) u.searchParams.set(k, String(v));
@@ -50,30 +43,18 @@ async function fetchWithTimeout(url, timeoutMs = TIMEOUT_MS) {
   const controller = new AbortController();
   const timer      = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const res = await fetch(url, { signal: controller.signal });
-    return res;
+    return await fetch(url, { signal: controller.signal });
   } finally {
     clearTimeout(timer);
   }
 }
 
 /**
- * removeNSPrefix(str) → string
- *
- * Elimina prefijos de namespace XML: 'ign:provincia' → 'provincia'
- * Necesario para manejar namespaces arbitrarios de distintos servidores.
- */
-function removeNSPrefix(str) {
-  if (!str) return str;
-  const colon = str.indexOf(':');
-  return colon === -1 ? str : str.slice(colon + 1);
-}
-
-/**
  * parseCapabilities(xml) → { version, title, abstract, provider, featureTypes }
  *
- * Parsea XML de GetCapabilities con regex conservadores.
- * Soporta WFS 1.0.0, 1.1.0 y 2.0.0 (estructuras levemente distintas).
+ * Parsea XML de GetCapabilities.
+ * Usa split en lugar de regex greedy para manejar <FeatureType> con atributos
+ * como <FeatureType xmlns:ign="http://ign"> que usan el IGN y otros servidores.
  */
 function parseCapabilities(xml) {
   const extract = (patterns, fallback = null) => {
@@ -89,15 +70,13 @@ function parseCapabilities(xml) {
   const abstract = extract([/<ows:Abstract>([^<]+)<\/ows:Abstract>/, /<Service>[\s\S]*?<Abstract>([^<]+)<\/Abstract>/]);
   const provider = extract([/<ows:ProviderName>([^<]+)<\/ows:ProviderName>/]);
 
-  // Extraer lista de capas usando split — más robusto que regex greedy
-  // El IGN usa <FeatureType> sin namespace, con contenido mixto ows: adentro
+  // Split en '<FeatureType' (sin >) para cubrir tags con atributos arbitrarios
+  // como <FeatureType xmlns:ign="http://ign"> que usa el IGN
   const featureTypes = [];
-  // Split en '<FeatureType' (sin >) para cubrir tags con atributos como
-  // <FeatureType xmlns:ign="http://ign"> que usa el IGN
   const parts = xml.split(/<(?:wfs:)?FeatureType[\s>]/);
 
   for (let i = 1; i < parts.length; i++) {
-    const block = parts[i].split(/<\/FeatureType>|<\/wfs:FeatureType>/)[0];
+    const block = parts[i].split(/<\/(?:wfs:)?FeatureType>/)[0];
 
     const nameMatch  = block.match(/<(?:[^:>]+:)?Name>([^<]+)<\/(?:[^:>]+:)?Name>/);
     const titleMatch = block.match(/<(?:[^:>]+:)?Title>([^<]+)<\/(?:[^:>]+:)?Title>/);
@@ -105,11 +84,13 @@ function parseCapabilities(xml) {
                        block.match(/<(?:[^:>]+:)?DefaultCRS>([^<]+)<\/(?:[^:>]+:)?DefaultCRS>/);
 
     if (nameMatch?.[1]) {
+      const rawSrs = srsMatch?.[1] || 'EPSG:4326';
       featureTypes.push({
         name:  nameMatch[1].trim(),
         title: titleMatch?.[1]?.trim() || null,
-        srs:   (srsMatch?.[1] || 'EPSG:4326').trim().replace('urn:x-ogc:def:crs:EPSG:', 'EPSG:').replace('urn:ogc:def:crs:EPSG::', 'EPSG:'),
-        hasBbox: false,
+        srs:   rawSrs.trim()
+               .replace('urn:x-ogc:def:crs:EPSG:', 'EPSG:')
+               .replace('urn:ogc:def:crs:EPSG::', 'EPSG:'),
       });
     }
   }
@@ -118,22 +99,36 @@ function parseCapabilities(xml) {
 }
 
 /**
- * parseDescribeFeatureType(xml) → [{ name, type }]
+ * getAttr(elementStr, attrName) → string | null
  *
- * Parsea el schema XSD de DescribeFeatureType para extraer campos y tipos.
+ * Extrae el valor de un atributo de un tag XML, independientemente del orden.
+ * Soluciona el bug donde el regex requería name antes que type en xsd:element.
+ */
+function getAttr(str, attrName) {
+  const m = str.match(new RegExp(`\\b${attrName}="([^"]+)"`));
+  return m ? m[1] : null;
+}
+
+/**
+ * parseDescribeFeatureType(xml) → [{ name, metadata }]
+ *
+ * Parsea el schema XSD de DescribeFeatureType.
+ * Extrae cada atributo independientemente para soportar cualquier orden.
  * Mapea tipos XSD a los tipos internos de Capibara.
  */
 function parseDescribeFeatureType(xml) {
   const XSD_TYPE_MAP = {
-    'xsd:string':         'string',
-    'xsd:int':            'integer',
-    'xsd:integer':        'integer',
-    'xsd:long':           'integer',
-    'xsd:short':          'integer',
-    'xsd:double':         'float',
-    'xsd:float':          'float',
-    'xsd:decimal':        'float',
-    'xsd:boolean':        'boolean',
+    'xsd:string':   'string',   'xs:string':   'string',
+    'xsd:int':      'integer',  'xs:int':      'integer',
+    'xsd:integer':  'integer',  'xs:integer':  'integer',
+    'xsd:long':     'integer',  'xs:long':     'integer',
+    'xsd:short':    'integer',  'xs:short':    'integer',
+    'xsd:double':   'float',    'xs:double':   'float',
+    'xsd:float':    'float',    'xs:float':    'float',
+    'xsd:decimal':  'float',    'xs:decimal':  'float',
+    'xsd:boolean':  'boolean',  'xs:boolean':  'boolean',
+    'xsd:date':     'string',   'xs:date':     'string',
+    'xsd:dateTime': 'string',   'xs:dateTime': 'string',
     'gml:PointPropertyType':          'geometry',
     'gml:MultiSurfacePropertyType':   'geometry',
     'gml:SurfacePropertyType':        'geometry',
@@ -141,24 +136,35 @@ function parseDescribeFeatureType(xml) {
     'gml:MultiCurvePropertyType':     'geometry',
     'gml:CurvePropertyType':          'geometry',
     'gml:MultiPointPropertyType':     'geometry',
+    'gml:MultiPolygonPropertyType':   'geometry',
+    'gml:PolygonPropertyType':        'geometry',
+    'gml:LineStringPropertyType':     'geometry',
   };
 
-  const fields  = [];
-  const attrRex = /<xsd:element[^>]+name="([^"]+)"[^>]+type="([^"]+)"/g;
-  let   m;
+  const fields = [];
 
-  while ((m = attrRex.exec(xml)) !== null) {
-    const rawName = m[1];
-    const rawType = m[2];
-    const isGeo   = rawType.startsWith('gml:');
+  // Extraer todos los tags xsd:element (o xs:element) — self-closing o no
+  const elementRex = /<(?:xsd?:)element\b([^>]*?)(?:\/>|>)/g;
+  let m;
 
+  while ((m = elementRex.exec(xml)) !== null) {
+    const attrs   = m[1];
+    const name    = getAttr(attrs, 'name');
+    const rawType = getAttr(attrs, 'type');
+
+    // Ignorar elementos sin name o sin type, y elementos abstractos/de grupo
+    if (!name || !rawType) continue;
+    // Ignorar elementos que son contenedores abstractos
+    if (name === 'boundedBy' || name === 'location') continue;
+
+    const isGeo = rawType.startsWith('gml:');
     fields.push({
-      name: rawName,
+      name,
       metadata: {
         type:         XSD_TYPE_MAP[rawType] || 'unknown',
         is_geometry:  isGeo,
         has_html:     false,
-        nullable:     true,
+        nullable:     getAttr(attrs, 'nillable') === 'true',
         sample_value: null,
       },
     });
@@ -175,9 +181,6 @@ module.exports = makeConnector({
 
   /**
    * connect(params) → { ok, error?, info? }
-   *
-   * Verifica que la URL responda con un documento WFS válido.
-   * Extrae versión, título, abstract y proveedor del GetCapabilities.
    */
   async connect(params) {
     const url = buildUrl(params.url, {
@@ -195,16 +198,11 @@ module.exports = makeConnector({
     }
 
     const { version, title, abstract, provider } = parseCapabilities(xml);
-    return {
-      ok:   true,
-      info: { version, title, abstract, provider },
-    };
+    return { ok: true, info: { version, title, abstract, provider } };
   },
 
   /**
    * getLayers(params) → [{ name, title, metadata }]
-   *
-   * Descubre todas las capas disponibles en el servicio.
    */
   async getLayers(params) {
     const url = buildUrl(params.url, {
@@ -213,27 +211,18 @@ module.exports = makeConnector({
       VERSION: params.version || '1.1.0',
     });
 
-    console.log('[wfs.getLayers] url:', url);
     const res = await fetchWithTimeout(url);
-    console.log('[wfs.getLayers] status:', res.status);
     if (!res.ok) throw new Error(`HTTP ${res.status} al obtener capabilities`);
 
-    const xml          = await res.text();
-    console.log('[wfs.getLayers] xml length:', xml.length, 'sample:', xml.slice(0, 200));
+    const xml              = await res.text();
     const { featureTypes } = parseCapabilities(xml);
-    console.log('[wfs.getLayers] featureTypes found:', featureTypes.length);
-    console.log('[wfs.getLayers] has <FeatureType>:', xml.includes('<FeatureType>'));
-    console.log('[wfs.getLayers] has <wfs:FeatureType>:', xml.includes('<wfs:FeatureType>'));
-    // Loguear el primer FeatureType que aparezca en el XML
-    const ftIdx = xml.indexOf('FeatureType>');
-    if (ftIdx > 0) console.log('[wfs.getLayers] first FeatureType context:', xml.slice(Math.max(0,ftIdx-20), ftIdx+80));
 
     return featureTypes.map(ft => ({
       name:  ft.name,
       title: ft.title,
       metadata: {
         crs:           ft.srs,
-        geometry_type: 'UNKNOWN',  // se completa en getFields o discover
+        geometry_type: 'UNKNOWN',
         feature_count: null,
         abstract:      null,
       },
@@ -242,8 +231,6 @@ module.exports = makeConnector({
 
   /**
    * getFields(params, layerName) → [{ name, metadata }]
-   *
-   * Obtiene los campos de una capa vía DescribeFeatureType.
    */
   async getFields(params, layerName) {
     const url = buildUrl(params.url, {
@@ -265,11 +252,6 @@ module.exports = makeConnector({
 
   /**
    * getSample(params, layerName, count?) → { features, total }
-   *
-   * Obtiene una muestra de features en formato GeoJSON.
-   * Usa el parámetro correcto según la versión del servicio:
-   *   WFS 1.x → maxFeatures
-   *   WFS 2.0 → count
    */
   async getSample(params, layerName, count = 5) {
     const version  = params.version || '1.1.0';
@@ -296,10 +278,6 @@ module.exports = makeConnector({
 
   /**
    * getCount(params, layerName) → number | null
-   *
-   * Obtiene el conteo total de features sin descargar datos.
-   * Timeout corto (8s) — es informativo, no crítico.
-   * Devuelve null si el servicio no soporta RESULTTYPE=hits.
    */
   async getCount(params, layerName) {
     try {
@@ -326,19 +304,11 @@ module.exports = makeConnector({
 
   /**
    * getFeatureAtPoint(params, layerName, lat, lon) → { feature, error? }
-   *
-   * Obtiene el feature que contiene el punto dado.
-   * Usa CQL_FILTER con INTERSECTS si el servidor lo soporta (GeoServer),
-   * con fallback a BBOX para servidores más básicos.
-   *
-   * lat, lon → coordenadas WGS84 (EPSG:4326)
    */
   async getFeatureAtPoint(params, layerName, lat, lon) {
     const version = params.version || '1.1.0';
-
-    // BBOX pequeño alrededor del punto (~10m de margen)
-    const delta = 0.0001;
-    const bbox  = `${lon - delta},${lat - delta},${lon + delta},${lat + delta},EPSG:4326`;
+    const delta   = 0.0001;
+    const bbox    = `${lon - delta},${lat - delta},${lon + delta},${lat + delta},EPSG:4326`;
 
     const url = buildUrl(params.url, {
       SERVICE:      'WFS',
