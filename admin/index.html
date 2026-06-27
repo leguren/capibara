@@ -12,16 +12,6 @@
 </head>
 <body>
 
-<nav class="navbar">
-  <a href="/admin" class="navbar-brand">Capibara</a>
-  <nav class="navbar-nav">
-    <a href="/admin"   class="navbar-link is-active">Fuentes</a>
-    <a href="/publish" class="navbar-link">Publicar</a>
-  </nav>
-  <div class="navbar-spacer"></div>
-  <div class="navbar-user" id="nav-user"></div>
-</nav>
-
 <main class="page-content">
 
   <h1 class="admin-title">Gestión de fuentes</h1>
@@ -44,6 +34,7 @@
       <button class="filter-pill" data-value="unverified">sin verificar</button>
     </div>
     <button class="action-btn primary" id="btn-new-source">Nueva fuente</button>
+    <a href="/publish" class="action-btn">Publicar</a>
   </div>
 
   <!-- Filtros de formato -->
@@ -89,8 +80,6 @@
 
   const user = await AUTH.requireAdmin();
   if (!user) return;
-  AUTH.renderNavUser(document.getElementById('nav-user'), user);
-
   // ── Estado de filtros (multi-select) ──────────────────────────────
 
   const activeStatuses = new Set();
