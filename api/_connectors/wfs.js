@@ -92,7 +92,9 @@ function parseCapabilities(xml) {
   // Extraer lista de capas usando split — más robusto que regex greedy
   // El IGN usa <FeatureType> sin namespace, con contenido mixto ows: adentro
   const featureTypes = [];
-  const parts = xml.split(/<FeatureType>|<wfs:FeatureType>/);
+  // Split en '<FeatureType' (sin >) para cubrir tags con atributos como
+  // <FeatureType xmlns:ign="http://ign"> que usa el IGN
+  const parts = xml.split(/<(?:wfs:)?FeatureType[\s>]/);
 
   for (let i = 1; i < parts.length; i++) {
     const block = parts[i].split(/<\/FeatureType>|<\/wfs:FeatureType>/)[0];
