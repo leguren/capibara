@@ -14,6 +14,13 @@
 
 <main class="page-content">
 
+  <!-- Breadcrumb -->
+  <nav class="breadcrumb">
+    <a href="/admin" class="breadcrumb-link">Admin</a>
+    <span class="breadcrumb-sep">/</span>
+    <span class="breadcrumb-current">Publicar</span>
+  </nav>
+
   <h1 class="admin-title">Publicar</h1>
 
   <!-- Stats del estado actual -->
@@ -23,16 +30,10 @@
     <div class="stat-chip"><span class="stat-n" id="stat-fields">—</span> campos a publicar</div>
   </div>
 
-  <!-- Fila de navegación + acción -->
+  <!-- Nota de versión + acción -->
   <div class="filter-row">
-    <a href="/admin" class="action-btn">← Volver a fuentes</a>
-    <div style="flex:1"></div>
+    <input class="input" id="publish-notes" placeholder="Nota de versión (opcional)" style="flex:1">
     <button class="action-btn primary" id="btn-publish">Publicar ahora</button>
-  </div>
-
-  <!-- Nota de versión -->
-  <div style="margin-top:12px">
-    <input class="input" id="publish-notes" placeholder="Nota de versión (opcional)">
   </div>
 
   <!-- Historial de publicaciones -->
