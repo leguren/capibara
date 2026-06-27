@@ -102,8 +102,18 @@ module.exports = async function handler(req, res) {
     const allStmts = [...toInsert, ...toUpdate];
     const BATCH_SIZE = 50;
     for (let i = 0; i < allStmts.length; i += BATCH_SIZE) {
-      await db.batch(allStmts.slice(i, i + BATCH_SIZE), 'write');
+      try {
+        await db.batch(allStmts.slice(i, i + BATCH_SIZE), 'write');
+        console.log('[discover] batch OK, stmts', i, '-', Math.min(i + BATCH_SIZE, allStmts.length));
+      } catch(e) {
+        console.error('[discover] batch FAILED at', i, ':', e.message);
+        // Fallback: ejecutar uno por uno
+        for (const stmt of allStmts.slice(i, i + BATCH_SIZE)) {
+          try { await db.execute(stmt); } catch(e2) { console.error('[discover] single execute failed:', e2.message); }
+        }
+      }
     }
+    console.log('[discover] done, added:', added, 'skipped:', skipped);
 
     return ok(res, { ok: true, total: layers.length, added, skipped });
   }
