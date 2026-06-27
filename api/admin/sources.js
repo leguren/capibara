@@ -81,17 +81,30 @@ module.exports = async function handler(req, res) {
     const counts = {};
     let added = 0, skipped = 0;
     const ts = now();
+
+    // Separar nuevas de existentes
+    const toInsert = [];
+    const toUpdate = [];
+
     for (const layer of layers) {
-      const metadata = JSON.stringify({ ...(layer.metadata || {}), feature_count: counts[layer.name] ?? layer.metadata?.feature_count ?? null });
+      const metadata = JSON.stringify({ ...(layer.metadata || {}), feature_count: null });
       const meta = layer.metadata || {};
       if (existingMap.has(layer.name)) {
-        await db.execute({ sql: 'UPDATE layers SET metadata = ?, name_alias = COALESCE(name_alias, ?), discovered_at = ? WHERE id = ?', args: [metadata, layer.title || null, ts, existingMap.get(layer.name)] });
+        toUpdate.push({ sql: 'UPDATE layers SET metadata = ?, name_alias = COALESCE(name_alias, ?), discovered_at = ? WHERE id = ?', args: [metadata, layer.title || null, ts, existingMap.get(layer.name)] });
         skipped++;
       } else {
-        await db.execute({ sql: 'INSERT INTO layers (id, source_id, name_source, name_alias, geometry_type, srs, feature_count, included, metadata, discovered_at) VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?)', args: [id('lyr'), sid, layer.name, layer.title || null, (meta.geometry_type || 'UNKNOWN').toUpperCase(), meta.crs || 'EPSG:4326', counts[layer.name] ?? meta.feature_count ?? null, metadata, ts] });
+        toInsert.push({ sql: 'INSERT INTO layers (id, source_id, name_source, name_alias, geometry_type, srs, feature_count, included, metadata, discovered_at) VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?)', args: [id('lyr'), sid, layer.name, layer.title || null, (meta.geometry_type || 'UNKNOWN').toUpperCase(), meta.crs || 'EPSG:4326', null, metadata, ts] });
         added++;
       }
     }
+
+    // Ejecutar en lotes de 50 para evitar timeout
+    const allStmts = [...toInsert, ...toUpdate];
+    const BATCH_SIZE = 50;
+    for (let i = 0; i < allStmts.length; i += BATCH_SIZE) {
+      await db.batch(allStmts.slice(i, i + BATCH_SIZE), 'write');
+    }
+
     return ok(res, { ok: true, total: layers.length, added, skipped });
   }
 
