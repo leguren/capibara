@@ -1,40 +1,110 @@
 {
   "rewrites": [
-    { "source": "/login",     "destination": "/login/index.html" },
-    { "source": "/admin",     "destination": "/admin/index.html" },
-    { "source": "/dashboard", "destination": "/dashboard/index.html" },
-    { "source": "/publish",   "destination": "/publish/index.html" },
-
-    { "source": "/api/auth/login",    "destination": "/api/auth?sub=login" },
-    { "source": "/api/auth/callback", "destination": "/api/auth?sub=callback" },
-    { "source": "/api/auth/logout",   "destination": "/api/auth?sub=logout" },
-    { "source": "/api/auth/me",       "destination": "/api/auth?sub=me" },
-
-    { "source": "/api/admin/sources/connect",  "destination": "/api/admin/sources?sub=connect" },
-    { "source": "/api/admin/sources/discover", "destination": "/api/admin/sources?sub=discover" },
-
-    { "source": "/api/admin/layers/fields",   "destination": "/api/admin/layers?sub=fields" },
-    { "source": "/api/admin/layers/discover", "destination": "/api/admin/layers?sub=discover" },
-
-    { "source": "/api/admin/fields/sample",   "destination": "/api/admin/fields?sub=sample" },
-
-    { "source": "/api/geo/1/query",            "destination": "/api/geo/query" },
-    { "source": "/api/geo/1/catalog/domains",  "destination": "/api/geo/catalog?sub=domains" },
-    { "source": "/api/geo/1/catalog/layers",   "destination": "/api/geo/catalog?sub=layers" },
-    { "source": "/api/geo/1/catalog/coverage", "destination": "/api/geo/catalog?sub=coverage" },
-    { "source": "/api/geo/1/catalog",          "destination": "/api/geo/catalog" },
-
-    { "source": "/api/user/keys",    "destination": "/api/user?sub=keys" },
-    { "source": "/api/user/profile", "destination": "/api/user?sub=profile" }
+    {
+      "source": "/admin",
+      "destination": "/admin/index.html"
+    },
+    {
+      "source": "/admin/sources",
+      "destination": "/admin/sources/index.html"
+    },
+    {
+      "source": "/admin/publish",
+      "destination": "/admin/publish/index.html"
+    },
+    {
+      "source": "/login",
+      "destination": "/login/index.html"
+    },
+    {
+      "source": "/dashboard",
+      "destination": "/dashboard/index.html"
+    },
+    {
+      "source": "/api/auth/login",
+      "destination": "/api/auth?sub=login"
+    },
+    {
+      "source": "/api/auth/callback",
+      "destination": "/api/auth?sub=callback"
+    },
+    {
+      "source": "/api/auth/logout",
+      "destination": "/api/auth?sub=logout"
+    },
+    {
+      "source": "/api/auth/me",
+      "destination": "/api/auth?sub=me"
+    },
+    {
+      "source": "/api/admin/sources/connect",
+      "destination": "/api/admin/sources?sub=connect"
+    },
+    {
+      "source": "/api/admin/sources/discover",
+      "destination": "/api/admin/sources?sub=discover"
+    },
+    {
+      "source": "/api/admin/layers/fields",
+      "destination": "/api/admin/layers?sub=fields"
+    },
+    {
+      "source": "/api/admin/layers/discover",
+      "destination": "/api/admin/layers?sub=discover"
+    },
+    {
+      "source": "/api/admin/fields/sample",
+      "destination": "/api/admin/fields?sub=sample"
+    },
+    {
+      "source": "/api/geo/1/query",
+      "destination": "/api/geo/query"
+    },
+    {
+      "source": "/api/geo/1/catalog/domains",
+      "destination": "/api/geo/catalog?sub=domains"
+    },
+    {
+      "source": "/api/geo/1/catalog/layers",
+      "destination": "/api/geo/catalog?sub=layers"
+    },
+    {
+      "source": "/api/geo/1/catalog/coverage",
+      "destination": "/api/geo/catalog?sub=coverage"
+    },
+    {
+      "source": "/api/geo/1/catalog",
+      "destination": "/api/geo/catalog"
+    },
+    {
+      "source": "/api/user/keys",
+      "destination": "/api/user?sub=keys"
+    },
+    {
+      "source": "/api/user/profile",
+      "destination": "/api/user?sub=profile"
+    }
   ],
   "headers": [
     {
       "source": "/api/(.*)",
       "headers": [
-        { "key": "Access-Control-Allow-Origin",      "value": "*" },
-        { "key": "Access-Control-Allow-Methods",     "value": "GET, POST, PATCH, DELETE, OPTIONS" },
-        { "key": "Access-Control-Allow-Headers",     "value": "Content-Type, Authorization" },
-        { "key": "Access-Control-Allow-Credentials", "value": "true" }
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        },
+        {
+          "key": "Access-Control-Allow-Methods",
+          "value": "GET, POST, PATCH, DELETE, OPTIONS"
+        },
+        {
+          "key": "Access-Control-Allow-Headers",
+          "value": "Content-Type, Authorization"
+        },
+        {
+          "key": "Access-Control-Allow-Credentials",
+          "value": "true"
+        }
       ]
     }
   ]
