@@ -12,10 +12,9 @@
 </head>
 <body>
 
-<!-- Navbar -->
 <nav class="navbar">
   <a href="/admin" class="navbar-brand">
-    <svg width="26" height="26" viewBox="0 0 40 40" fill="none">
+    <svg width="24" height="24" viewBox="0 0 40 40" fill="none">
       <rect width="40" height="40" rx="10" fill="#A56A43"/>
       <ellipse cx="20" cy="22" rx="11" ry="8" fill="#F7F3EC"/>
       <ellipse cx="14" cy="20" rx="3" ry="4.5" fill="#EFE9DF"/>
@@ -31,11 +30,10 @@
   </nav>
   <div class="navbar-spacer"></div>
   <div class="navbar-user" id="nav-user">
-    <div class="skeleton" style="width:80px;height:20px;border-radius:4px"></div>
+    <div class="skeleton" style="width:80px;height:16px;border-radius:4px"></div>
   </div>
 </nav>
 
-<!-- Contenido principal -->
 <main class="page-content" style="max-width:1200px">
 
   <div class="page-header">
@@ -43,41 +41,39 @@
       <div class="page-title">Fuentes de datos</div>
       <div class="page-subtitle">Conectá servicios externos y configurá qué capas y campos sirve la API.</div>
     </div>
-    <div class="page-actions">
-      <button class="btn btn-primary" id="btn-new-source">+ Nueva fuente</button>
-    </div>
+    <button class="btn btn-primary" id="btn-new-source">+ Nueva fuente</button>
   </div>
 
   <!-- Stats globales -->
   <div class="stats-grid" id="stats-grid">
     <div class="stat-card">
       <div class="stat-label">Fuentes</div>
-      <div class="stat-value skeleton" style="width:40px;height:32px">&nbsp;</div>
+      <div class="stat-value skeleton" style="width:40px;height:28px">&nbsp;</div>
     </div>
     <div class="stat-card">
       <div class="stat-label">Capas activas</div>
-      <div class="stat-value skeleton" style="width:40px;height:32px">&nbsp;</div>
+      <div class="stat-value skeleton" style="width:40px;height:28px">&nbsp;</div>
     </div>
     <div class="stat-card">
       <div class="stat-label">Campos activos</div>
-      <div class="stat-value skeleton" style="width:40px;height:32px">&nbsp;</div>
+      <div class="stat-value skeleton" style="width:40px;height:28px">&nbsp;</div>
     </div>
     <div class="stat-card">
       <div class="stat-label">Conectadas</div>
-      <div class="stat-value skeleton" style="width:40px;height:32px">&nbsp;</div>
+      <div class="stat-value skeleton" style="width:40px;height:28px">&nbsp;</div>
     </div>
   </div>
 
-  <!-- Toolbar de filtros -->
+  <!-- Toolbar -->
   <div class="toolbar">
-    <input class="input toolbar-search" id="search-input" placeholder="Buscar por nombre, proveedor…">
-    <select class="select" id="filter-status" style="width:140px">
+    <input class="input toolbar-search" id="search-input" placeholder="Buscar fuentes…">
+    <select class="select" id="filter-status" style="width:150px">
       <option value="">Todos los estados</option>
       <option value="ok">Conectadas</option>
       <option value="error">Con error</option>
       <option value="unverified">Sin verificar</option>
     </select>
-    <select class="select" id="filter-format" style="width:140px">
+    <select class="select" id="filter-format" style="width:150px">
       <option value="">Todos los formatos</option>
       <option value="wfs">WFS</option>
       <option value="arcgis_rest">ArcGIS REST</option>
@@ -89,30 +85,30 @@
 
   <!-- Grid de source cards -->
   <div class="sources-grid" id="sources-grid">
-    <!-- Loading skeleton -->
-    <div class="card skeleton" style="height:160px"></div>
-    <div class="card skeleton" style="height:160px"></div>
-    <div class="card skeleton" style="height:160px"></div>
+    <div class="card skeleton" style="height:110px"></div>
+    <div class="card skeleton" style="height:110px"></div>
+    <div class="card skeleton" style="height:110px"></div>
   </div>
 
 </main>
 
-<!-- Panel lateral de detalle de fuente -->
+<!-- Panel lateral -->
 <div class="detail-panel" id="detail-panel" style="display:none">
   <div class="detail-panel-header">
-    <button class="btn btn-ghost btn-icon" id="close-panel">←</button>
-    <div style="flex:1">
-      <div id="panel-title" style="font-weight:700;color:var(--brown-dark)"></div>
-      <div id="panel-sub" style="font-size:12px;color:var(--text2)"></div>
+    <button class="btn btn-ghost btn-icon" id="close-panel" title="Cerrar">←</button>
+    <div style="flex:1;min-width:0">
+      <div class="panel-title" id="panel-title"></div>
+      <div class="panel-subtitle" id="panel-sub"></div>
     </div>
   </div>
   <div class="detail-panel-body" id="panel-body"></div>
 </div>
 
-<!-- Scripts: orden importante — config → vocab → src -->
 <script src="/config/app.js"></script>
 <script src="/vocab/status.js"></script>
 <script src="/vocab/formats.js"></script>
+<script src="/vocab/domains.js"></script>
+<script src="/vocab/frequencies.js"></script>
 <script src="/src/api.js"></script>
 <script src="/src/toast.js"></script>
 <script src="/src/utils.js"></script>
@@ -130,65 +126,59 @@
   const AUTH    = window.CAPIBARA_AUTH;
   const API     = window.CAPIBARA_API;
   const TOAST   = window.CAPIBARA_TOAST;
+  const STATUS  = window.CAPIBARA_STATUS;
+  const LAYER_ROW = window.CAPIBARA_LAYER_ROW;
 
-  // Verificar sesión admin
   const user = await AUTH.requireAdmin();
   if (!user) return;
   AUTH.renderNavUser(document.getElementById('nav-user'), user);
 
-  // Filtros — declarados antes de renderSources que los referencia
+  // Filtros
   const searchInput  = document.getElementById('search-input');
   const filterStatus = document.getElementById('filter-status');
   const filterFormat = document.getElementById('filter-format');
-
-  [searchInput, filterStatus, filterFormat].forEach(el => {
-    el.addEventListener('input', () => renderSources(window._sources));
-  });
+  [searchInput, filterStatus, filterFormat].forEach(el =>
+    el.addEventListener('input', () => renderSources(window._adminSources))
+  );
 
   // Nueva fuente
-  document.getElementById('btn-new-source').addEventListener('click', () => {
-    SOURCES.openCreateModal();
+  document.getElementById('btn-new-source').addEventListener('click', () =>
+    SOURCES.openCreateModal()
+  );
+
+  // Cerrar panel
+  document.getElementById('close-panel').addEventListener('click', () => {
+    document.getElementById('detail-panel').style.display = 'none';
+    document.querySelectorAll('.source-card.is-active').forEach(c => c.classList.remove('is-active'));
   });
 
-  // Cargar y renderizar fuentes
   SOURCES.onUpdate(renderSources);
   await SOURCES.load();
 
+  // ── renderSources ────────────────────────────────────────────────────────
+
   function renderSources(sources) {
-    window._sources = sources;
+    window._adminSources = sources;
     const grid    = document.getElementById('sources-grid');
     const q       = searchInput.value.toLowerCase();
-    const status  = filterStatus.value;
-    const format  = filterFormat.value;
+    const sts     = filterStatus.value;
+    const fmt     = filterFormat.value;
+
+    // Stats
+    document.getElementById('stats-grid').innerHTML = `
+      <div class="stat-card"><div class="stat-label">Fuentes</div><div class="stat-value">${sources.length}</div></div>
+      <div class="stat-card"><div class="stat-label">Capas activas</div><div class="stat-value">${sources.reduce((a, s) => a + (s.layers_included || 0), 0)}</div></div>
+      <div class="stat-card"><div class="stat-label">Campos activos</div><div class="stat-value">${sources.reduce((a, s) => a + (s.fields_included || 0), 0)}</div></div>
+      <div class="stat-card"><div class="stat-label">Conectadas</div><div class="stat-value">${sources.filter(s => s.status === 'ok').length}</div></div>
+    `;
 
     const filtered = sources.filter(s => {
       const name = ((s.name_alias || s.name_source || '') + ' ' + (s.provider_alias || s.provider_source || '')).toLowerCase();
       if (q && !name.includes(q)) return false;
-      if (status && s.status !== status) return false;
-      if (format && s.data_format !== format) return false;
+      if (sts && s.status !== sts) return false;
+      if (fmt && s.data_format !== fmt) return false;
       return true;
     });
-
-    // Stats
-    const stats = document.getElementById('stats-grid');
-    stats.innerHTML = `
-      <div class="stat-card">
-        <div class="stat-label">Fuentes</div>
-        <div class="stat-value">${sources.length}</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Capas activas</div>
-        <div class="stat-value">${sources.reduce((a, s) => a + (s.layers_included || 0), 0)}</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Campos activos</div>
-        <div class="stat-value">${sources.reduce((a, s) => a + (s.fields_included || 0), 0)}</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Conectadas</div>
-        <div class="stat-value">${sources.filter(s => s.status === 'ok').length}</div>
-      </div>
-    `;
 
     if (!filtered.length) {
       grid.innerHTML = `
@@ -202,93 +192,114 @@
     grid.innerHTML = '';
     for (const source of filtered) {
       const card = CARD.render(source);
-
-      card.addEventListener('click', e => {
-        // Solo abrir panel si no clickearon un botón
-        if (!e.target.closest('button')) openDetailPanel(source);
-      });
-
-      card.querySelector('.js-connect').addEventListener('click', e => {
-        e.stopPropagation();
-        SOURCES.connect(source.id, e.currentTarget);
-      });
-      card.querySelector('.js-discover').addEventListener('click', async e => {
-        e.stopPropagation();
-        await SOURCES.discoverLayers(source.id, e.currentTarget);
-      });
-      card.querySelector('.js-delete').addEventListener('click', e => {
-        e.stopPropagation();
-        SOURCES.deleteSource(source.id);
-      });
-
+      card.addEventListener('click', () => openDetailPanel(source));
       grid.appendChild(card);
     }
   }
 
-  // Panel de detalle lateral
-  document.getElementById('close-panel').addEventListener('click', () => {
-    document.getElementById('detail-panel').style.display = 'none';
-  });
+  // ── Panel de detalle ─────────────────────────────────────────────────────
+
+  let _currentSourceId = null;
 
   async function openDetailPanel(source) {
+    // Marcar card activa
+    document.querySelectorAll('.source-card.is-active').forEach(c => c.classList.remove('is-active'));
+    document.querySelector(`.source-card[data-id="${source.id}"]`)?.classList.add('is-active');
+
     const panel = document.getElementById('detail-panel');
     const body  = document.getElementById('panel-body');
-    panel.style.display = 'block';
+    panel.style.display = 'flex';
+
     document.getElementById('panel-title').textContent = UTILS.displayName(source);
-    document.getElementById('panel-sub').textContent   = source.data_format + ' · ' + (source.status || '—');
+    document.getElementById('panel-sub').textContent   = `${source.data_format?.toUpperCase() || ''} · ${STATUS.get(source.status).label}`;
 
-    body.innerHTML = '<div class="skeleton" style="height:200px;border-radius:8px"></div>';
+    _currentSourceId = source.id;
+    body.innerHTML = '<div class="panel-section"><div class="skeleton" style="height:80px;border-radius:6px"></div></div>';
 
-    const { data, ok, error } = await API.getSource(source.id + '&_=' + Date.now());
-    if (!ok) { body.innerHTML = `<div style="color:var(--error);padding:16px">${error}</div>`; return; }
-
-    const src = data.source;
-    body.innerHTML = `
-      <div class="section">
-        <div class="section-title">Capas (${src.layers?.length || 0})</div>
-        <div class="layer-list" id="panel-layers"></div>
-        <button class="btn btn-secondary btn-sm js-discover" data-id="${src.id}" style="margin-top:8px">
-          Descubrir capas
-        </button>
-      </div>
-    `;
-
-    const layerList = body.querySelector('#panel-layers');
-    const LAYER_ROW = window.CAPIBARA_LAYER_ROW;
-
-    if (!src.layers?.length) {
-      layerList.innerHTML = '<div style="font-size:12px;color:var(--text3);padding:8px 0">Sin capas descubiertas.</div>';
-    } else {
-      const table = document.createElement('table');
-      table.className = 'table';
-      table.innerHTML = `<thead><tr>
-        <th style="width:40px"></th><th>Nombre</th><th>Dominio</th><th>Frecuencia</th>
-        <th>Features</th><th></th>
-      </tr></thead><tbody id="layers-tbody"></tbody>`;
-      layerList.appendChild(table);
-      const tbody = table.querySelector('#layers-tbody');
-      for (const layer of src.layers) {
-        const tr = LAYER_ROW.render(layer);
-        const discoverBtn = tr.querySelector('.js-discover-fields');
-        if (discoverBtn) {
-          discoverBtn.addEventListener('click', async e => {
-            const btn = e.currentTarget;
-            btn.classList.add('btn-loading');
-            const { data: dData, ok: dOk } = await API.discoverFields(layer.id);
-            btn.classList.remove('btn-loading');
-            if (dOk) TOAST.ok('Campos descubiertos', `${dData.added} nuevos.`);
-            else TOAST.error('Error', dData?.error || 'Error al descubrir campos');
-          });
-        }
-        tbody.appendChild(tr);
-      }
+    // Cargar detalle fresco del servidor
+    const { data, ok, error } = await API.getSource(source.id);
+    if (_currentSourceId !== source.id) return; // usuario abrió otra fuente mientras cargaba
+    if (!ok) {
+      body.innerHTML = `<div class="panel-section" style="color:var(--error)">${error}</div>`;
+      return;
     }
 
-    body.querySelector('.js-discover')?.addEventListener('click', async e => {
-      await SOURCES.discoverLayers(src.id, e.currentTarget);
-      openDetailPanel(src);
-    });
+    renderPanel(body, data.source);
   }
+
+  function renderPanel(body, src) {
+    const connParams = (() => {
+      try { return typeof src.connection_params === 'string' ? JSON.parse(src.connection_params) : src.connection_params; }
+      catch { return {}; }
+    })();
+    const url = connParams?.url || '';
+
+    // ── Acciones según estado ────────────────────────────────────────────
+    const isConnected   = src.status === 'ok';
+    const hasLayers     = (src.layers?.length || 0) > 0;
+    const discoverLabel = hasLayers ? 'Actualizar capas' : 'Descubrir capas';
+
+    const actionsHtml = `
+      ${!isConnected ? `<button class="btn btn-primary btn-sm js-connect">Conectar</button>` : ''}
+      ${isConnected  ? `<button class="btn btn-secondary btn-sm js-discover">${discoverLabel}</button>` : ''}
+      <button class="btn btn-ghost btn-sm js-delete" style="margin-left:auto;color:var(--error)">Eliminar</button>
+    `;
+
+    // ── Info de la fuente ────────────────────────────────────────────────
+    const infoHtml = `
+      ${url ? `<div class="panel-info-row"><span class="panel-info-label">URL</span><span class="panel-info-value">${UTILS.escHtml(url)}</span></div>` : ''}
+      ${src.last_checked ? `<div class="panel-info-row"><span class="panel-info-label">Último chequeo</span><span style="font-size:13px">${UTILS.formatDate(src.last_checked)}</span></div>` : ''}
+      ${src.error_message ? `<div class="panel-info-row"><span class="panel-info-label">Error</span><span style="color:var(--error);font-size:12px">${UTILS.escHtml(src.error_message)}</span></div>` : ''}
+      ${src.notes ? `<div class="panel-info-row"><span class="panel-info-label">Notas</span><span style="font-size:13px">${UTILS.escHtml(src.notes)}</span></div>` : ''}
+    `;
+
+    // ── Capas ────────────────────────────────────────────────────────────
+    const layers   = src.layers || [];
+    const included = layers.filter(l => l.included).length;
+
+    const layersHtml = layers.length === 0
+      ? `<div style="padding:16px 20px;font-size:13px;color:var(--text2)">Sin capas descubiertas. Usá el botón "Descubrir capas" para cargarlas.</div>`
+      : `<div class="layer-list-header">
+           <span>${layers.length} capas</span>
+           <span>${included} activas</span>
+         </div>
+         <div id="layers-accordion"></div>`;
+
+    body.innerHTML = `
+      <div class="panel-section">
+        <div class="panel-actions">${actionsHtml}</div>
+      </div>
+      <div class="panel-section">${infoHtml}</div>
+      <div id="panel-layers-section">${layersHtml}</div>
+    `;
+
+    // Bind acciones
+    body.querySelector('.js-connect')?.addEventListener('click', async e => {
+      const ok = await SOURCES.connect(src.id, e.currentTarget);
+      if (ok) { const { data } = await API.getSource(src.id); if (data) renderPanel(body, data.source); }
+    });
+
+    body.querySelector('.js-discover')?.addEventListener('click', async e => {
+      const btn = e.currentTarget;
+      await SOURCES.discoverLayers(src.id, btn);
+      const { data } = await API.getSource(src.id);
+      if (data) renderPanel(body, data.source);
+    });
+
+    body.querySelector('.js-delete')?.addEventListener('click', () => {
+      SOURCES.deleteSource(src.id);
+      document.getElementById('detail-panel').style.display = 'none';
+    });
+
+    // Renderizar accordion de capas
+    if (layers.length > 0) {
+      const accordion = body.querySelector('#layers-accordion');
+      for (const layer of layers) {
+        accordion.appendChild(LAYER_ROW.render(layer));
+      }
+    }
+  }
+
 })();
 </script>
 
