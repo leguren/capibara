@@ -272,9 +272,10 @@
         const discoverBtn = tr.querySelector('.js-discover-fields');
         if (discoverBtn) {
           discoverBtn.addEventListener('click', async e => {
-            e.currentTarget.classList.add('btn-loading');
+            const btn = e.currentTarget;
+            btn.classList.add('btn-loading');
             const { data: dData, ok: dOk } = await API.discoverFields(layer.id);
-            e.currentTarget.classList.remove('btn-loading');
+            btn.classList.remove('btn-loading');
             if (dOk) TOAST.ok('Campos descubiertos', `${dData.added} nuevos.`);
             else TOAST.error('Error', dData?.error || 'Error al descubrir campos');
           });
