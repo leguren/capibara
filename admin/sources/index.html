@@ -9,6 +9,7 @@
   <link rel="stylesheet" href="/style/components.css">
   <link rel="stylesheet" href="/style/toast.css">
   <link rel="stylesheet" href="/style/admin.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20,300,0,0">
 </head>
 <body>
 
@@ -51,15 +52,6 @@
   </div>
 
   <!-- Filtros de formato -->
-  <div class="filter-row" style="margin-top:6px">
-    <div class="filter-pills" id="format-pills">
-      <button class="filter-pill" data-value="wfs">WFS</button>
-      <button class="filter-pill" data-value="arcgis_rest">ArcGIS</button>
-      <button class="filter-pill" data-value="csv">CSV</button>
-      <button class="filter-pill" data-value="geojson">GeoJSON</button>
-      <button class="filter-pill" data-value="json">JSON</button>
-    </div>
-  </div>
 
   <!-- Lista de fuentes en cascada -->
   <div class="sources-list" id="sources-list"></div>
@@ -96,8 +88,6 @@
   // ── Estado de filtros (multi-select) ──────────────────────────────
 
   const activeStatuses = new Set();
-  const activeFormats  = new Set();
-
   // Fuentes expandidas (set de ids) y datos cargados (map id → data)
   const openSources  = new Set();
   const loadedSources = new Map(); // id → source detail data
@@ -117,8 +107,6 @@
   }
 
   bindPills('status-pills', activeStatuses);
-  bindPills('format-pills', activeFormats);
-
   const searchInput = document.getElementById('search-input');
   const searchClear = document.getElementById('search-clear');
 
@@ -173,12 +161,11 @@
       const name = ((s.name_alias || s.name_source || '') + ' ' + (s.provider_alias || s.provider_source || '')).toLowerCase();
         if (q && !name.includes(q)) return false;
         if (activeStatuses.size && !activeStatuses.has(s.status)) return false;
-        if (activeFormats.size  && !activeFormats.has(s.data_format)) return false;
-        return true;
+          return true;
       });
 
     if (!filtered.length) {
-      list.innerHTML = `<div style="text-align:center;padding:40px;font-size:13px;color:var(--text2)">Sin fuentes${q || activeStatuses.size || activeFormats.size ? ' para los filtros aplicados' : ''}.</div>`;
+      list.innerHTML = `<div style="text-align:center;padding:40px;font-size:13px;color:var(--text2)">Sin fuentes${q || activeStatuses.size ? ' para los filtros aplicados' : ''}.</div>`;
       return;
     }
 
@@ -209,17 +196,12 @@
     block.dataset.id = source.id;
     block.innerHTML  = `
       <div class="source-header">
-        <span class="dot ${STATUS.get(source.status).dotClass}"
-              title="${STATUS.get(source.status).label}"></span>
         <div class="source-info">
-          <span class="source-name">
-            ${UTILS.escHtml(name)}
-            <span class="source-badge">${source.data_format || ''}</span>
-          </span>
-          ${provider ? `<span class="source-sub">${UTILS.escHtml(provider)}</span>` : ''}
+          <span class="source-name">${UTILS.escHtml(name)}</span>
+          ${source.countries?.length ? `<div class="source-countries">${source.countries.map(c => `<span class="country-pill">${c}</span>`).join('')}</div>` : ''}
         </div>
         <span class="source-meta-right">${source.layers_total || 0} capas</span>
-        <span class="source-arrow">▶</span>
+        <span class="source-arrow"></span>
       </div>
       <div class="source-body"></div>
     `;
@@ -367,7 +349,7 @@
           ${layer.name_alias ? `<span class="layer-alias-sub">→ ${UTILS.escHtml(layer.name_alias)}</span>` : ''}
         </div>
         <span class="layer-geom-badge">${(layer.geometry_type || '').toUpperCase()}</span>
-        <span class="layer-arrow">▶</span>
+        <span class="layer-arrow"></span>
       </div>
       <div class="layer-body"></div>
     `;
