@@ -293,12 +293,14 @@
       SOURCES.deleteSource(src.id);
     });
 
-    // Renderizar capas
+    // Renderizar capas — DocumentFragment evita reflow por cada appendChild
     const acc = body.querySelector(`#layers-${src.id}`);
     if (acc && src.layers?.length) {
+      const fragment = document.createDocumentFragment();
       for (const layer of src.layers) {
-        acc.appendChild(buildLayerBlock(layer));
+        fragment.appendChild(buildLayerBlock(layer));
       }
+      acc.appendChild(fragment);
     }
   }
 
