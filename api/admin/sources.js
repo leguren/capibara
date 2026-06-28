@@ -116,17 +116,21 @@ module.exports = async function handler(req, res) {
   // ── GET/PATCH/DELETE por ID ──────────────────────────────────────────────
   if (sid) {
     if (req.method === 'GET') {
-      // no-store: evita que el browser cachee el detalle de una fuente
       res.setHeader('Cache-Control', 'no-store');
       const srcResult = await db.execute({ sql: 'SELECT * FROM sources WHERE id = ? LIMIT 1', args: [sid] });
       if (!srcResult.rows.length) return err(res, 404, 'Fuente no encontrada');
-      const source = srcResult.rows[0];
-      // Países
+      const source = { ...srcResult.rows[0] };
       const cResult = await db.execute({ sql: 'SELECT country FROM source_countries WHERE source_id = ?', args: [sid] });
       source.countries = cResult.rows.map(r => r.country);
-      // Capas — query simple sin JOIN a fields (evita timeout con 192+ capas)
-      const layersResult = await db.execute({ sql: 'SELECT id, name_source, name_alias, abstract, domain, update_frequency, geometry_type, srs, feature_count, min_lat, max_lat, min_lon, max_lon, included, metadata, notes, discovered_at FROM layers WHERE source_id = ? ORDER BY name_source ASC', args: [sid] });
-      source.layers = layersResult.rows;
+      // Conteos — el array de capas se carga por separado via GET /api/admin/layers?source_id=
+      // para evitar que queries de 100+ filas cuelguen el handler en Vercel Hobby (timeout 10s).
+      const cntResult = await db.execute({
+        sql: 'SELECT COUNT(*) AS total, SUM(CASE WHEN included=1 THEN 1 ELSE 0 END) AS active FROM layers WHERE source_id = ?',
+        args: [sid],
+      });
+      const cnt = cntResult.rows[0] || {};
+      source.layers_total    = Number(cnt.total  || 0);
+      source.layers_included = Number(cnt.active || 0);
       return ok(res, { source });
     }
 
