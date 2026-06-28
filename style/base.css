@@ -30,10 +30,6 @@
   --accent:      #3d52a0;
   --accent-dark: #2e3f7f;
 
-  /* Compatibilidad: brown → accent (para componentes que lo usen) */
-  --brown:       #3d52a0;
-  --brown-dark:  #1a1814;
-  --brown-light: #5567b8;
 
   /* Estados semánticos */
   --ok:          #52b788;   /* conectado, éxito */
@@ -108,7 +104,7 @@ code, pre, .mono {
 ::-webkit-scrollbar       { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: var(--bg2); }
 ::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: var(--radius-full); }
-::-webkit-scrollbar-thumb:hover { background: var(--brown-light); }
+::-webkit-scrollbar-thumb:hover { background: var(--accent); }
 
 /* ── Status dots ────────────────────────────────────────────────────────── */
 /* Usados en source-card para indicar el estado de conexión */
