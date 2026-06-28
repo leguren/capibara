@@ -66,6 +66,7 @@ window.CAPIBARA_API = (() => {
     detectFormat:    (url)        => post(`${ADMIN_API}/detect`, { url }),
 
     // Admin — Layers
+    getSourceLayers: (sourceId)    => get(`${ADMIN_API}/layers?source_id=${sourceId}`),
     updateLayer:     (id, body)   => patch(`${ADMIN_API}/layers?id=${id}`, body),
     getLayerFields:  (id)         => get(`${ADMIN_API}/layers/fields?id=${id}`),
     discoverFields:  (id)         => post(`${ADMIN_API}/layers/discover?id=${id}`, {}),
