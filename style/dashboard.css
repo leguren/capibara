@@ -21,7 +21,7 @@
 .api-key-type      { font-size: 11px; font-family: var(--font-mono); color: var(--text2); }
 .api-key-used      { font-size: 11px; color: var(--text3); white-space: nowrap; }
 .api-key-token-box {
-  background:    var(--brown-dark);
+  background:    var(--text);
   color:         #E5DDD2;
   font-family:   var(--font-mono);
   font-size:     12px;
