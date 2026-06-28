@@ -66,7 +66,7 @@
   width:         28px;
   height:        28px;
   border-radius: 50%;
-  background:    var(--brown);
+  background:    var(--accent);
   overflow:      hidden;
   display:       flex;
   align-items:   center;
@@ -90,7 +90,7 @@
 .page-title {
   font-size:      20px;
   font-weight:    700;
-  color:          var(--brown-dark);
+  color:          var(--text);
   letter-spacing: -0.01em;
 }
 .page-subtitle {
@@ -156,7 +156,7 @@
 .card-title {
   font-size:   15px;
   font-weight: 700;
-  color:       var(--brown-dark);
+  color:       var(--text);
 }
 
 /* ── Tabla ──────────────────────────────────────────────────────────────── */
@@ -221,7 +221,7 @@
   padding:         20px 20px 0;
   margin-bottom:   16px;
 }
-.modal-title { font-size: 16px; font-weight: 700; color: var(--brown-dark); }
+.modal-title { font-size: 16px; font-weight: 700; color: var(--text); }
 .modal-body  { padding: 0 20px; }
 .modal-footer {
   display:         flex;
@@ -257,7 +257,7 @@
 .stat-value {
   font-size:   24px;
   font-weight: 700;
-  color:       var(--brown-dark);
+  color:       var(--text);
   font-family: var(--font-mono);
 }
 .stat-sub {
@@ -268,7 +268,7 @@
 
 /* ── Code blocks ────────────────────────────────────────────────────────── */
 .code-block {
-  background:    var(--brown-dark);
+  background:    var(--text);
   color:         #E5DDD2;
   padding:       14px 16px;
   border-radius: var(--radius-md);
