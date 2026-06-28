@@ -95,6 +95,9 @@
 }
 .filter-pill:hover    { background: var(--bg2); }
 .filter-pill.is-active { border-color: var(--accent); color: var(--accent); background: #fff; }
+.filter-pill[data-value="ok"].is-active         { border-color: var(--ok);    color: var(--ok); }
+.filter-pill[data-value="error"].is-active      { border-color: var(--error); color: var(--error); }
+.filter-pill[data-value="unverified"].is-active { border-color: #f4a261;      color: #f4a261; }
 
 
 /* ── Buscador redondeado ──────────────────────────────────────────── */
@@ -368,6 +371,13 @@
 /* ── Loading inline ───────────────────────────────────────────────── */
 .inline-loading { font-size: 12px; color: var(--text2); padding: 10px 16px 10px 28px; }
 
+
+/* ── Refresh button ──────────────────────────────────────────────── */
+@keyframes spin { to { transform: rotate(360deg); } }
+.refresh-icon { display: inline-block; }
+#btn-refresh.is-refreshing .refresh-icon {
+  animation: spin 0.7s linear infinite;
+}
 /* ── Responsive ───────────────────────────────────────────────────── */
 @media (max-width: 600px) {
   .page-content { padding: 28px 16px 60px; }
