@@ -30,11 +30,10 @@
       <input class="admin-search" id="search-input" placeholder="Buscar fuentes…">
       <button class="search-clear" id="search-clear" title="Borrar búsqueda">×</button>
     </div>
-    <button class="filter-pill primary" id="btn-new-source">Nueva fuente</button>
     <a href="/admin/publish" class="filter-pill">Publicar</a>
   </div>
 
-  <!-- Filtros de estado + actualizar -->
+  <!-- Filtros de estado + actualizar + nueva fuente -->
   <div class="filter-row" style="margin-top:20px">
     <div class="filter-pills" id="status-pills">
       <button class="filter-pill" data-value="ok">
@@ -48,6 +47,7 @@
       </button>
     </div>
     <button class="filter-pill" id="btn-refresh" title="Actualizar">↻ Actualizar</button>
+    <button class="filter-pill primary" id="btn-new-source">Nueva fuente</button>
   </div>
 
   <!-- Filtros de formato -->
@@ -162,13 +162,20 @@
     document.getElementById('count-error').textContent      = sources.filter(s => s.status === 'error').length;
     document.getElementById('count-unverified').textContent = sources.filter(s => s.status === 'unverified' || !s.status).length;
 
-    const filtered = sources.filter(s => {
+    const filtered = sources
+      .slice()
+      .sort((a, b) => {
+        const na = (a.name_alias || a.name_source || '').toLowerCase();
+        const nb = (b.name_alias || b.name_source || '').toLowerCase();
+        return na.localeCompare(nb, 'es');
+      })
+      .filter(s => {
       const name = ((s.name_alias || s.name_source || '') + ' ' + (s.provider_alias || s.provider_source || '')).toLowerCase();
-      if (q && !name.includes(q)) return false;
-      if (activeStatuses.size && !activeStatuses.has(s.status)) return false;
-      if (activeFormats.size  && !activeFormats.has(s.data_format)) return false;
-      return true;
-    });
+        if (q && !name.includes(q)) return false;
+        if (activeStatuses.size && !activeStatuses.has(s.status)) return false;
+        if (activeFormats.size  && !activeFormats.has(s.data_format)) return false;
+        return true;
+      });
 
     if (!filtered.length) {
       list.innerHTML = `<div style="text-align:center;padding:40px;font-size:13px;color:var(--text2)">Sin fuentes${q || activeStatuses.size || activeFormats.size ? ' para los filtros aplicados' : ''}.</div>`;
