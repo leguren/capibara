@@ -9,8 +9,8 @@
       "destination": "/admin/sources/index.html"
     },
     {
-      "source": "/admin/publish",
-      "destination": "/admin/publish/index.html"
+      "source": "/admin/sources/publish",
+      "destination": "/admin/sources/publish/index.html"
     },
     {
       "source": "/login",
