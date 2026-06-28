@@ -91,6 +91,7 @@
   font-family:   var(--font);
   white-space:   nowrap;
   text-decoration: none;
+  gap:           6px;
 }
 .filter-pill:hover    { background: var(--bg2); }
 .filter-pill.is-active { border-color: var(--accent); color: var(--accent); background: #fff; }
