@@ -30,7 +30,7 @@
 .login-logo-text {
   font-size:      24px;
   font-weight:    700;
-  color:          var(--brown-dark);
+  color:          var(--text);
   letter-spacing: -0.02em;
 }
 .login-tagline {
