@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Capibara — Publicar</title>
+  <link rel="stylesheet" href="/style/base.css">
+  <link rel="stylesheet" href="/style/buttons.css">
+  <link rel="stylesheet" href="/style/components.css">
+  <link rel="stylesheet" href="/style/toast.css">
+  <link rel="stylesheet" href="/style/admin.css">
+</head>
+<body>
+
+<div style="height:var(--navbar-h)"></div>
+
+<main class="page-content">
+
+  <!-- Breadcrumb -->
+  <nav class="breadcrumb">
+    <a href="/admin" class="breadcrumb-link">Admin</a>
+    <span class="breadcrumb-sep">/</span>
+    <a href="/admin/sources" class="breadcrumb-link">Fuentes</a>
+    <span class="breadcrumb-sep">/</span>
+    <span class="breadcrumb-current">Publicar</span>
+  </nav>
+
+  <h1 class="admin-title">Publicar</h1>
+
+  <!-- Stats del estado actual -->
+  <div class="stats-row" id="stats-row">
+    <div class="stat-chip"><span class="stat-n" id="stat-sources">—</span> fuentes activas</div>
+    <div class="stat-chip"><span class="stat-n" id="stat-layers">—</span> capas a publicar</div>
+    <div class="stat-chip"><span class="stat-n" id="stat-fields">—</span> campos a publicar</div>
+  </div>
+
+  <!-- Nota de versión + acción -->
+  <div class="filter-row">
+    <input class="input" id="publish-notes" placeholder="Nota de versión (opcional)" style="flex:1">
+    <button class="action-btn primary" id="btn-publish">Publicar ahora</button>
+  </div>
+
+  <!-- Historial de publicaciones -->
+  <div class="sources-list" id="publish-history" style="margin-top:20px"></div>
+
+  <!-- Info contextual -->
+  <div style="margin-top:24px;display:flex;flex-direction:column;gap:10px">
+
+    <div class="source-block">
+      <div class="source-header" style="cursor:default">
+        <div class="source-info">
+          <span class="source-name">¿Cómo funciona?</span>
+        </div>
+      </div>
+      <div class="source-body" style="display:flex">
+        <div class="source-info-section" style="border:none;line-height:1.6;color:var(--text2);font-size:13px">
+          <p style="margin-bottom:8px">La API pública no lee directamente de la base de datos de fuentes — lee el último snapshot publicado.</p>
+          <p style="margin-bottom:8px">Esto significa que podés agregar y modificar fuentes sin afectar a los clientes hasta que hagas una publicación.</p>
+          <p>Cada publicación tiene un <span style="font-family:var(--font-mono);font-size:11px">version_label</span> semántico (v1.0.0, v1.0.1…) y queda registrado con quién la hizo y cuándo.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="source-block">
+      <div class="source-header" style="cursor:default">
+        <div class="source-info">
+          <span class="source-name">Seguridad</span>
+        </div>
+      </div>
+      <div class="source-body" style="display:flex">
+        <div class="source-info-section" style="border:none;line-height:1.6;color:var(--text2);font-size:13px">
+          Las credenciales de conexión (tokens, contraseñas) se eliminan automáticamente del config antes de guardarlo. El snapshot es seguro para auditar.
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</main>
+
+<script src="/config/app.js"></script>
+<script src="/src/api.js"></script>
+<script src="/src/toast.js"></script>
+<script src="/src/utils.js"></script>
+<script src="/src/auth.js"></script>
+
+<script>
+(async () => {
+  'use strict';
+
+  const AUTH  = window.CAPIBARA_AUTH;
+  const API   = window.CAPIBARA_API;
+  const UTILS = window.CAPIBARA_UTILS;
+  const TOAST = window.CAPIBARA_TOAST;
+
+  const user = await AUTH.requireAdmin();
+  if (!user) return;
+
+  // Cargar estado actual
+  async function loadStats() {
+    const { data, ok } = await API.getSources();
+    if (!ok) return;
+    const sources = data.sources || [];
+    document.getElementById('stat-sources').textContent = sources.filter(s => s.status === 'ok' && s.included).length;
+    document.getElementById('stat-layers').textContent  = UTILS.formatNumber(sources.reduce((a, s) => a + (s.layers_included || 0), 0));
+    document.getElementById('stat-fields').textContent  = UTILS.formatNumber(sources.reduce((a, s) => a + (s.fields_included || 0), 0));
+  }
+
+  // Cargar historial
+  async function loadHistory() {
+    const el = document.getElementById('publish-history');
+    const { data, ok } = await API.getPublications();
+    if (!ok || !data?.publications?.length) {
+      el.innerHTML = `<div style="text-align:center;padding:40px;font-size:13px;color:var(--text2)">Sin publicaciones todavía.</div>`;
+      return;
+    }
+
+    el.innerHTML = data.publications.map(p => `
+      <div class="source-block">
+        <div class="source-header" style="cursor:default">
+          <div class="source-info">
+            <span class="source-name">
+              ${UTILS.escHtml(p.version_label)}
+              <span class="source-badge">${UTILS.escHtml(p.published_by_name || p.published_by_email || '')}</span>
+            </span>
+            ${p.notes ? `<span class="source-sub">${UTILS.escHtml(p.notes)}</span>` : ''}
+          </div>
+          <span class="source-meta-right">
+            ${UTILS.formatNumber(p.sources_count)} fuentes · ${UTILS.formatNumber(p.layers_count)} capas · ${UTILS.formatNumber(p.fields_count)} campos
+          </span>
+          <span style="font-size:11px;color:var(--text2);white-space:nowrap">${UTILS.formatDate(p.created_at)}</span>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  await Promise.all([loadStats(), loadHistory()]);
+
+  // Publicar
+  document.getElementById('btn-publish').addEventListener('click', async e => {
+    const btn   = e.currentTarget;
+    const notes = document.getElementById('publish-notes').value.trim();
+    btn.classList.add('btn-loading');
+    btn.disabled = true;
+
+    const { data, ok, error } = await API.publish({ notes: notes || null });
+    btn.classList.remove('btn-loading');
+    btn.disabled = false;
+
+    if (!ok) { TOAST.error('Error al publicar', error); return; }
+    TOAST.ok(`Publicado ${data.version}`, `${data.layers_count} capas, ${data.fields_count} campos.`);
+    document.getElementById('publish-notes').value = '';
+    await Promise.all([loadStats(), loadHistory()]);
+  });
+
+})();
+</script>
+
+</body>
+</html>
