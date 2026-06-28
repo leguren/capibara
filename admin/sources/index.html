@@ -37,17 +37,17 @@
   <div class="filter-row" style="margin-top:20px">
     <div class="filter-pills" id="status-pills">
       <button class="filter-pill" data-value="ok">
-        <span class="dot dot-ok"></span><span id="count-ok">0</span>conectadas
+        <span class="dot dot-ok"></span><span id="count-ok">0</span>en línea
       </button>
       <button class="filter-pill" data-value="error">
-        <span class="dot dot-error"></span><span id="count-error">0</span>con error
+        <span class="dot dot-error"></span><span id="count-error">0</span>sin respuesta
       </button>
       <button class="filter-pill" data-value="unverified">
         <span class="dot dot-unverified"></span><span id="count-unverified">0</span>sin verificar
       </button>
     </div>
-    <button class="filter-pill" id="btn-refresh" title="Actualizar">↻ Actualizar</button>
-    <button class="filter-pill primary" id="btn-new-source">Nueva fuente</button>
+    <button class="filter-pill" id="btn-refresh" title="Actualizar"><span class="refresh-icon">↻</span>Actualizar</button>
+    <button class="filter-pill" id="btn-new-source">Nueva fuente</button>
   </div>
 
   <!-- Filtros de formato -->
@@ -140,10 +140,10 @@
 
   document.getElementById('btn-refresh').addEventListener('click', async () => {
     const btn = document.getElementById('btn-refresh');
-    btn.textContent = '↻';
+    btn.classList.add('is-refreshing');
     btn.disabled = true;
     await SOURCES.load();
-    btn.textContent = '↻ Actualizar';
+    btn.classList.remove('is-refreshing');
     btn.disabled = false;
   });
 
