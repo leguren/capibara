@@ -24,9 +24,20 @@ module.exports = async function handler(req, res) {
   const session = requireAdmin(req, res);
   if (!session) return;
 
-  const db      = getDb();
-  const sub     = req.query.sub;
-  const layerId = req.query.id;
+  const db       = getDb();
+  const sub      = req.query.sub;
+  const layerId  = req.query.id;
+  const sourceId = req.query.source_id;
+
+  // ── LIST LAYERS BY SOURCE ─────────────────────────────────────────────────
+  // GET /api/admin/layers?source_id=xxx — carga liviana solo con columnas del panel
+  if (req.method === 'GET' && sourceId) {
+    const result = await db.execute({
+      sql: 'SELECT id, name_source, name_alias, domain, update_frequency, geometry_type, included FROM layers WHERE source_id = ? ORDER BY name_source ASC',
+      args: [sourceId],
+    });
+    return ok(res, { layers: result.rows });
+  }
 
   if (!layerId) return err(res, 400, 'Se requiere id');
 
