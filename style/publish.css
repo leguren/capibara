@@ -28,7 +28,7 @@
   font-family: var(--font-mono);
   font-weight: 600;
   font-size:   13px;
-  color:       var(--brown-dark);
+  color:       var(--text);
   min-width:   56px;
 }
 .publish-meta { flex: 1; font-size: 12px; color: var(--text2); }
@@ -43,6 +43,6 @@
   margin-bottom: 24px;
   transition:   border-color var(--transition);
 }
-.publish-btn-area:hover { border-color: var(--brown-light); }
-.publish-btn-title  { font-size: 15px; font-weight: 700; color: var(--brown-dark); margin-bottom: 6px; }
+.publish-btn-area:hover { border-color: var(--accent); }
+.publish-btn-title  { font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
 .publish-btn-desc   { font-size: 12px; color: var(--text2); margin-bottom: 16px; }
