@@ -16,7 +16,7 @@
   align-items:   flex-start;
   gap:           10px;
   padding:       12px 14px;
-  background:    var(--brown-dark);
+  background:    var(--text);
   color:         #fff;
   border-radius: var(--radius-md);
   box-shadow:    var(--shadow-lg);
