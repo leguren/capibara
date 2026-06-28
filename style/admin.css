@@ -212,12 +212,33 @@
 }
 
 .source-info   { flex: 1; min-width: 0; }
-.source-name   { font-size: 14px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; gap: 7px; }
+.source-name   { font-size: 14px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+.source-countries { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 3px; }
+.country-pill {
+  font-family:   var(--font-mono);
+  font-size:     10px;
+  font-weight:   600;
+  color:         var(--text2);
+  background:    var(--bg2);
+  border:        1px solid var(--border);
+  border-radius: 4px;
+  padding:       1px 5px;
+  letter-spacing: 0.03em;
+}
 .source-sub    { font-size: 11px; color: var(--text2); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .source-badge  { font-family: var(--font-mono); font-size: 11px; color: var(--text2); font-weight: 400; }
 .source-meta-right { font-family: var(--font-mono); font-size: 11px; color: var(--text2); white-space: nowrap; flex-shrink: 0; }
-.source-arrow  { color: var(--text3); flex-shrink: 0; font-size: 13px; transition: transform var(--transition); }
-.source-block.open .source-arrow { transform: rotate(90deg); }
+.source-arrow {
+  font-family:  'Material Symbols Outlined';
+  font-size:    20px;
+  font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 20;
+  color:        var(--text3);
+  flex-shrink:  0;
+  user-select:  none;
+  line-height:  1;
+}
+.source-arrow::before               { content: 'expand_more'; }
+.source-block.open .source-arrow::before { content: 'expand_less'; }
 
 /* ── Source body ──────────────────────────────────────────────────── */
 .source-body {
@@ -309,8 +330,17 @@
 .layer-name      { font-size: 12px; font-family: var(--font-mono); color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
 .layer-alias-sub { font-size: 11px; color: var(--text2); display: block; margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .layer-geom-badge { font-size: 10px; font-family: var(--font-mono); color: var(--text3); white-space: nowrap; flex-shrink: 0; }
-.layer-arrow   { color: var(--text3); flex-shrink: 0; font-size: 12px; transition: transform var(--transition); }
-.layer-block.open .layer-arrow { transform: rotate(90deg); }
+.layer-arrow {
+  font-family:  'Material Symbols Outlined';
+  font-size:    18px;
+  font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 20;
+  color:        var(--text3);
+  flex-shrink:  0;
+  user-select:  none;
+  line-height:  1;
+}
+.layer-arrow::before              { content: 'expand_more'; }
+.layer-block.open .layer-arrow::before { content: 'expand_less'; }
 
 /* ── Layer body ───────────────────────────────────────────────────── */
 .layer-body {
