@@ -454,9 +454,8 @@
 
       el.innerHTML = sources.map(s => {
         const name      = s.name_alias || s.name_source || '(sin nombre)';
-        const fmt       = s.data_format || '';
-        const pillClass = fmt ? `pill-${fmt.replace('_','-')}` : 'pill-default';
-        const pillHtml  = fmt ? `<span class="pill ${pillClass}">${fmt.replace('_',' ')}</span>` : '';
+        const fmt      = s.data_format || '';
+        const pillHtml = fmt ? `<span class="pill pub-format-pill">${fmt.replace('_',' ')}</span>` : '';
         return `
           <div class="pub-source-block" data-source-id="${s.id}">
             <div class="pub-source-row js-pub-src-toggle">
