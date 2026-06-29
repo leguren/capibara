@@ -345,6 +345,7 @@
 }
 .layer-row:hover { background: var(--bg2); }
 .layer-block.open .layer-row { background: var(--bg2); }
+.layer-name-wrap { flex: 1; min-width: 0; }
 .layer-arrow {
   font-family:            'Material Symbols Outlined';
   font-size:              18px;
