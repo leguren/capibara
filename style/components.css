@@ -205,7 +205,7 @@
   background:    var(--bg);
   border-radius: var(--radius-lg);
   width:         100%;
-  max-width:     520px;
+  max-width:     480px;
   max-height:    90vh;
   overflow-y:    auto;
   box-shadow:    var(--shadow-lg);
