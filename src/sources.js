@@ -57,23 +57,26 @@ window.CAPIBARA_SOURCES = (() => {
           </div>
           <div class="modal-field">
             <label class="modal-label">Formato</label>
-            <select class="select" id="src-format">
-              <option value="">unknown</option>
-              <option value="arcgis_rest">arcgis rest</option>
-              <option value="csv">csv</option>
-              <option value="geojson">geojson</option>
-              <option value="json">json</option>
-              <option value="wfs">wfs</option>
-            </select>
+            <div class="dd-wrap" id="fmt-wrap">
+              <select class="select" id="src-format">
+                <option value="">unknown</option>
+                <option value="arcgis_rest">arcgis rest</option>
+                <option value="csv">csv</option>
+                <option value="geojson">geojson</option>
+                <option value="json">json</option>
+                <option value="wfs">wfs</option>
+              </select>
+              <span class="dd-icon">expand_more</span>
+            </div>
           </div>
           <div class="modal-field">
             <label class="modal-label">Países</label>
-            <div style="position:relative" id="ctry-wrap">
+            <div class="dd-wrap" id="ctry-wrap">
               <button type="button" class="select" id="ctry-trigger"
-                style="text-align:left;cursor:pointer;display:flex;align-items:center">
-                <span id="ctry-display" style="flex:1;color:var(--text2)">Seleccioná países…</span>
-                <span style="color:var(--text3)">▾</span>
+                style="text-align:left;cursor:pointer;padding-right:36px">
+                <span id="ctry-display" style="color:var(--text2)">Seleccioná países…</span>
               </button>
+              <span class="dd-icon">expand_more</span>
               <div id="ctry-dropdown" style="display:none;position:absolute;top:calc(100% + 2px);left:0;right:0;
                 background:var(--bg);border:1px solid var(--border);z-index:100;max-height:220px;overflow-y:auto"></div>
             </div>
@@ -127,13 +130,24 @@ window.CAPIBARA_SOURCES = (() => {
       })
     );
 
+    const ctryWrap = overlay.querySelector('#ctry-wrap');
     overlay.querySelector('#ctry-trigger').addEventListener('click', e => {
       e.stopPropagation();
-      ctryDD.style.display = ctryDD.style.display === 'none' ? 'block' : 'none';
+      const open = ctryDD.style.display === 'none';
+      ctryDD.style.display = open ? 'block' : 'none';
+      ctryWrap.classList.toggle('open', open);
     });
     overlay.addEventListener('click', e => {
-      if (!e.target.closest('#ctry-wrap')) ctryDD.style.display = 'none';
+      if (!e.target.closest('#ctry-wrap')) {
+        ctryDD.style.display = 'none';
+        ctryWrap.classList.remove('open');
+      }
     });
+
+    // Rotar ícono del formato al abrir/cerrar el select nativo
+    const fmtWrap = overlay.querySelector('#fmt-wrap');
+    overlay.querySelector('#src-format').addEventListener('focus', () => fmtWrap.classList.add('open'));
+    overlay.querySelector('#src-format').addEventListener('blur',  () => fmtWrap.classList.remove('open'));
 
     document.body.appendChild(overlay);
 
