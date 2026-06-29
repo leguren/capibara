@@ -153,25 +153,29 @@
         <div class="modal-body">
           <div class="modal-field">
             <label class="modal-label">Nombre de la capa</label>
-            <span class="modal-readonly">${UTILS.escHtml(layer.name_source)}</span>
+            <input class="input" value="${UTILS.escHtml(layer.name_source)}" readonly>
           </div>
-          <div style="border-top:1px solid var(--border);margin:12px 0"></div>
           <div class="modal-field">
-            <label class="modal-label" for="lyr-alias">Alias (nombre legible)</label>
-            <input class="input" id="lyr-alias" value="${UTILS.escHtml(layer.name_alias || '')}" placeholder="Nombre visible en el panel">
+            <label class="modal-label" for="lyr-alias">Alias</label>
+            <input class="input" id="lyr-alias" value="${UTILS.escHtml(layer.name_alias || '')}" placeholder="Pasos internacionales de Argentina">
           </div>
           <div class="modal-field">
             <label class="modal-label" for="lyr-domain">Dominio temático</label>
-            <select class="select" id="lyr-domain">
-              <option value="">— sin dominio —</option>
-              ${DOM.options()}
-            </select>
+            <div class="dd-wrap">
+              <select class="select" id="lyr-domain">
+                ${DOM.options()}
+              </select>
+              <span class="dd-icon">expand_more</span>
+            </div>
           </div>
           <div class="modal-field">
             <label class="modal-label" for="lyr-freq">Frecuencia de actualización</label>
-            <select class="select" id="lyr-freq">
-              ${FREQ.options()}
-            </select>
+            <div class="dd-wrap">
+              <select class="select" id="lyr-freq">
+                ${FREQ.options()}
+              </select>
+              <span class="dd-icon">expand_more</span>
+            </div>
           </div>
         </div>
         <div class="modal-footer">
