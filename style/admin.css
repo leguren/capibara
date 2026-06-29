@@ -688,38 +688,25 @@
 .pub-version-date { font-family: var(--font-mono); }
 
 /* ── Detalle expandido de versión ────────────────────────────────── */
-.pub-detail-row {
-  display:  flex;
-  gap:      8px;
-  padding:  6px 12px 2px;
-  font-size: 11px;
-  align-items: baseline;
+.pub-version-meta-row {
+  display:     flex;
+  align-items: center;
+  gap:         8px;
+  padding:     8px 12px;
 }
-.pub-detail-label { color: var(--text3); flex-shrink: 0; }
-.pub-detail-value { font-family: var(--font-mono); color: var(--text2); word-break: break-all; }
-
-.pub-snap-sources { padding: 4px 0 4px; }
-.pub-snap-source  { padding: 4px 0; }
-.pub-snap-source-name {
-  padding:     4px 12px;
-  font-size:   12px;
-  font-weight: 500;
-  color:       var(--text);
+.pub-version-by {
+  flex:        1;
+  display:     flex;
+  align-items: center;
+  gap:         6px;
+  min-width:   0;
 }
 
 /* ── Eliminar peligro (layer-btn.danger) ─────────────────────────── */
 .layer-btn.danger { color: var(--error); border-color: rgba(230,57,70,0.3); }
 .layer-btn.danger:hover { background: rgba(230,57,70,0.05); border-color: rgba(230,57,70,0.5); color: var(--error); }
 
-/* ── Snapshot de versión previa (lista anidada) ─────────────────── */
-.pub-snap-list {
-  border-radius: 0;
-  border-left:   none;
-  border-right:  none;
-  border-bottom: none;
-  margin-top:    8px;
-}
-.pub-snap-list .pub-source-block:first-child .pub-source-row { border-top: 1px solid var(--border); }
+/* ── Snapshot de versión previa: eliminado ─────────────────────── */
 
 /* ── Pill neutra formato (modal Publicar) ────────────────────────── */
 .pub-format-pill {
