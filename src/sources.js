@@ -147,9 +147,11 @@ window.CAPIBARA_SOURCES = (() => {
     // Rotar ícono del formato al abrir/cerrar el select nativo
     const fmtWrap = overlay.querySelector('#fmt-wrap');
     const fmtSel  = overlay.querySelector('#src-format');
-    fmtSel.addEventListener('focus',  () => fmtWrap.classList.add('open'));
-    fmtSel.addEventListener('blur',   () => fmtWrap.classList.remove('open'));
-    fmtSel.addEventListener('change', () => { fmtWrap.classList.remove('open'); fmtSel.blur(); });
+    const closeFmt = () => fmtWrap.classList.remove('open');
+    fmtSel.addEventListener('mousedown', () => fmtWrap.classList.add('open'));
+    fmtSel.addEventListener('change', closeFmt);
+    fmtSel.addEventListener('blur',   closeFmt);
+    document.addEventListener('mousedown', e => { if (!fmtWrap.contains(e.target)) closeFmt(); }, true);
 
     document.body.appendChild(overlay);
 
