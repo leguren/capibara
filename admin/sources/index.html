@@ -901,7 +901,7 @@
     const { data, ok } = await API.getLayerFields(layer.id);
     if (!ok || !data?.fields?.length) {
       body.innerHTML = `
-        <div style="padding:12px 16px;display:flex;align-items:center;gap:12px">
+        <div style="padding:12px 16px;display:flex;align-items:center;justify-content:space-between">
           <span style="font-size:13px;color:var(--text2)">Sin campos descubiertos.</span>
           <button class="field-alias-save js-do-discover-fields">Descubrir campos</button>
         </div>
