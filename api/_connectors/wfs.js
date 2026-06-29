@@ -185,45 +185,43 @@ function parseDescribeFeatureType(xml) {
  *       cuando sus APIs soporten introspección de esquema en batch.
  */
 function parseGeomTypes(xml) {
-  const GML_MAP = {
-    // Puntos
-    'gml:PointPropertyType':              'POINT',
-    'gml:MultiPointPropertyType':         'POINT',
-    // Líneas
-    'gml:CurvePropertyType':              'LINE',
-    'gml:MultiCurvePropertyType':         'LINE',
-    'gml:LineStringPropertyType':         'LINE',
-    'gml:MultiLineStringPropertyType':    'LINE',
-    // Polígonos
-    'gml:SurfacePropertyType':            'POLYGON',
-    'gml:MultiSurfacePropertyType':       'POLYGON',
-    'gml:PolygonPropertyType':            'POLYGON',
-    'gml:MultiPolygonPropertyType':       'POLYGON',
-    'gml:CompositeSurfacePropertyType':   'POLYGON',
-    // Geometría genérica
-    'gml:GeometryPropertyType':           'GEOMETRY',
-    'gml:AbstractGeometryType':           'GEOMETRY',
-    'gml:GeometryCollectionPropertyType': 'GEOMETRY',
+  // Mapa de sufijos GML → tipo de geometría
+  // Buscamos el SUFIJO (:MultiSurfacePropertyType") sin importar el prefijo de namespace
+  // para soportar servidores que usan prefijos distintos a "gml:" (ej. "geom:", "g:", etc.)
+  const GML_SUFFIXES = {
+    'PointPropertyType':              'POINT',
+    'MultiPointPropertyType':         'POINT',
+    'CurvePropertyType':              'LINE',
+    'MultiCurvePropertyType':         'LINE',
+    'LineStringPropertyType':         'LINE',
+    'MultiLineStringPropertyType':    'LINE',
+    'SurfacePropertyType':            'POLYGON',
+    'MultiSurfacePropertyType':       'POLYGON',
+    'PolygonPropertyType':            'POLYGON',
+    'MultiPolygonPropertyType':       'POLYGON',
+    'CompositeSurfacePropertyType':   'POLYGON',
+    'GeometryPropertyType':           'GEOMETRY',
+    'AbstractGeometryType':           'GEOMETRY',
+    'GeometryCollectionPropertyType': 'GEOMETRY',
   };
 
   const result = {};
-  // Cada complexType corresponde a una capa. Su nombre es "NombreCapaType".
-  const blocks = xml.split(/<(?:xsd?:)complexType/);
+  const blocks = xml.split(/<(?:xsd?:)complexType\b/);
 
   for (let i = 1; i < blocks.length; i++) {
-    const block    = blocks[i];
-    const nameM    = block.match(/\bname="([^"]+)"/);
+    const block  = blocks[i];
+    const nameM  = block.match(/\bname="([^"]+)"/);
     if (!nameM) continue;
 
-    const typeName = nameM[1]; // e.g. "LocalidadType" o "ign_LocalidadType"
-    // Quitar sufijo "Type" y posible prefijo de namespace
+    const typeName = nameM[1];
     const stripped = typeName.replace(/Type$/, '');
     const local    = stripped.includes('_') ? stripped.slice(stripped.indexOf('_') + 1) : stripped;
 
-    for (const [gmlType, geomLabel] of Object.entries(GML_MAP)) {
-      if (block.includes(`type="${gmlType}"`)) {
+    for (const [suffix, geomLabel] of Object.entries(GML_SUFFIXES)) {
+      // Buscar ":SufijoTipo" en el bloque — cualquier prefijo de namespace
+      if (block.includes(`:${suffix}"`)) {
         result[local]    = geomLabel;
-        result[stripped] = geomLabel; // clave alternativa
+        result[stripped] = geomLabel;
         break;
       }
     }
