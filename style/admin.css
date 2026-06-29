@@ -309,6 +309,16 @@
 .action-btn.danger:hover { background: rgba(230,57,70,0.05); border-color: rgba(230,57,70,0.5); }
 
 /* ── Source body: top bar con tipo + acciones ────────────────────── */
+/* Pills de info de fuente: sin relleno ni color */
+.source-top-bar .pill {
+  background:   transparent;
+  border:       1px solid var(--border);
+  color:        var(--text2);
+  font-weight:  400;
+  font-size:    11px;
+  padding:      2px 8px;
+}
+
 .source-top-bar {
   display:         flex;
   align-items:     center;
@@ -321,16 +331,18 @@
 .source-type-pills  { display: flex; gap: 6px; align-items: center; }
 .source-top-actions { display: flex; gap: 6px; align-items: center; }
 
-/* ── Layer row (diseño plano) ────────────────────────────────────── */
+/* ── Layer estructura ────────────────────────────────────────────── */
+.layer-block { border-top: 1px solid var(--bg3); }
+.layer-block:first-child { border-top: none; }
 .layer-row {
   display:     flex;
   align-items: center;
   gap:         10px;
   padding:     8px 16px;
-  border-top:  1px solid var(--bg3);
+  cursor:      pointer;
 }
-.layer-row:first-child { border-top: none; }
 .layer-row:hover { background: var(--bg2); }
+.layer-block.open .layer-row { background: var(--bg2); }
 
 .layer-check {
   width:       15px;
