@@ -135,6 +135,91 @@
     btn.disabled = false;
   });
 
+  // ── Modal de edición de capa ──────────────────────────────────────────
+  function openLayerEditModal(layer, block) {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.innerHTML = `
+      <div class="modal" style="max-width:480px">
+        <div class="modal-header">
+          <span class="modal-title">Editar capa</span>
+          <button class="modal-close js-close">
+            <span class="material-symbols-outlined" style="font-size:18px;line-height:1">close</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="modal-field">
+            <label class="modal-label">Nombre de la capa</label>
+            <span class="modal-readonly">${UTILS.escHtml(layer.name_source)}</span>
+          </div>
+          <div style="border-top:1px solid var(--border);margin:12px 0"></div>
+          <div class="modal-field">
+            <label class="modal-label" for="lyr-alias">Alias (nombre legible)</label>
+            <input class="input" id="lyr-alias" value="${UTILS.escHtml(layer.name_alias || '')}" placeholder="Nombre visible en el panel">
+          </div>
+          <div class="modal-field">
+            <label class="modal-label" for="lyr-domain">Dominio temático</label>
+            <select class="select" id="lyr-domain">
+              <option value="">— sin dominio —</option>
+              ${DOM.options()}
+            </select>
+          </div>
+          <div class="modal-field">
+            <label class="modal-label" for="lyr-freq">Frecuencia de actualización</label>
+            <select class="select" id="lyr-freq">
+              ${FREQ.options()}
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="action-btn js-cancel">Cancelar</button>
+          <button class="action-btn primary js-save">Guardar</button>
+        </div>
+      </div>
+    `;
+
+    overlay.querySelector('#lyr-domain').value = layer.domain || '';
+    overlay.querySelector('#lyr-freq').value   = layer.update_frequency || 'unknown';
+
+    const close = () => document.body.removeChild(overlay);
+    overlay.querySelector('.js-close').addEventListener('click', close);
+    overlay.querySelector('.js-cancel').addEventListener('click', close);
+    overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+
+    overlay.querySelector('.js-save').addEventListener('click', async () => {
+      const alias  = overlay.querySelector('#lyr-alias').value.trim() || null;
+      const domain = overlay.querySelector('#lyr-domain').value || null;
+      const freq   = overlay.querySelector('#lyr-freq').value || 'unknown';
+      const saveBtn = overlay.querySelector('.js-save');
+      saveBtn.classList.add('btn-loading'); saveBtn.disabled = true;
+
+      const { ok, error } = await API.updateLayer(layer.id, { name_alias: alias, domain, update_frequency: freq });
+      saveBtn.classList.remove('btn-loading'); saveBtn.disabled = false;
+      if (!ok) { TOAST.error('Error', error); return; }
+
+      Object.assign(layer, { name_alias: alias, domain, update_frequency: freq });
+      // Actualizar nombre en la fila
+      if (block) {
+        const displayName = alias || layer.name_source;
+        const nameEl = block.querySelector('.layer-name');
+        if (nameEl) nameEl.textContent = displayName;
+        const sourceEl = block.querySelector('.layer-name-source');
+        if (alias && !sourceEl) {
+          const span = document.createElement('span');
+          span.className = 'layer-name-source';
+          span.textContent = layer.name_source;
+          block.querySelector('.layer-name-wrap')?.appendChild(span);
+        } else if (!alias && sourceEl) {
+          sourceEl.remove();
+        }
+      }
+      TOAST.ok('Guardado', 'Capa actualizada.');
+      close();
+    });
+
+    document.body.appendChild(overlay);
+  }
+
   // ── Modal de edición de fuente ────────────────────────────────────────
   function openEditModal(src) {
     const connParams = (() => { try { return typeof src.connection_params === 'string' ? JSON.parse(src.connection_params) : (src.connection_params || {}); } catch { return {}; } })();
@@ -423,6 +508,8 @@
           ${showSource ? `<span class="layer-name-source">${UTILS.escHtml(layer.name_source)}</span>` : ''}
         </div>
         <span class="layer-count">${count}</span>
+        <button class="layer-btn js-layer-edit">Editar</button>
+        <button class="layer-btn js-discover-fields-btn">Campos</button>
         <span class="layer-arrow"></span>
       </div>
       <div class="layer-body"></div>
@@ -437,8 +524,28 @@
     });
 
     block.querySelector('.layer-row').addEventListener('click', e => {
-      if (e.target.closest('.layer-check')) return;
+      if (e.target.closest('.layer-check') || e.target.closest('.layer-btn')) return;
       toggleLayer(block, layer);
+    });
+
+    block.querySelector('.js-layer-edit').addEventListener('click', e => {
+      e.stopPropagation();
+      openLayerEditModal(layer, block);
+    });
+
+    block.querySelector('.js-discover-fields-btn').addEventListener('click', async e => {
+      e.stopPropagation();
+      const btn = e.currentTarget;
+      btn.classList.add('btn-loading'); btn.disabled = true;
+      const { data, ok, error } = await API.discoverFields(layer.id);
+      btn.classList.remove('btn-loading'); btn.disabled = false;
+      if (!ok) { TOAST.error('Error', error); return; }
+      TOAST.ok(data.added > 0 ? 'Campos descubiertos' : 'Campos actualizados', `${data.added} nuevos.`);
+      // Invalidar caché y refrescar si la capa está abierta
+      loadedFields.delete(layer.id);
+      if (block.classList.contains('open')) {
+        openLayerFields(block.querySelector('.layer-body'), layer);
+      }
     });
 
     return block;
@@ -450,134 +557,71 @@
 
     if (!isOpen) { openLayers.delete(layer.id); body.innerHTML = ''; return; }
     openLayers.add(layer.id);
-    renderLayerBody(body, layer);
+    openLayerFields(body, layer);
   }
 
-  function renderLayerBody(body, layer) {
-    body.innerHTML = `
-      <div class="layer-form-row">
-        <span class="layer-form-label">alias</span>
-        <input class="input js-layer-alias" value="${UTILS.escHtml(layer.name_alias || '')}" placeholder="Nombre legible">
-      </div>
-      <div class="layer-form-row">
-        <span class="layer-form-label">dominio</span>
-        <select class="select js-layer-domain" style="width:180px">
-          <option value="">— sin dominio —</option>
-          ${DOM.options()}
-        </select>
-      </div>
-      <div class="layer-form-row">
-        <span class="layer-form-label">frecuencia</span>
-        <select class="select js-layer-freq" style="width:180px">
-          ${FREQ.options()}
-        </select>
-      </div>
-      <div class="layer-actions">
-        <button class="action-btn js-discover-fields">Descubrir campos</button>
-        <span class="js-fields-info" style="font-size:11px;color:var(--text2)"></span>
-      </div>
-      <div class="fields-list js-fields-list" style="display:none"></div>
-    `;
-
-    body.querySelector('.js-layer-domain').value = layer.domain || '';
-    body.querySelector('.js-layer-freq').value   = layer.update_frequency || 'unknown';
-
-    // Alias
-    let t;
-    body.querySelector('.js-layer-alias').addEventListener('input', e => {
-      clearTimeout(t);
-      t = setTimeout(async () => {
-        await API.updateLayer(layer.id, { name_alias: e.target.value.trim() || null });
-      }, 800);
-    });
-
-    // Domain
-    body.querySelector('.js-layer-domain').addEventListener('change', async e => {
-      await API.updateLayer(layer.id, { domain: e.target.value || null });
-    });
-
-    // Freq
-    body.querySelector('.js-layer-freq').addEventListener('change', async e => {
-      await API.updateLayer(layer.id, { update_frequency: e.target.value || 'unknown' });
-    });
-
-    // Discover fields
-    body.querySelector('.js-discover-fields').addEventListener('click', async e => {
-      const btn = e.currentTarget;
-      btn.classList.add('btn-loading');
-      btn.disabled = true;
-
-      // Si ya hay campos cargados → solo mostrar; si no → descubrir
-      if (loadedFields.has(layer.id)) {
-        btn.classList.remove('btn-loading');
-        btn.disabled = false;
-        renderFields(body, layer.id);
-        return;
-      }
-
-      const { data, ok, error } = await API.discoverFields(layer.id);
-      btn.classList.remove('btn-loading');
-      btn.disabled = false;
-      if (!ok) { TOAST.error('Error', error); return; }
-      TOAST.ok('Campos descubiertos', `${data.added} nuevos, ${data.skipped} ya existían.`);
-      await loadAndShowFields(body, layer.id);
-    });
-  }
-
-  async function loadAndShowFields(body, layerId) {
-    const info    = body.querySelector('.js-fields-info');
-    const listEl  = body.querySelector('.js-fields-list');
-    if (info) info.textContent = 'Cargando campos…';
-
-    const { data, ok } = await API.getLayerFields(layerId);
+  async function openLayerFields(body, layer) {
+    body.innerHTML = `<div class="inline-loading" style="padding:10px 16px">Cargando campos…</div>`;
+    if (loadedFields.has(layer.id)) { renderFields(body, layer.id); return; }
+    const { data, ok } = await API.getLayerFields(layer.id);
     if (!ok || !data?.fields?.length) {
-      if (info) info.textContent = 'Sin campos descubiertos.';
+      body.innerHTML = `<div class="inline-loading" style="padding:10px 16px">Sin campos descubiertos. Usá el botón Campos en la fila.</div>`;
+      return;
+    }
+    loadedFields.set(layer.id, data.fields);
+    renderFields(body, layer.id);
+  }
+
+
+  function renderFields(body, layerId) {
+    const fields = loadedFields.get(layerId) || [];
+    if (!fields.length) {
+      body.innerHTML = `<div class="inline-loading" style="padding:10px 16px">Sin campos. Usá el botón Campos en la fila.</div>`;
       return;
     }
 
-    loadedFields.set(layerId, data.fields);
-    renderFields(body, layerId);
-  }
+    body.innerHTML = '';
+    const frag = document.createDocumentFragment();
 
-  function renderFields(body, layerId) {
-    const fields  = loadedFields.get(layerId) || [];
-    const info    = body.querySelector('.js-fields-info');
-    const listEl  = body.querySelector('.js-fields-list');
+    for (const f of fields) {
+      const row = document.createElement('div');
+      row.className  = 'field-row';
+      row.dataset.id = f.id;
+      row.innerHTML  = `
+        <input type="checkbox" class="layer-check js-field-check" ${f.included ? 'checked' : ''}
+               title="${f.included ? 'Activo' : 'Inactivo'}">
+        <div class="field-name-wrap">
+          <span class="field-name">${UTILS.escHtml(f.name_source)}</span>
+          <span class="field-type">${f.type || '?'}</span>
+        </div>
+        <div class="field-alias-wrap">
+          <input class="field-alias-input js-field-alias" value="${UTILS.escHtml(f.name_alias || '')}" placeholder="alias">
+          <button class="field-alias-save js-field-save">Guardar</button>
+        </div>
+      `;
 
-    if (info) info.textContent = `${fields.filter(f => f.included).length}/${fields.length} campos activos`;
-
-    listEl.style.display = '';
-    listEl.innerHTML = fields.map(f => `
-      <div class="field-row" data-id="${f.id}">
-        <label class="toggle" title="${f.included ? 'Activo' : 'Inactivo'}">
-          <input type="checkbox" class="js-toggle-field" data-id="${f.id}" ${f.included ? 'checked' : ''}>
-          <span class="toggle-track"><span class="toggle-thumb"></span></span>
-        </label>
-        <span class="field-name" title="${UTILS.escHtml(f.name_source)}">${UTILS.escHtml(f.name_source)}</span>
-        <span class="field-type">${f.type || '?'}</span>
-        <input class="input field-alias-input js-field-alias" data-id="${f.id}"
-               value="${UTILS.escHtml(f.name_alias || '')}" placeholder="alias">
-      </div>
-    `).join('');
-
-    // Toggle field
-    listEl.querySelectorAll('.js-toggle-field').forEach(cb => {
-      cb.addEventListener('change', async e => {
-        const { ok, error } = await API.updateField(e.target.dataset.id, { included: e.target.checked ? 1 : 0 });
+      row.querySelector('.js-field-check').addEventListener('change', async e => {
+        const { ok, error } = await API.updateField(f.id, { included: e.target.checked ? 1 : 0 });
         if (!ok) { TOAST.error('Error', error); e.target.checked = !e.target.checked; }
+        else { f.included = e.target.checked ? 1 : 0; }
       });
-    });
 
-    // Field alias
-    listEl.querySelectorAll('.js-field-alias').forEach(inp => {
-      let t;
-      inp.addEventListener('input', e => {
-        clearTimeout(t);
-        t = setTimeout(async () => {
-          await API.updateField(e.target.dataset.id, { name_alias: e.target.value.trim() || null });
-        }, 800);
+      row.querySelector('.js-field-save').addEventListener('click', async e => {
+        const inp   = row.querySelector('.js-field-alias');
+        const alias = inp.value.trim() || null;
+        const btn   = e.currentTarget;
+        btn.classList.add('btn-loading'); btn.disabled = true;
+        const { ok, error } = await API.updateField(f.id, { name_alias: alias });
+        btn.classList.remove('btn-loading'); btn.disabled = false;
+        if (!ok) { TOAST.error('Error', error); return; }
+        f.name_alias = alias;
+        TOAST.ok('Guardado');
       });
-    });
+
+      frag.appendChild(row);
+    }
+
+    body.appendChild(frag);
   }
 
 })();
