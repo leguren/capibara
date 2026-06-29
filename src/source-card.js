@@ -95,9 +95,9 @@ window.CAPIBARA_LAYER_ROW = (() => {
             ${FREQ.options()}
           </select>
         </div>
-        <div style="display:flex;gap:8px;align-items:center;margin-top:4px">
-          <button class="btn btn-secondary btn-sm js-discover-fields">Descubrir campos</button>
+        <div style="display:flex;gap:8px;align-items:center;justify-content:space-between;margin-top:4px">
           <span class="js-fields-count" style="font-size:11px;color:var(--text2)"></span>
+          <button class="btn btn-secondary btn-sm js-discover-fields">Descubrir campos</button>
         </div>
         <div class="fields-mini js-fields-mini" hidden></div>
       </div>
