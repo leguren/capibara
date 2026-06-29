@@ -354,6 +354,11 @@
 
 /* ── Layer block (legado, en desuso) ─────────────────────────────── */
 .layers-section { display: flex; flex-direction: column; }
+.layers-accordion {
+  max-height:   224px;
+  overflow-y:   auto;
+  overscroll-behavior: contain;
+}
 .layers-header  { padding: 8px 16px 4px; font-size: 11px; color: var(--text2); display: flex; justify-content: space-between; }
 
 .layer-block { border-top: 1px solid var(--bg3); }
