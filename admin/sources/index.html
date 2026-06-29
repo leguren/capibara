@@ -538,17 +538,16 @@
             const pubId = block.dataset.pubId;
             const pub   = data.publications.find(p => p.id === pubId);
             const isActivePub = pubId === data.publications[0]?.id;
-            const catalogLink = isActivePub ? `<a href="/api/geo/1/catalog" target="_blank" class="pub-catalog-link">Ver catálogo</a>` : '';
             const notesHtml = pub?.notes ? `<div class="pub-version-notes">${UTILS.escHtml(pub.notes)}</div>` : '';
             body.innerHTML = notesHtml;
-            // Fila de metadata: published_by + Eliminar
+
+            // Fila published_by + Eliminar
             const metaRow = document.createElement('div');
             metaRow.className = 'pub-version-meta-row';
             metaRow.innerHTML = `
               <div class="pub-version-by">
                 <span class="source-provider-label">publicado por</span>
                 <span class="source-provider-text">${pub?.published_by ? UTILS.escHtml(pub.published_by) : '—'}</span>
-                ${catalogLink}
               </div>
               <button class="layer-btn danger js-pub-delete" data-pub-id="${pubId}" data-version="${UTILS.escHtml(pub?.version_label||'')}" data-active="${isActivePub}">Eliminar</button>
             `;
@@ -569,6 +568,25 @@
               loadHistory();
             });
             body.appendChild(metaRow);
+
+            // Lista de fuentes del snapshot
+            const { data: det, ok: dok } = await API.getPublication(pubId);
+            if (dok && det.sources?.length) {
+              const srcList = document.createElement('div');
+              srcList.className = 'pub-snap-source-list';
+              det.sources.forEach(s => {
+                const name = s.name_alias || s.name_source;
+                const fmt  = s.data_format || '';
+                const row  = document.createElement('div');
+                row.className = 'pub-snap-source-row';
+                row.innerHTML = `
+                  <span class="pub-snap-source-name">${UTILS.escHtml(name)}</span>
+                  ${fmt ? `<span class="pub-snap-source-fmt">${UTILS.escHtml(fmt.replace('_',' '))}</span>` : ''}
+                `;
+                srcList.appendChild(row);
+              });
+              body.appendChild(srcList);
+            }
           }
         });
       });
