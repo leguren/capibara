@@ -568,7 +568,6 @@
 
 .pub-version-body {
   display:        none;
-  border-top:     1px solid var(--border);
   flex-direction: column;
 }
 .pub-version-block.open .pub-version-body { display: flex; }
@@ -651,7 +650,7 @@
   display:     flex;
   align-items: center;
   gap:         6px;
-  padding:     4px 12px 4px 24px;
+  padding:     6px 12px;
   border-top:  1px solid var(--bg3);
 }
 .pub-layer-row:first-child { border-top: none; }
