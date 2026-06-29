@@ -70,6 +70,22 @@ window.CAPIBARA_SOURCES = (() => {
             </div>
           </div>
           <div class="modal-field">
+            <label class="modal-label">Nombre del servicio</label>
+            <input class="input" id="src-name-source" readonly>
+          </div>
+          <div class="modal-field">
+            <label class="modal-label">Alias</label>
+            <input class="input" id="src-alias" placeholder="Pasos internacionales">
+          </div>
+          <div class="modal-field">
+            <label class="modal-label">Proveedor del servicio</label>
+            <input class="input" id="src-provider-source" readonly>
+          </div>
+          <div class="modal-field">
+            <label class="modal-label">Alias</label>
+            <input class="input" id="src-provider" placeholder="Ministerio de Seguridad Nacional">
+          </div>
+          <div class="modal-field">
             <label class="modal-label">Países</label>
             <select class="select" id="src-countries" multiple style="height:60px">
               <option value="AG">Antigua y Barbuda AG</option>
@@ -108,22 +124,6 @@ window.CAPIBARA_SOURCES = (() => {
               <option value="UY">Uruguay UY</option>
               <option value="VE">Venezuela VE</option>
             </select>
-          </div>
-          <div class="modal-field">
-            <label class="modal-label">Nombre del servicio</label>
-            <input class="input" id="src-name-source" readonly>
-          </div>
-          <div class="modal-field">
-            <label class="modal-label">Alias</label>
-            <input class="input" id="src-alias" placeholder="Pasos internacionales">
-          </div>
-          <div class="modal-field">
-            <label class="modal-label">Proveedor del servicio</label>
-            <input class="input" id="src-provider-source" readonly>
-          </div>
-          <div class="modal-field">
-            <label class="modal-label">Alias</label>
-            <input class="input" id="src-provider" placeholder="Ministerio de Seguridad Nacional">
           </div>
           <div class="modal-field">
             <label class="modal-label">Notas internas</label>
