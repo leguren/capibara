@@ -537,7 +537,7 @@
             body.dataset.loaded = '1';
             const pubId = block.dataset.pubId;
             const pub   = data.publications.find(p => p.id === pubId);
-            const isActivePub = (i === 0);
+            const isActivePub = pubId === data.publications[0]?.id;
             const catalogLink = isActivePub ? `<a href="/api/geo/1/catalog" target="_blank" class="pub-catalog-link">Ver catálogo</a>` : '';
             const notesHtml = pub?.notes ? `<div class="pub-version-notes">${UTILS.escHtml(pub.notes)}</div>` : '';
             body.innerHTML = notesHtml;
