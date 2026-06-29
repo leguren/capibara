@@ -453,14 +453,18 @@
       }
 
       el.innerHTML = sources.map(s => {
-        const name = s.name_alias || s.name_source || '(sin nombre)';
+        const name      = s.name_alias || s.name_source || '(sin nombre)';
+        const fmt       = s.data_format || '';
+        const pillClass = fmt ? `pill-${fmt.replace('_','-')}` : 'pill-default';
+        const pillHtml  = fmt ? `<span class="pill ${pillClass}">${fmt.replace('_',' ')}</span>` : '';
         return `
           <div class="pub-source-block" data-source-id="${s.id}">
             <div class="pub-source-row js-pub-src-toggle">
               <div class="pub-source-info">
                 <span class="pub-source-name">${UTILS.escHtml(name)}</span>
-                <span class="pub-source-count">${s.layers_included ?? '?'} capas</span>
+                ${pillHtml}
               </div>
+              <span class="pub-source-count">${s.layers_included ?? '?'} capas</span>
               <span class="layer-arrow pub-source-arrow"></span>
             </div>
             <div class="pub-source-body" id="pub-src-${s.id}"></div>
@@ -482,7 +486,10 @@
             if (!lok) { body.innerHTML = `<div style="padding:6px 12px;font-size:12px;color:var(--error)">Error.</div>`; return; }
             const layers = (ld.layers || []).filter(l => l.included);
             body.innerHTML = layers.length
-              ? layers.map(l => `<div class="pub-layer-row"><span class="pub-layer-name">${UTILS.escHtml(l.name_alias || l.name_source)}</span></div>`).join('')
+              ? layers.map(l => {
+                  const geom = l.geometry_type ? `<span class="pub-layer-geom">${UTILS.escHtml(l.geometry_type)}</span>` : '';
+                  return `<div class="pub-layer-row"><span class="pub-layer-name">${UTILS.escHtml(l.name_alias || l.name_source)}</span>${geom}</div>`;
+                }).join('')
               : `<div style="padding:6px 12px;font-size:12px;color:var(--text2)">Sin capas incluidas.</div>`;
           }
         });
@@ -540,11 +547,15 @@
             if (dok && det.sources?.length) {
               sourcesHtml = det.sources.map(s => {
                 const sname  = s.name_alias || s.name_source;
-                const layers = (s.layers || []).map(l => `<div class="pub-layer-row"><span class="pub-layer-name">${UTILS.escHtml(l.name_alias || l.name_source)}</span></div>`).join('');
+                const layers = (s.layers || []).map(l => {
+                  const geom = l.geometry_type ? `<span class="pub-layer-geom">${UTILS.escHtml(l.geometry_type)}</span>` : '';
+                  return `<div class="pub-layer-row"><span class="pub-layer-name">${UTILS.escHtml(l.name_alias || l.name_source)}</span>${geom}</div>`;
+                }).join('');
                 return `<div class="pub-snap-source"><div class="pub-snap-source-name">${UTILS.escHtml(sname)}</div>${layers}</div>`;
               }).join('');
             }
-            const catalogHtml = (i === 0) ? `<div class="pub-detail-row"><a href="/api/geo/1/catalog" target="_blank" class="pub-catalog-link">Ver catálogo</a></div>` : '';
+            const isActivePub = block.dataset.pubId === data.publications[0]?.id;
+            const catalogHtml = isActivePub ? `<div class="pub-detail-row"><a href="/api/geo/1/catalog" target="_blank" class="pub-catalog-link">Ver catálogo</a></div>` : '';
             body.innerHTML = notesHtml + byHtml + catalogHtml + (sourcesHtml ? `<div class="pub-snap-sources">${sourcesHtml}</div>` : '');
           }
         });
