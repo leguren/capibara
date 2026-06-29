@@ -303,9 +303,19 @@ module.exports = makeConnector({
       });
       const res  = await fetchWithTimeout(url, timeoutMs);
       const text = await res.text();
+      console.log('[getGeomTypes]', {
+        status:         res.status,
+        bytes:          text.length,
+        hasComplexType: text.includes('complexType'),
+        hasException:   text.includes('ExceptionReport'),
+        preview:        text.slice(0, 150).replace(/\s+/g, ' '),
+      });
       if (!res.ok || !text.includes('complexType')) return {};
-      return parseGeomTypes(text);
-    } catch (_) {
+      const types = parseGeomTypes(text);
+      console.log('[getGeomTypes] parsed:', Object.keys(types).length, 'types — sample:', Object.entries(types).slice(0, 3));
+      return types;
+    } catch (e) {
+      console.warn('[getGeomTypes] excepción:', e.message);
       return {};
     }
   },
