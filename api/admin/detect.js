@@ -74,7 +74,20 @@ module.exports = async function handler(req, res) {
   if (!url) return res.status(400).json({ error: 'Se requiere url' });
 
   const fromUrl = detectFromUrl(url);
-  if (fromUrl?.confidence === 'high') return res.status(200).json({ url, detected: { ...fromUrl, detected_params: {} }, raw: null, fetch_error: null });
+  // Incluso con detección por URL de alta confianza intentamos un preview
+  // (nombre del servicio y proveedor del GetCapabilities/service JSON)
+  if (fromUrl?.confidence === 'high') {
+    let preview = { name_source: null, provider_source: null };
+    try {
+      const ctrl = new AbortController();
+      setTimeout(() => ctrl.abort(), 5_000);
+      const r    = await fetch(url, { signal: ctrl.signal });
+      const text = await r.text();
+      if (fromUrl.format === 'wfs')         preview = extractWfsPreview(text);
+      else if (fromUrl.format === 'arcgis_rest') preview = extractArcgisPreview(text);
+    } catch { /* preview queda vacío */ }
+    return res.status(200).json({ url, detected: { ...fromUrl, detected_params: {} }, raw: null, fetch_error: null, preview });
+  }
 
   let fetchError = null, contentType = null, sample = '', statusCode = null;
   try {
