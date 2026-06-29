@@ -163,6 +163,7 @@ function parseDescribeFeatureType(xml) {
       metadata: {
         type:         XSD_TYPE_MAP[rawType] || 'unknown',
         is_geometry:  isGeo,
+        gml_type:     isGeo ? rawType : null,  // para detectar geometry_type de la capa
         has_html:     false,
         nullable:     getAttr(attrs, 'nillable') === 'true',
         sample_value: null,
