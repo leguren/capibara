@@ -528,7 +528,7 @@
       `).join('');
 
       el.querySelectorAll('.js-pub-toggle').forEach(row => {
-        row.addEventListener('click', e => {
+        row.addEventListener('click', async e => {
           const block  = row.closest('.pub-version-block');
           const body   = block.querySelector('.pub-version-body');
           const isOpen = block.classList.contains('open');
