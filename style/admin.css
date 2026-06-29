@@ -577,6 +577,18 @@
   color:      var(--text2);
   line-height: 1.5;
 }
+.pub-version-active {
+  font-family:   var(--font);
+  font-size:     10px;
+  font-weight:   500;
+  color:         var(--ok);
+  background:    rgba(82,183,136,0.12);
+  border-radius: var(--radius-full);
+  padding:       1px 6px;
+  vertical-align: middle;
+  margin-left:   4px;
+  letter-spacing: 0;
+}
 .pub-version-count {
   font-size:   11px;
   color:       var(--text3);
