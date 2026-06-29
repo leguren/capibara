@@ -76,9 +76,10 @@ window.CAPIBARA_API = (() => {
     getFieldSample:  (id)         => get(`${ADMIN_API}/fields/sample?id=${id}`),
 
     // Admin — Publish
-    getPublications:    ()    => get(`${ADMIN_API}/publish`),
+    getPublications:    ()     => get(`${ADMIN_API}/publish`),
+    getPublication:     (id)   => get(`${ADMIN_API}/publish?id=${id}`),
     publish:            (body) => post(`${ADMIN_API}/publish`, body),
-    deletePublication:  (id)  => del(`${ADMIN_API}/publish?id=${id}`),
+    deletePublication:  (id)   => del(`${ADMIN_API}/publish?id=${id}`),
 
     // User
     getKeys:    ()         => get(`${USER_API}/keys`),
