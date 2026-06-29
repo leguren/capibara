@@ -49,46 +49,50 @@ window.CAPIBARA_SOURCES = (() => {
         </div>
         <div class="modal-body">
           <div class="modal-field">
-            <label class="modal-label">URL del servicio</label>
+            <label class="modal-label">URL</label>
             <div style="display:flex;gap:8px">
-              <input class="input input-mono" id="src-url" style="flex:1">
+              <input class="input input-mono" id="src-url" placeholder="https://..." style="flex:1">
               <button class="action-btn" id="btn-detect">Detectar</button>
             </div>
-            <span style="font-size:11px;color:var(--text2);margin-top:4px;display:block" id="detect-hint">Pegá la URL y hacé clic en Detectar para auto-completar el formato.</span>
           </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-            <div class="modal-field">
-              <label class="modal-label">Formato</label>
-              <select class="select" id="src-format">
-                <option value="">— seleccionar —</option>
-                <option value="wfs">WFS (OGC)</option>
-                <option value="arcgis_rest">ArcGIS REST</option>
-                <option value="csv">CSV</option>
-                <option value="geojson">GeoJSON</option>
-                <option value="json">JSON</option>
-              </select>
-            </div>
-            <div class="modal-field">
-              <label class="modal-label">Países (códigos ISO)</label>
-              <input class="input" id="src-country" placeholder="AR BO BR" style="text-transform:uppercase">
-            </div>
-            <div class="modal-field">
-              <label class="modal-label">Alias (opcional)</label>
-              <input class="input" id="src-alias">
-            </div>
-            <div class="modal-field">
-              <label class="modal-label">Proveedor alias (opcional)</label>
-              <input class="input" id="src-provider">
-            </div>
+          <div class="modal-field">
+            <label class="modal-label">Formato</label>
+            <select class="select" id="src-format">
+              <option value="arcgis_rest">arcgis rest</option>
+              <option value="csv">csv</option>
+              <option value="geojson">geojson</option>
+              <option value="json">json</option>
+              <option value="wfs">wfs</option>
+            </select>
           </div>
-          <div class="modal-field" style="margin-top:4px">
-            <label class="modal-label">Notas internas (opcional)</label>
-            <textarea class="input" id="src-notes" rows="2" style="height:60px;resize:vertical;padding:8px 12px"></textarea>
+          <div class="modal-field">
+            <label class="modal-label">Países (códigos ISO, separados por espacio)</label>
+            <input class="input" id="src-country" placeholder="AR BO BR" style="text-transform:uppercase">
+          </div>
+          <div class="modal-field">
+            <label class="modal-label">Nombre del servicio</label>
+            <input class="input" id="src-name-source" placeholder="se completa al conectar" readonly>
+          </div>
+          <div class="modal-field">
+            <label class="modal-label">Nombre alias</label>
+            <input class="input" id="src-alias" placeholder="nombre legible para el panel">
+          </div>
+          <div class="modal-field">
+            <label class="modal-label">Proveedor del servicio</label>
+            <input class="input" id="src-provider-source" placeholder="se completa al conectar" readonly>
+          </div>
+          <div class="modal-field">
+            <label class="modal-label">Proveedor alias</label>
+            <input class="input" id="src-provider" placeholder="nombre legible del proveedor">
+          </div>
+          <div class="modal-field">
+            <label class="modal-label">Notas internas</label>
+            <textarea class="input" id="src-notes" style="height:60px;resize:vertical;padding:8px 12px"></textarea>
           </div>
         </div>
         <div class="modal-footer">
           <button class="action-btn" id="modal-cancel">Cancelar</button>
-          <button class="action-btn primary" id="modal-save">Crear y conectar</button>
+          <button class="action-btn primary" id="modal-save">Conectar</button>
         </div>
       </div>
     `;
@@ -102,19 +106,20 @@ window.CAPIBARA_SOURCES = (() => {
 
     // Detección automática de formato
     overlay.querySelector('#btn-detect').addEventListener('click', async () => {
-      const url  = overlay.querySelector('#src-url').value.trim();
-      const hint = overlay.querySelector('#detect-hint');
+      const url = overlay.querySelector('#src-url').value.trim();
       if (!url) { TOAST.warn('Ingresá una URL primero'); return; }
-
-      hint.textContent = 'Detectando…';
+      const btn = overlay.querySelector('#btn-detect');
+      btn.disabled = true;
       const { data, ok, error } = await API.detectFormat(url);
-      if (!ok) { hint.textContent = `Error: ${error}`; return; }
-
+      btn.disabled = false;
+      if (!ok) { TOAST.error('Error al detectar', error); return; }
       if (data.detected) {
         overlay.querySelector('#src-format').value = data.detected.format;
-        hint.textContent = `Detectado: ${FMTS.get(data.detected.format).label} (confianza: ${data.detected.confidence})`;
+        TOAST.ok('Detectado', FMTS.get(data.detected.format).label);
+        if (data.preview?.name_source)     overlay.querySelector('#src-name-source').value     = data.preview.name_source;
+        if (data.preview?.provider_source) overlay.querySelector('#src-provider-source').value = data.preview.provider_source;
       } else {
-        hint.textContent = 'No se pudo detectar el formato. Seleccionalo manualmente.';
+        TOAST.warn('Formato no detectado', 'Seleccionalo manualmente.');
       }
     });
 
@@ -129,19 +134,18 @@ window.CAPIBARA_SOURCES = (() => {
         data_format:       format,
         name_alias:        overlay.querySelector('#src-alias').value.trim() || null,
         provider_alias:    overlay.querySelector('#src-provider').value.trim() || null,
+        // name_source y provider_source se obtienen del connect step (GetCapabilities)
         countries:         overlay.querySelector('#src-country').value.trim()
                             .toUpperCase().split(/[\s,]+/).filter(Boolean),
         notes:             overlay.querySelector('#src-notes').value.trim() || null,
       };
 
       const saveBtn = overlay.querySelector('#modal-save');
-      saveBtn.classList.add('btn-loading');
       saveBtn.disabled = true;
 
       // 1. Crear fuente
       const { data: createData, ok: createOk, error: createErr } = await API.createSource(body);
       if (!createOk) {
-        saveBtn.classList.remove('btn-loading');
         saveBtn.disabled = false;
         TOAST.error('Error al crear fuente', createErr);
         return;
