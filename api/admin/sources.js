@@ -110,6 +110,30 @@ module.exports = async function handler(req, res) {
       }
     }
 
+    // ── Post-proceso: detectar geometrías DESPUÉS de los inserts ─────────
+    // Se llama con timeout de 3s para no exceder el límite de Vercel (10s).
+    // Si falla o se acaba el tiempo, las capas quedan con geometry_type = UNKNOWN.
+    if (typeof entry.connector.getGeomTypes === 'function') {
+      try {
+        const geomTypes = await entry.connector.getGeomTypes(params, 3_000);
+        const keys = Object.keys(geomTypes);
+        if (keys.length > 0) {
+          console.log('[discover] geometrías post-detect:', keys.length);
+          await Promise.all(layers.map(layer => {
+            const local = layer.name.includes(':') ? layer.name.split(':').pop() : layer.name;
+            const geomType = geomTypes[local] || geomTypes[layer.name];
+            if (!geomType) return Promise.resolve();
+            return db.execute({
+              sql:  'UPDATE layers SET geometry_type = ? WHERE source_id = ? AND name_source = ?',
+              args: [geomType, sid, layer.name],
+            });
+          }));
+        }
+      } catch (e) {
+        console.warn('[discover] getGeomTypes falló:', e.message);
+      }
+    }
+
     return ok(res, { ok: true, total: layers.length, added, skipped });
   }
 
