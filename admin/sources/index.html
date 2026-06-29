@@ -576,13 +576,10 @@
               srcList.className = 'pub-snap-source-list';
               det.sources.forEach(s => {
                 const name = s.name_alias || s.name_source;
-                const fmt  = s.data_format || '';
+                const fmt  = s.data_format ? `<span class="pub-layer-geom">${UTILS.escHtml(s.data_format.replace('_',' '))}</span>` : '';
                 const row  = document.createElement('div');
-                row.className = 'pub-snap-source-row';
-                row.innerHTML = `
-                  <span class="pub-snap-source-name">${UTILS.escHtml(name)}</span>
-                  ${fmt ? `<span class="pub-snap-source-fmt">${UTILS.escHtml(fmt.replace('_',' '))}</span>` : ''}
-                `;
+                row.className = 'pub-layer-row';
+                row.innerHTML = `<span class="pub-layer-name">${UTILS.escHtml(name)}</span>${fmt}`;
                 srcList.appendChild(row);
               });
               body.appendChild(srcList);
