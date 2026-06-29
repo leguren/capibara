@@ -314,7 +314,7 @@
           </div>
           <div class="modal-field">
             <label class="modal-label" for="edit-notes">Notas internas</label>
-            <textarea class="input" id="edit-notes" style="height:72px;resize:vertical;padding:8px 12px">${UTILS.escHtml(src.notes || '')}</textarea>
+            <textarea class="textarea" id="edit-notes" style="height:72px;padding:8px 12px">${UTILS.escHtml(src.notes || '')}</textarea>
           </div>
         </div>
         <div class="modal-footer">
@@ -411,7 +411,7 @@
           <!-- Notas internas -->
           <div class="modal-field">
             <label class="modal-label" for="pub-notes">Notas internas</label>
-            <textarea class="input" id="pub-notes" style="height:72px;resize:vertical;padding:8px 12px"></textarea>
+            <textarea class="textarea" id="pub-notes" style="height:72px;padding:8px 12px"></textarea>
           </div>
 
         </div>
@@ -486,7 +486,7 @@
             const layers = (ld.layers || []).filter(l => l.included);
             body.innerHTML = layers.length
               ? layers.map(l => {
-                  const geom = l.geometry_type ? `<span class="pub-layer-geom">${UTILS.escHtml(l.geometry_type)}</span>` : '';
+                  const geom = l.geometry_type ? `<span class="pub-layer-geom">${UTILS.escHtml((l.geometry_type||"").toLowerCase())}</span>` : '';
                   return `<div class="pub-layer-row"><span class="pub-layer-name">${UTILS.escHtml(l.name_alias || l.name_source)}</span>${geom}</div>`;
                 }).join('')
               : `<div style="padding:6px 12px;font-size:12px;color:var(--text2)">Sin capas incluidas.</div>`;
@@ -547,7 +547,7 @@
               sourcesHtml = det.sources.map(s => {
                 const sname  = s.name_alias || s.name_source;
                 const layers = (s.layers || []).map(l => {
-                  const geom = l.geometry_type ? `<span class="pub-layer-geom">${UTILS.escHtml(l.geometry_type)}</span>` : '';
+                  const geom = l.geometry_type ? `<span class="pub-layer-geom">${UTILS.escHtml((l.geometry_type||"").toLowerCase())}</span>` : '';
                   return `<div class="pub-layer-row"><span class="pub-layer-name">${UTILS.escHtml(l.name_alias || l.name_source)}</span>${geom}</div>`;
                 }).join('');
                 return `<div class="pub-snap-source"><div class="pub-snap-source-name">${UTILS.escHtml(sname)}</div>${layers}</div>`;
