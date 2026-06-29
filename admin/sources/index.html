@@ -337,6 +337,9 @@
       if (block && loadedSources.has(id)) {
         block.classList.add('open');
         renderSourceBody(block, loadedSources.get(id));
+        // Restaurar capas: del cache si están disponibles, sino cargar del API
+        if (loadedLayers.has(id)) renderLayers(block, id, loadedLayers.get(id));
+        else loadLayers(block, id);
       }
     }
   }
