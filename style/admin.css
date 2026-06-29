@@ -624,10 +624,11 @@
   flex:      1;
   min-width: 0;
   display:   flex;
-  align-items: baseline;
-  gap:       8px;
+  align-items: center;
+  gap:       6px;
+  overflow:  hidden;
 }
-.pub-source-name  { font-size: 13px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pub-source-name  { font-size: 13px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-shrink: 1; min-width: 0; }
 .pub-source-count { font-size: 11px; color: var(--text3); font-family: var(--font-mono); white-space: nowrap; flex-shrink: 0; }
 .pub-source-arrow {
   font-family:            'Material Symbols Outlined';
@@ -647,11 +648,16 @@
 
 /* ── Capas dentro de fuente/snapshot ─────────────────────────────── */
 .pub-layer-row {
+  display:     flex;
+  align-items: center;
+  justify-content: space-between;
+  gap:         8px;
   padding:     4px 12px 4px 24px;
   border-top:  1px solid var(--bg3);
 }
 .pub-layer-row:first-child { border-top: none; }
-.pub-layer-name { font-size: 12px; color: var(--text2); }
+.pub-layer-name { font-size: 12px; color: var(--text2); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pub-layer-geom { font-size: 11px; font-family: var(--font-mono); color: var(--text3); white-space: nowrap; flex-shrink: 0; }
 
 /* ── Próxima versión con candado ─────────────────────────────────── */
 .pub-version-input-wrap {
@@ -673,7 +679,7 @@
   background: transparent;
   color:      var(--text3);
   cursor:     pointer;
-  border-radius: var(--radius-sm);
+  border-radius: 50%;
   transition: color var(--transition), background var(--transition);
 }
 .pub-lock-btn:hover { color: var(--text); background: var(--bg2); }
