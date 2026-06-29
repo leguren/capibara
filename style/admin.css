@@ -471,6 +471,69 @@
 #btn-refresh.is-refreshing .refresh-icon {
   animation: spin 0.7s linear infinite;
 }
+
+/* ── Field rows (lista de campos por capa) ───────────────────────── */
+.field-row {
+  display:     flex;
+  align-items: center;
+  gap:         8px;
+  padding:     7px 16px;
+  border-top:  1px solid var(--border);
+}
+.field-row:first-child { border-top: none; }
+.field-row:hover { background: var(--bg2); }
+
+.field-name-wrap { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; }
+.field-name      { font-size: 12px; font-family: var(--font-mono); color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.field-type      { font-size: 11px; color: var(--text3); white-space: nowrap; flex-shrink: 0; }
+
+.field-alias-wrap { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+.field-alias-input {
+  height:        28px;
+  padding:       0 10px;
+  border-radius: 999px;
+  border:        1px solid var(--border);
+  font-size:     12px;
+  width:         130px;
+  font-family:   var(--font);
+  color:         var(--text);
+  background:    var(--bg);
+  outline:       none;
+  transition:    border-color var(--transition);
+}
+.field-alias-input:focus { border-color: var(--accent); }
+.field-alias-save {
+  height:        28px;
+  padding:       0 10px;
+  border-radius: 999px;
+  border:        1px solid var(--border);
+  background:    var(--bg);
+  font-size:     11px;
+  font-family:   var(--font);
+  color:         var(--text2);
+  cursor:        pointer;
+  white-space:   nowrap;
+  transition:    background var(--transition), border-color var(--transition);
+}
+.field-alias-save:hover { background: var(--bg2); border-color: var(--accent); color: var(--accent); }
+
+/* ── Botones de acción por fila de capa ──────────────────────────── */
+.layer-btn {
+  height:        24px;
+  padding:       0 8px;
+  font-size:     11px;
+  border-radius: var(--radius);
+  border:        1px solid var(--border);
+  background:    var(--bg);
+  color:         var(--text2);
+  cursor:        pointer;
+  white-space:   nowrap;
+  flex-shrink:   0;
+  font-family:   var(--font);
+  transition:    background var(--transition), border-color var(--transition), color var(--transition);
+}
+.layer-btn:hover { background: var(--bg2); color: var(--text); }
+
 /* ── Responsive ───────────────────────────────────────────────────── */
 @media (max-width: 600px) {
   .page-content { padding: 28px 16px 60px; }
