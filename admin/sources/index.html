@@ -542,20 +542,46 @@
             const notesHtml = pub?.notes ? `<div class="pub-version-notes">${UTILS.escHtml(pub.notes)}</div>` : '';
             const byHtml    = pub?.published_by ? `<div class="pub-detail-row"><span class="pub-detail-label">publicado por</span><span class="pub-detail-value">${UTILS.escHtml(pub.published_by)}</span></div>` : '';
             const { data: det, ok: dok } = await API.getPublication(pubId);
-            let sourcesHtml = '';
-            if (dok && det.sources?.length) {
-              sourcesHtml = det.sources.map(s => {
-                const sname  = s.name_alias || s.name_source;
-                const layers = (s.layers || []).map(l => {
-                  const geom = l.geometry_type ? `<span class="pub-layer-geom">${UTILS.escHtml((l.geometry_type||"").toLowerCase())}</span>` : '';
-                  return `<div class="pub-layer-row"><span class="pub-layer-name">${UTILS.escHtml(l.name_alias || l.name_source)}</span>${geom}</div>`;
-                }).join('');
-                return `<div class="pub-snap-source"><div class="pub-snap-source-name">${UTILS.escHtml(sname)}</div>${layers}</div>`;
-              }).join('');
-            }
             const isActivePub = block.dataset.pubId === data.publications[0]?.id;
             const catalogHtml = isActivePub ? `<div class="pub-detail-row"><a href="/api/geo/1/catalog" target="_blank" class="pub-catalog-link">Ver catálogo</a></div>` : '';
-            body.innerHTML = notesHtml + byHtml + catalogHtml + (sourcesHtml ? `<div class="pub-snap-sources">${sourcesHtml}</div>` : '');
+            body.innerHTML = notesHtml + byHtml + catalogHtml;
+
+            // Lista de fuentes del snapshot — igual a "fuentes a publicar"
+            if (dok && det.sources?.length) {
+              const snapList = document.createElement('div');
+              snapList.className = 'pub-sources-list pub-snap-list';
+              det.sources.forEach(s => {
+                const sname = s.name_alias || s.name_source;
+                const fmt   = s.data_format || '';
+                const pillHtml = fmt ? `<span class="pill pub-format-pill">${fmt.replace('_',' ')}</span>` : '';
+                const srcBlock = document.createElement('div');
+                srcBlock.className = 'pub-source-block';
+                srcBlock.innerHTML = `
+                  <div class="pub-source-row js-snap-src-toggle">
+                    <div class="pub-source-info">
+                      <span class="pub-source-name">${UTILS.escHtml(sname)}</span>
+                      ${pillHtml}
+                    </div>
+                    <span class="pub-source-count">${(s.layers||[]).length} capas</span>
+                    <span class="layer-arrow pub-source-arrow"></span>
+                  </div>
+                  <div class="pub-source-body pub-snap-layers"></div>
+                `;
+                const layerBody = srcBlock.querySelector('.pub-snap-layers');
+                layerBody.innerHTML = (s.layers || []).map(l => {
+                  const geom = l.geometry_type
+                    ? `<span class="pub-layer-geom">${UTILS.escHtml((l.geometry_type||'').toLowerCase())}</span>`
+                    : '';
+                  return `<div class="pub-layer-row"><span class="pub-layer-name">${UTILS.escHtml(l.name_alias || l.name_source)}</span>${geom}</div>`;
+                }).join('') || `<div style="padding:6px 12px;font-size:12px;color:var(--text2)">Sin capas.</div>`;
+
+                srcBlock.querySelector('.js-snap-src-toggle').addEventListener('click', () => {
+                  srcBlock.classList.toggle('open');
+                });
+                snapList.appendChild(srcBlock);
+              });
+              body.appendChild(snapList);
+            }
           }
         });
       });
