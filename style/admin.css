@@ -720,8 +720,6 @@
   margin-top:    8px;
 }
 .pub-snap-list .pub-source-block:first-child .pub-source-row { border-top: 1px solid var(--border); }
-/* Sin scroll anidado en el snapshot — todo en cascada */
-.pub-snap-list .pub-source-body { max-height: none; overflow-y: visible; }
 
 /* ── Pill neutra formato (modal Publicar) ────────────────────────── */
 .pub-format-pill {
