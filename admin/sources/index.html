@@ -509,7 +509,6 @@
         </div>
         <span class="layer-count">${count}</span>
         <button class="layer-btn js-layer-edit">Editar</button>
-        <button class="layer-btn js-discover-fields-btn">Campos</button>
         <span class="layer-arrow"></span>
       </div>
       <div class="layer-body"></div>
@@ -533,28 +532,6 @@
       openLayerEditModal(layer, block);
     });
 
-    block.querySelector('.js-discover-fields-btn').addEventListener('click', async e => {
-      e.stopPropagation();
-      const btn = e.currentTarget;
-      btn.classList.add('btn-loading'); btn.disabled = true;
-      const { data, ok, error } = await API.discoverFields(layer.id);
-      btn.classList.remove('btn-loading'); btn.disabled = false;
-      if (!ok) { TOAST.error('Error', error); return; }
-      TOAST.ok(data.added > 0 ? 'Campos descubiertos' : 'Campos actualizados', `${data.added} nuevos.`);
-      // Siempre fetch y cachear los campos tras discover, independiente del estado de la capa.
-      // Esto evita el cache-miss en el próximo open (que ocurre cuando la capa estaba cerrada
-      // durante el discover y SOURCES.load() reconstruyó el DOM entre medio).
-      const { data: fd, ok: fok } = await API.getLayerFields(layer.id);
-      if (fok && fd?.fields?.length) {
-        loadedFields.set(layer.id, fd.fields);
-        if (block.classList.contains('open')) {
-          renderFields(block.querySelector('.layer-body'), layer.id);
-        }
-      } else if (block.classList.contains('open')) {
-        openLayerFields(block.querySelector('.layer-body'), layer);
-      }
-    });
-
     return block;
   }
 
@@ -572,7 +549,25 @@
     if (loadedFields.has(layer.id)) { renderFields(body, layer.id); return; }
     const { data, ok } = await API.getLayerFields(layer.id);
     if (!ok || !data?.fields?.length) {
-      body.innerHTML = `<div class="inline-loading" style="padding:10px 16px">Sin campos descubiertos. Usá el botón Campos en la fila.</div>`;
+      body.innerHTML = `
+        <div style="padding:12px 16px;display:flex;align-items:center;gap:12px">
+          <span style="font-size:13px;color:var(--text2)">Sin campos descubiertos.</span>
+          <button class="action-btn js-do-discover-fields">Descubrir campos</button>
+        </div>
+      `;
+      body.querySelector('.js-do-discover-fields').addEventListener('click', async e => {
+        const btn = e.currentTarget;
+        btn.classList.add('btn-loading'); btn.disabled = true;
+        const { data: dd, ok: dok, error: derr } = await API.discoverFields(layer.id);
+        if (!dok) { btn.classList.remove('btn-loading'); btn.disabled = false; TOAST.error('Error', derr); return; }
+        TOAST.ok(dd.added > 0 ? 'Campos descubiertos' : 'Sin campos nuevos', `${dd.added} nuevos.`);
+        const { data: fd, ok: fok } = await API.getLayerFields(layer.id);
+        btn.classList.remove('btn-loading'); btn.disabled = false;
+        if (fok && fd?.fields?.length) {
+          loadedFields.set(layer.id, fd.fields);
+          renderFields(body, layer.id);
+        }
+      });
       return;
     }
     loadedFields.set(layer.id, data.fields);
@@ -583,7 +578,7 @@
   function renderFields(body, layerId) {
     const fields = loadedFields.get(layerId) || [];
     if (!fields.length) {
-      body.innerHTML = `<div class="inline-loading" style="padding:10px 16px">Sin campos. Usá el botón Campos en la fila.</div>`;
+      body.innerHTML = `<div class="inline-loading" style="padding:10px 16px">Sin campos descubiertos.</div>`;
       return;
     }
 
