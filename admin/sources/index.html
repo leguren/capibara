@@ -135,6 +135,78 @@
     btn.disabled = false;
   });
 
+  // ── Modal de edición de fuente ────────────────────────────────────────
+  function openEditModal(src) {
+    const connParams = (() => { try { return typeof src.connection_params === 'string' ? JSON.parse(src.connection_params) : (src.connection_params || {}); } catch { return {}; } })();
+    const url = connParams?.url || '';
+
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.innerHTML = `
+      <div class="modal" style="max-width:480px">
+        <div class="modal-header">
+          <span class="modal-title">Editar fuente</span>
+          <button class="modal-close js-close"><span class="material-symbols-outlined" style="font-size:18px;line-height:1">close</span></button>
+        </div>
+        <div class="modal-body">
+          <div class="modal-field">
+            <label class="modal-label">Nombre del servicio</label>
+            <span class="modal-readonly">${UTILS.escHtml(src.name_source)}</span>
+          </div>
+          ${url ? `<div class="modal-field"><label class="modal-label">URL</label><span class="modal-readonly" style="font-size:11px;font-family:var(--font-mono);word-break:break-all">${UTILS.escHtml(url)}</span></div>` : ''}
+          <div class="modal-field">
+            <label class="modal-label">Tipo</label>
+            <span class="modal-readonly">${FMTS.get(src.data_format).label} · ${src.access_method || ''}</span>
+          </div>
+          <div style="border-top:1px solid var(--border);margin:12px 0"></div>
+          <div class="modal-field">
+            <label class="modal-label" for="edit-alias">Alias (nombre legible)</label>
+            <input class="input" id="edit-alias" value="${UTILS.escHtml(src.name_alias || '')}" placeholder="Nombre que aparece en el panel">
+          </div>
+          <div class="modal-field">
+            <label class="modal-label" for="edit-countries">Países (códigos ISO separados por espacio)</label>
+            <input class="input" id="edit-countries" value="${(src.countries || []).join(' ')}" placeholder="AR BO BR CL CO UY">
+          </div>
+          <div class="modal-field">
+            <label class="modal-label" for="edit-notes">Notas internas</label>
+            <textarea class="input" id="edit-notes" style="height:72px;resize:vertical;padding:8px 12px" placeholder="Notas sobre esta fuente">${UTILS.escHtml(src.notes || '')}</textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="action-btn js-cancel">Cancelar</button>
+          <button class="action-btn primary js-save">Guardar</button>
+        </div>
+      </div>
+    `;
+
+    const close = () => document.body.removeChild(overlay);
+    overlay.querySelector('.js-close').addEventListener('click', close);
+    overlay.querySelector('.js-cancel').addEventListener('click', close);
+    overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+
+    overlay.querySelector('.js-save').addEventListener('click', async () => {
+      const alias     = overlay.querySelector('#edit-alias').value.trim() || null;
+      const countries = overlay.querySelector('#edit-countries').value.trim().toUpperCase().split(/[\s,]+/).filter(Boolean);
+      const notes     = overlay.querySelector('#edit-notes').value.trim() || null;
+      const saveBtn   = overlay.querySelector('.js-save');
+      saveBtn.classList.add('btn-loading'); saveBtn.disabled = true;
+
+      const { ok, error } = await API.updateSource(src.id, { name_alias: alias, notes, countries });
+      saveBtn.classList.remove('btn-loading'); saveBtn.disabled = false;
+      if (!ok) { TOAST.error('Error al guardar', error); return; }
+
+      // Actualizar caché y UI
+      Object.assign(src, { name_alias: alias, notes, countries });
+      loadedSources.set(src.id, src);
+      const blk = document.querySelector(`.source-block[data-id="${src.id}"]`);
+      if (blk) blk.querySelector('.source-name').textContent = UTILS.displayName(src);
+      TOAST.ok('Guardado', 'Fuente actualizada.');
+      close();
+    });
+
+    document.body.appendChild(overlay);
+  }
+
   SOURCES.onUpdate(renderSources);
   await SOURCES.load();
 
@@ -273,9 +345,7 @@
     `;
 
     // Bind acciones
-    body.querySelector('.js-edit')?.addEventListener('click', () => {
-      // TODO: abrir modal de edición de fuente
-    });
+    body.querySelector('.js-edit')?.addEventListener('click', () => openEditModal(src));
 
     body.querySelector('.js-refresh-source')?.addEventListener('click', async e => {
       const btn = e.currentTarget;
@@ -342,16 +412,20 @@
     const count       = layer.feature_count != null ? UTILS.formatNumber(layer.feature_count) : '—';
 
     const block = document.createElement('div');
-    block.className  = 'layer-row';
+    block.className  = 'layer-block';
     block.dataset.id = layer.id;
     block.innerHTML  = `
-      <input type="checkbox" class="layer-check" ${layer.included ? 'checked' : ''} title="${layer.included ? 'Incluida en API' : 'Excluida de API'}">
-      <span class="material-symbols-outlined layer-geom-icon">${geomIcon(layer.geometry_type)}</span>
-      <div class="layer-name-wrap">
-        <span class="layer-name">${UTILS.escHtml(displayName)}</span>
-        ${showSource ? `<span class="layer-name-source">${UTILS.escHtml(layer.name_source)}</span>` : ''}
+      <div class="layer-row">
+        <input type="checkbox" class="layer-check" ${layer.included ? 'checked' : ''} title="${layer.included ? 'Incluida en API' : 'Excluida de API'}">
+        <span class="material-symbols-outlined layer-geom-icon">${geomIcon(layer.geometry_type)}</span>
+        <div class="layer-name-wrap">
+          <span class="layer-name">${UTILS.escHtml(displayName)}</span>
+          ${showSource ? `<span class="layer-name-source">${UTILS.escHtml(layer.name_source)}</span>` : ''}
+        </div>
+        <span class="layer-count">${count}</span>
+        <span class="layer-arrow"></span>
       </div>
-      <span class="layer-count">${count}</span>
+      <div class="layer-body"></div>
     `;
 
     const check = block.querySelector('.layer-check');
@@ -360,6 +434,11 @@
       const { ok, error } = await API.updateLayer(layer.id, { included: e.target.checked ? 1 : 0 });
       if (!ok) { TOAST.error('Error', error); e.target.checked = !e.target.checked; }
       else { layer.included = e.target.checked ? 1 : 0; }
+    });
+
+    block.querySelector('.layer-row').addEventListener('click', e => {
+      if (e.target.closest('.layer-check')) return;
+      toggleLayer(block, layer);
     });
 
     return block;
