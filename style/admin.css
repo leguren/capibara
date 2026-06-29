@@ -373,76 +373,11 @@
 }
 .layers-header  { padding: 8px 16px 4px; font-size: 11px; color: var(--text2); display: flex; justify-content: space-between; }
 
-.layer-block { border-top: 1px solid var(--bg3); }
-.layer-block:first-child { border-top: none; }
 
-.layer-header {
-  display:     flex;
-  align-items: center;
-  gap:         10px;
-  padding:     9px 16px 9px 28px;
-  cursor:      pointer;
-  user-select: none;
-  transition:  background var(--transition);
-}
-.layer-header:hover { background: var(--bg2); }
-.layer-block.open .layer-header { background: var(--bg2); }
-
-.layer-name-wrap { flex: 1; min-width: 0; }
-.layer-name      { font-size: 12px; font-family: var(--font-mono); color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
-.layer-alias-sub { font-size: 11px; color: var(--text2); display: block; margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.layer-geom-badge { font-size: 10px; font-family: var(--font-mono); color: var(--text3); white-space: nowrap; flex-shrink: 0; }
-.layer-arrow {
-  font-family:  'Material Symbols Outlined';
-  font-size:    18px;
-  font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 20;
-  color:        var(--text3);
-  flex-shrink:  0;
-  user-select:  none;
-  line-height:  1;
-  transition:   transform 0.18s ease;
-}
-.layer-arrow::before              { content: 'expand_more'; }
-.layer-block.open .layer-arrow   { transform: rotate(-180deg); }
 
 /* ── Layer body ───────────────────────────────────────────────────── */
-.layer-body {
-  display:    none;
-  padding:    10px 16px 12px 44px;
-  background: var(--bg2);
-  border-top: 1px solid var(--bg3);
-  flex-direction: column;
-  gap:        8px;
-}
-.layer-block.open .layer-body { display: flex; }
-
-.layer-form-row { display: flex; align-items: center; gap: 8px; font-size: 12px; }
-.layer-form-label { color: var(--text2); min-width: 72px; flex-shrink: 0; }
-.layer-form-row .input,
-.layer-form-row .select { height: 28px; font-size: 12px; }
-
-.layer-actions { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 2px; }
-
-/* ── Fields list dentro del layer body ───────────────────────────── */
-.fields-list {
-  margin-top:  4px;
-  border-top:  1px solid var(--bg3);
-  padding-top: 8px;
-  display:     flex;
-  flex-direction: column;
-}
-.field-row {
-  display:     flex;
-  align-items: center;
-  gap:         8px;
-  padding:     4px 0;
-  font-size:   12px;
-  border-bottom: 1px solid var(--bg3);
-}
-.field-row:last-child { border-bottom: none; }
-.field-name  { font-family: var(--font-mono); color: var(--text); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; }
-.field-type  { font-size: 10px; color: var(--text3); font-family: var(--font-mono); white-space: nowrap; min-width: 48px; }
-.field-alias-input { height: 24px; font-size: 11px; padding: 0 8px; min-width: 110px; }
+.layer-body         { display: none; }
+.layer-block.open .layer-body { display: block; }
 
 /* ── Toggle ───────────────────────────────────────────────────────── */
 .toggle { display: inline-flex; align-items: center; cursor: pointer; flex-shrink: 0; }
@@ -522,7 +457,7 @@
   height:        24px;
   padding:       0 8px;
   font-size:     11px;
-  border-radius: var(--radius);
+  border-radius: 999px;
   border:        1px solid var(--border);
   background:    var(--bg);
   color:         var(--text2);
