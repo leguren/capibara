@@ -10,6 +10,27 @@ const { initSchema }   = require('../_db');
 
 const TIMEOUT_MS = 15_000;
 
+
+function extractWfsPreview(sample) {
+  const titleM = sample.match(/<(?:[a-z]+:)?Title>([^<]{1,200})<\/(?:[a-z]+:)?Title>/i);
+  const provM  = sample.match(/<(?:[a-z]+:)?ProviderName>([^<]{1,200})<\/(?:[a-z]+:)?ProviderName>/i)
+               || sample.match(/<(?:[a-z]+:)?ContactOrganization>([^<]{1,200})<\/(?:[a-z]+:)?ContactOrganization>/i);
+  return {
+    name_source:     titleM?.[1]?.trim() || null,
+    provider_source: provM?.[1]?.trim()  || null,
+  };
+}
+
+function extractArcgisPreview(sample) {
+  try {
+    const d = JSON.parse(sample);
+    return {
+      name_source:     d.documentInfo?.Title || d.serviceDescription || d.name || null,
+      provider_source: d.documentInfo?.Author || null,
+    };
+  } catch { return { name_source: null, provider_source: null }; }
+}
+
 function detectFromUrl(url) {
   const lower = url.toLowerCase();
   if (lower.includes('service=wfs') || lower.includes('request=getcapabilities')) return { format: 'wfs', confidence: 'high', from: 'url_params' };
@@ -74,7 +95,12 @@ module.exports = async function handler(req, res) {
   const best     = [fromBody, fromCT, fromUrl].filter(Boolean).find(c => c.confidence === 'high') ||
                    [fromBody, fromCT, fromUrl].filter(Boolean).find(c => c.confidence === 'medium') || null;
 
-  if (best) return res.status(200).json({ url, detected: { ...best, detected_params: best.detected_params || {}, note: null }, raw, fetch_error: null });
+  if (best) {
+    const preview = best.format === 'wfs'         ? extractWfsPreview(sample)
+                  : best.format === 'arcgis_rest' ? extractArcgisPreview(sample)
+                  : { name_source: null, provider_source: null };
+    return res.status(200).json({ url, detected: { ...best, detected_params: best.detected_params || {}, note: null }, raw, fetch_error: null, preview });
+  }
 
   try {
     const wfsUrl = new URL(url);
@@ -85,7 +111,8 @@ module.exports = async function handler(req, res) {
     const body  = await probe.text();
     if (body.includes('WFS_Capabilities')) {
       const vMatch = body.match(/version="([\d.]+)"/);
-      return res.status(200).json({ url, detected: { format: 'wfs', confidence: 'medium', from: 'capabilities_probe', detected_params: { version: vMatch?.[1] || '1.1.0' }, note: 'Detectado por probe' }, raw, fetch_error: null });
+      const previewP = extractWfsPreview(body);
+      return res.status(200).json({ url, detected: { format: 'wfs', confidence: 'medium', from: 'capabilities_probe', detected_params: { version: vMatch?.[1] || '1.1.0' }, note: 'Detectado por probe' }, raw, fetch_error: null, preview: previewP });
     }
   } catch { /* no es WFS */ }
 
