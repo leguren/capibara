@@ -368,44 +368,47 @@
     const overlay = document.createElement('div');
     overlay.className = 'modal-overlay';
     overlay.innerHTML = `
-      <div class="modal" style="max-width:560px">
+      <div class="modal" style="max-width:520px">
         <div class="modal-header">
           <span class="modal-title">Publicar</span>
           <button class="modal-close js-close">
             <span class="material-symbols-outlined" style="font-size:18px;line-height:1">close</span>
           </button>
         </div>
-        <div class="modal-body" style="display:flex;flex-direction:column;gap:16px">
+        <div class="modal-body">
 
           <!-- Stats -->
-          <div style="display:flex;gap:8px" id="pub-stats">
-            <div class="stat-chip"><span class="stat-n" id="pub-stat-sources">—</span> fuentes activas</div>
-            <div class="stat-chip"><span class="stat-n" id="pub-stat-layers">—</span> capas</div>
-            <div class="stat-chip"><span class="stat-n" id="pub-stat-fields">—</span> campos</div>
-          </div>
-
-          <!-- Acción -->
-          <div style="display:flex;gap:8px">
-            <input class="input" id="pub-notes" placeholder="Nota de versión (opcional)" style="flex:1">
-            <button class="action-btn primary" id="pub-btn">Publicar</button>
+          <div class="modal-field">
+            <div id="pub-stats" style="display:flex;gap:8px;flex-wrap:wrap">
+              <div class="stat-chip"><span class="stat-n" id="pub-stat-sources">—</span> fuentes activas</div>
+              <div class="stat-chip"><span class="stat-n" id="pub-stat-layers">—</span> capas</div>
+              <div class="stat-chip"><span class="stat-n" id="pub-stat-fields">—</span> campos</div>
+            </div>
           </div>
 
           <!-- Historial -->
-          <div id="pub-history" style="display:flex;flex-direction:column;gap:6px;max-height:220px;overflow-y:auto"></div>
+          <div class="modal-field">
+            <label class="modal-label">Versiones publicadas</label>
+            <div id="pub-history" class="pub-history-list"></div>
+          </div>
 
-          <!-- Info -->
-          <details style="font-size:12px;color:var(--text2);border-top:1px solid var(--border);padding-top:12px">
-            <summary style="cursor:pointer;font-weight:600;color:var(--text);margin-bottom:8px">¿Cómo funciona?</summary>
-            <p style="margin-bottom:6px;line-height:1.6">La API pública no lee directamente de la base de datos — lee el último snapshot publicado. Podés modificar fuentes sin afectar a los clientes hasta que publiques.</p>
-            <p style="line-height:1.6">Cada publicación tiene un <span style="font-family:var(--font-mono);font-size:11px">version_label</span> semántico (v1.0.0, v1.0.1…) y queda registrado con quién la hizo y cuándo. Las credenciales de conexión se eliminan del snapshot antes de guardarlo.</p>
-          </details>
+          <!-- Notas internas -->
+          <div class="modal-field">
+            <label class="modal-label" for="pub-notes">Notas internas</label>
+            <textarea class="input" id="pub-notes" style="height:72px;resize:vertical;padding:8px 12px"></textarea>
+          </div>
 
+        </div>
+        <div class="modal-footer">
+          <button class="action-btn js-cancel">Cancelar</button>
+          <button class="action-btn primary" id="pub-btn">Publicar</button>
         </div>
       </div>
     `;
 
     const close = () => document.body.removeChild(overlay);
     overlay.querySelector('.js-close').addEventListener('click', close);
+    overlay.querySelector('.js-cancel').addEventListener('click', close);
     overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
 
     async function loadStats() {
@@ -421,19 +424,46 @@
       const el = overlay.querySelector('#pub-history');
       const { data, ok } = await API.getPublications();
       if (!ok || !data?.publications?.length) {
-        el.innerHTML = `<div style="text-align:center;padding:16px;font-size:12px;color:var(--text2)">Sin publicaciones todavía.</div>`;
+        el.innerHTML = `<div style="text-align:center;padding:16px 0;font-size:12px;color:var(--text2)">Sin publicaciones todavía.</div>`;
         return;
       }
-      el.innerHTML = data.publications.map(p => `
-        <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--bg3)">
-          <div style="flex:1;min-width:0">
-            <span style="font-family:var(--font-mono);font-size:12px;font-weight:600">${UTILS.escHtml(p.version_label)}</span>
-            ${p.notes ? `<span style="font-size:11px;color:var(--text2);margin-left:8px">${UTILS.escHtml(p.notes)}</span>` : ''}
+      el.innerHTML = data.publications.map((p, i) => `
+        <div class="pub-version-block" data-pub-id="${p.id ?? i}">
+          <div class="pub-version-row js-pub-toggle">
+            <div class="pub-version-info">
+              <span class="pub-version-label">${UTILS.escHtml(p.version_label)}</span>
+              <span class="pub-version-date">${UTILS.formatDate(p.created_at)}</span>
+            </div>
+            <div class="pub-version-actions">
+              <button class="layer-btn js-pub-delete" data-pub-id="${p.id ?? i}" title="Eliminar versión">Eliminar</button>
+              <span class="layer-arrow pub-version-arrow"></span>
+            </div>
           </div>
-          <span style="font-size:11px;color:var(--text2);white-space:nowrap">${UTILS.formatNumber(p.sources_count)} fuentes · ${UTILS.formatNumber(p.layers_count)} capas</span>
-          <span style="font-size:11px;color:var(--text3);white-space:nowrap;flex-shrink:0">${UTILS.formatDate(p.created_at)}</span>
+          <div class="pub-version-body">
+            ${p.notes ? `<div class="pub-version-notes">${UTILS.escHtml(p.notes)}</div>` : ''}
+            <div class="pub-version-sources">
+              <span class="pub-version-count">${UTILS.formatNumber(p.sources_count)} fuentes · ${UTILS.formatNumber(p.layers_count)} capas</span>
+            </div>
+          </div>
         </div>
       `).join('');
+
+      // Toggle expand/collapse de cada versión
+      el.querySelectorAll('.js-pub-toggle').forEach(row => {
+        row.addEventListener('click', e => {
+          if (e.target.closest('.js-pub-delete')) return;
+          const block = row.closest('.pub-version-block');
+          block.classList.toggle('open');
+        });
+      });
+
+      // Botones de eliminar (placeholder — conectar a API cuando esté disponible)
+      el.querySelectorAll('.js-pub-delete').forEach(btn => {
+        btn.addEventListener('click', e => {
+          e.stopPropagation();
+          TOAST.error('Eliminar versión', 'Esta acción no está disponible todavía.');
+        });
+      });
     }
 
     Promise.all([loadStats(), loadHistory()]);
