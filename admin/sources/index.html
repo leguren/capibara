@@ -671,6 +671,8 @@
     block.dataset.id = source.id;
     block.innerHTML  = `
       <div class="source-header">
+        <input type="checkbox" class="source-check layer-check" ${source.included ? 'checked' : ''}
+               title="${source.included ? 'Publicar en API' : 'Excluida de la API'}">
         <span class="dot ${STATUS.get(source.status).dotClass}" title="${STATUS.get(source.status).label}"></span>
         <div class="source-info">
           <span class="source-name">${UTILS.escHtml(name)}</span>
@@ -686,6 +688,19 @@
     `;
 
     block.querySelector('.source-header').addEventListener('click', () => toggleSource(block, source));
+
+    // Checkbox de inclusión en API — stopPropagation para no abrir el acordeón
+    const srcCheck = block.querySelector('.source-check');
+    srcCheck.addEventListener('click', e => e.stopPropagation());
+    srcCheck.addEventListener('change', async e => {
+      const included = e.target.checked ? 1 : 0;
+      const { ok, error } = await API.updateSource(source.id, { included });
+      if (!ok) { TOAST.error('Error', error); e.target.checked = !e.target.checked; return; }
+      source.included = included;
+      // habilitar/deshabilitar checkboxes de capas del bloque
+      block.querySelectorAll('.layer-check:not(.source-check)').forEach(cb => { cb.disabled = !included; });
+    });
+
     return block;
   }
 
@@ -794,9 +809,14 @@
       return;
     }
 
+    const srcIncluded = !!acc.closest('.source-block')?.querySelector('.source-check')?.checked;
     const fragment = document.createDocumentFragment();
     for (const layer of layers) {
-      fragment.appendChild(buildLayerBlock(layer));
+      const lb = buildLayerBlock(layer);
+      if (!srcIncluded) {
+        lb.querySelectorAll('.layer-check').forEach(cb => { cb.disabled = true; });
+      }
+      fragment.appendChild(lb);
     }
     acc.innerHTML = '';
     acc.appendChild(fragment);
