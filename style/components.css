@@ -223,6 +223,40 @@
 }
 .modal-title { font-size: 16px; font-weight: 700; color: var(--text); }
 .modal-body  { padding: 0 20px; }
+.modal-close {
+  display:         inline-flex;
+  align-items:     center;
+  justify-content: center;
+  width:           32px;
+  height:          32px;
+  border:          none;
+  background:      transparent;
+  border-radius:   50%;
+  cursor:          pointer;
+  color:           var(--text2);
+  flex-shrink:     0;
+}
+.modal-close:hover { background: var(--bg2); color: var(--text); }
+
+.modal-field {
+  display:        flex;
+  flex-direction: column;
+  gap:            4px;
+  margin-bottom:  14px;
+}
+.modal-field:last-child { margin-bottom: 0; }
+
+.modal-label {
+  font-size:   12px;
+  font-weight: 600;
+  color:       var(--text2);
+  letter-spacing: 0.01em;
+}
+.modal-readonly {
+  font-size: 13px;
+  color:     var(--text);
+}
+
 .modal-footer {
   display:         flex;
   justify-content: flex-end;
