@@ -236,9 +236,10 @@
   flex-shrink:  0;
   user-select:  none;
   line-height:  1;
+  transition:   transform 0.22s ease;
 }
 .source-arrow::before               { content: 'expand_more'; }
-.source-block.open .source-arrow::before { content: 'expand_less'; }
+.source-block.open .source-arrow    { transform: rotate(-180deg); }
 
 /* ── Source body ──────────────────────────────────────────────────── */
 .source-body {
@@ -307,7 +308,51 @@
 .action-btn.danger  { color: var(--error); border-color: rgba(230,57,70,0.3); margin-left: auto; }
 .action-btn.danger:hover { background: rgba(230,57,70,0.05); border-color: rgba(230,57,70,0.5); }
 
-/* ── Layer block (= service-card en Casux) ────────────────────────── */
+/* ── Source body: top bar con tipo + acciones ────────────────────── */
+.source-top-bar {
+  display:         flex;
+  align-items:     center;
+  justify-content: space-between;
+  padding:         10px 16px;
+  border-bottom:   1px solid var(--border);
+}
+.source-block.status-ok.open .source-top-bar    { border-bottom-color: rgba(82,183,136,0.35); }
+.source-block.status-error.open .source-top-bar { border-bottom-color: rgba(230,57,70,0.28); }
+.source-type-pills  { display: flex; gap: 6px; align-items: center; }
+.source-top-actions { display: flex; gap: 6px; align-items: center; }
+
+/* ── Layer row (diseño plano) ────────────────────────────────────── */
+.layer-row {
+  display:     flex;
+  align-items: center;
+  gap:         10px;
+  padding:     8px 16px;
+  border-top:  1px solid var(--bg3);
+}
+.layer-row:first-child { border-top: none; }
+.layer-row:hover { background: var(--bg2); }
+
+.layer-check {
+  width:       15px;
+  height:      15px;
+  flex-shrink: 0;
+  cursor:      pointer;
+  accent-color: var(--accent);
+}
+.layer-geom-icon {
+  font-family:            'Material Symbols Outlined';
+  font-size:              16px;
+  font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 20;
+  color:                  var(--text3);
+  flex-shrink:            0;
+  line-height:            1;
+  user-select:            none;
+}
+.layer-name      { font-size: 13px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+.layer-name-source { font-size: 11px; font-family: var(--font-mono); color: var(--text3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; margin-top: 1px; }
+.layer-count     { font-family: var(--font-mono); font-size: 11px; color: var(--text2); white-space: nowrap; flex-shrink: 0; margin-left: auto; }
+
+/* ── Layer block (legado, en desuso) ─────────────────────────────── */
 .layers-section { display: flex; flex-direction: column; }
 .layers-header  { padding: 8px 16px 4px; font-size: 11px; color: var(--text2); display: flex; justify-content: space-between; }
 
@@ -338,9 +383,10 @@
   flex-shrink:  0;
   user-select:  none;
   line-height:  1;
+  transition:   transform 0.18s ease;
 }
 .layer-arrow::before              { content: 'expand_more'; }
-.layer-block.open .layer-arrow::before { content: 'expand_less'; }
+.layer-block.open .layer-arrow   { transform: rotate(-180deg); }
 
 /* ── Layer body ───────────────────────────────────────────────────── */
 .layer-body {
