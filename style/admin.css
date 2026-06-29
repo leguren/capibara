@@ -59,7 +59,7 @@
 }
 .stat-chip .stat-n {
   font-family: var(--font-mono);
-  font-weight: 700;
+  font-weight: 400;
   color:       var(--text);
   font-size:   13px;
 }
@@ -498,4 +498,87 @@
 @media (max-width: 600px) {
   .page-content { padding: 28px 16px 60px; }
   .admin-title  { font-size: 22px; }
+}
+
+/* ── Lista de versiones publicadas (modal Publicar) ───────────────── */
+.pub-history-list {
+  display:        flex;
+  flex-direction: column;
+  border:         1px solid var(--border);
+  border-radius:  var(--radius-lg);
+  overflow:       hidden;
+  max-height:     240px;
+  overflow-y:     auto;
+}
+
+.pub-version-block { display: flex; flex-direction: column; }
+.pub-version-block + .pub-version-block { border-top: 1px solid var(--bg3); }
+
+.pub-version-row {
+  display:     flex;
+  align-items: center;
+  gap:         10px;
+  padding:     8px 12px;
+  cursor:      pointer;
+  user-select: none;
+}
+.pub-version-row:hover { background: var(--bg2); }
+.pub-version-block.open .pub-version-row { background: var(--bg2); }
+
+.pub-version-info {
+  flex:       1;
+  min-width:  0;
+  display:    flex;
+  flex-direction: column;
+  gap:        2px;
+}
+.pub-version-label {
+  font-family: var(--font-mono);
+  font-size:   13px;
+  font-weight: 400;
+  color:       var(--text);
+}
+.pub-version-date {
+  font-size: 11px;
+  color:     var(--text3);
+}
+
+.pub-version-actions {
+  display:     flex;
+  align-items: center;
+  gap:         6px;
+  flex-shrink: 0;
+}
+
+.pub-version-arrow {
+  font-family:            'Material Symbols Outlined';
+  font-size:              18px;
+  font-variation-settings:'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 20;
+  color:                  var(--text3);
+  flex-shrink:            0;
+  user-select:            none;
+  line-height:            1;
+  transition:             transform 0.22s ease;
+}
+.pub-version-arrow::before                     { content: 'expand_more'; }
+.pub-version-block.open .pub-version-arrow     { transform: rotate(-180deg); }
+
+.pub-version-body {
+  display:    none;
+  padding:    8px 12px 10px;
+  border-top: 1px solid var(--border);
+  gap:        4px;
+  flex-direction: column;
+}
+.pub-version-block.open .pub-version-body { display: flex; }
+
+.pub-version-notes {
+  font-size:  12px;
+  color:      var(--text2);
+  line-height: 1.5;
+}
+.pub-version-count {
+  font-size:   11px;
+  color:       var(--text3);
+  font-family: var(--font-mono);
 }
