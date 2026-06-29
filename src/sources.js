@@ -40,7 +40,7 @@ window.CAPIBARA_SOURCES = (() => {
     const overlay = document.createElement('div');
     overlay.className = 'modal-overlay';
     overlay.innerHTML = `
-      <div class="modal" style="max-width:480px">
+      <div class="modal">
         <div class="modal-header">
           <div class="modal-title">Nueva fuente</div>
           <button class="modal-close" id="modal-close">
