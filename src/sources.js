@@ -71,15 +71,43 @@ window.CAPIBARA_SOURCES = (() => {
           </div>
           <div class="modal-field">
             <label class="modal-label">Países</label>
-            <div class="dd-wrap" id="ctry-wrap">
-              <button type="button" class="select" id="ctry-trigger"
-                style="text-align:left;cursor:pointer;padding-right:36px">
-                <span id="ctry-display" style="color:var(--text2)">Seleccioná países…</span>
-              </button>
-              <span class="dd-icon">expand_more</span>
-              <div id="ctry-dropdown" style="display:none;position:absolute;top:calc(100% + 2px);left:0;right:0;
-                background:var(--bg);border:1px solid var(--border);z-index:100;max-height:220px;overflow-y:auto"></div>
-            </div>
+            <select class="select" id="src-countries" multiple size="5">
+              <option value="AG">Antigua y Barbuda AG</option>
+              <option value="AR">Argentina AR</option>
+              <option value="BB">Barbados BB</option>
+              <option value="BZ">Belice BZ</option>
+              <option value="BO">Bolivia BO</option>
+              <option value="BR">Brasil BR</option>
+              <option value="CA">Canadá CA</option>
+              <option value="CL">Chile CL</option>
+              <option value="CO">Colombia CO</option>
+              <option value="CR">Costa Rica CR</option>
+              <option value="CU">Cuba CU</option>
+              <option value="DM">Dominica DM</option>
+              <option value="EC">Ecuador EC</option>
+              <option value="SV">El Salvador SV</option>
+              <option value="US">Estados Unidos US</option>
+              <option value="GD">Granada GD</option>
+              <option value="GT">Guatemala GT</option>
+              <option value="GY">Guyana GY</option>
+              <option value="HT">Haití HT</option>
+              <option value="HN">Honduras HN</option>
+              <option value="JM">Jamaica JM</option>
+              <option value="MX">México MX</option>
+              <option value="NI">Nicaragua NI</option>
+              <option value="PA">Panamá PA</option>
+              <option value="PY">Paraguay PY</option>
+              <option value="PE">Perú PE</option>
+              <option value="PR">Puerto Rico PR</option>
+              <option value="DO">República Dominicana DO</option>
+              <option value="KN">Saint Kitts y Nevis KN</option>
+              <option value="LC">Santa Lucía LC</option>
+              <option value="VC">San Vicente y las Granadinas VC</option>
+              <option value="SR">Surinam SR</option>
+              <option value="TT">Trinidad y Tobago TT</option>
+              <option value="UY">Uruguay UY</option>
+              <option value="VE">Venezuela VE</option>
+            </select>
           </div>
           <div class="modal-field">
             <label class="modal-label">Nombre del servicio</label>
@@ -108,41 +136,6 @@ window.CAPIBARA_SOURCES = (() => {
         </div>
       </div>
     `;
-
-    // País picker — checkboxes simples
-    const ctryDD   = overlay.querySelector('#ctry-dropdown');
-    const ctryDisp = overlay.querySelector('#ctry-display');
-    let selectedCodes = new Set();
-
-    ctryDD.innerHTML = window.CAPIBARA_COUNTRIES.LIST.map(c =>
-      `<label style="display:flex;align-items:center;gap:6px;padding:5px 12px;cursor:pointer;font-size:13px">
-        <input type="checkbox" value="${c.code}">
-        ${c.name} <span style="font-family:var(--font-mono);font-size:11px;color:var(--text2)">${c.code}</span>
-      </label>`
-    ).join('');
-
-    ctryDD.querySelectorAll('input').forEach(cb =>
-      cb.addEventListener('change', () => {
-        cb.checked ? selectedCodes.add(cb.value) : selectedCodes.delete(cb.value);
-        const codes = [...selectedCodes].sort();
-        ctryDisp.textContent  = codes.length ? codes.join(', ') : 'Seleccioná países…';
-        ctryDisp.style.color  = codes.length ? 'var(--text)' : 'var(--text2)';
-      })
-    );
-
-    const ctryWrap = overlay.querySelector('#ctry-wrap');
-    overlay.querySelector('#ctry-trigger').addEventListener('click', e => {
-      e.stopPropagation();
-      const open = ctryDD.style.display === 'none';
-      ctryDD.style.display = open ? 'block' : 'none';
-      ctryWrap.classList.toggle('open', open);
-    });
-    overlay.addEventListener('click', e => {
-      if (!e.target.closest('#ctry-wrap')) {
-        ctryDD.style.display = 'none';
-        ctryWrap.classList.remove('open');
-      }
-    });
 
     // Rotar ícono del formato al abrir/cerrar el select nativo
     const fmtWrap = overlay.querySelector('#fmt-wrap');
@@ -193,7 +186,7 @@ window.CAPIBARA_SOURCES = (() => {
         name_alias:        overlay.querySelector('#src-alias').value.trim() || null,
         provider_alias:    overlay.querySelector('#src-provider').value.trim() || null,
         // name_source y provider_source se obtienen del connect step (GetCapabilities)
-        countries:         [...selectedCodes].sort(),
+        countries:         [...overlay.querySelector('#src-countries').selectedOptions].map(o => o.value),
         notes:             overlay.querySelector('#src-notes').value.trim() || null,
       };
 
