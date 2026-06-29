@@ -276,61 +276,38 @@ module.exports = makeConnector({
     const xml              = await capRes.text();
     const { featureTypes } = parseCapabilities(xml);
 
-    // ── Geometry types: una sola request sin TYPENAME ─────────────────────
-    // Sin parámetro TYPENAME el servidor devuelve el schema de TODOS los tipos
-    // en una sola response — sin problema de URL length y sin múltiples requests
-    // que agotan el timeout de Vercel (10s Hobby).
-    //
-    // Fallback: si el servidor no soporta la request sin TYPENAME, geomTypes
-    // queda vacío y todos los layers tendrán geometry_type = 'UNKNOWN'.
-    //
-    // TODO: Aplicar patrón similar en ArcGIS (usa geometryType por capa en el
-    //       root JSON, verificar bug de mapeo), CSV, GeoJSON y demás conectores.
-    const geomTypes = {};
+    // Geometry_type se detecta en el discover endpoint (post-inserts) para no
+    // bloquear getLayers dentro del timeout de Vercel. Aquí siempre UNKNOWN.
+    return featureTypes.map(ft => ({
+      name:  ft.name,
+      title: ft.title,
+      metadata: { crs: ft.srs, geometry_type: 'UNKNOWN', feature_count: null, abstract: null },
+    }));
+  },
+
+  /**
+   * getGeomTypes(params, timeoutMs) → { layerLocalName: 'POINT'|'LINE'|'POLYGON'|'GEOMETRY' }
+   *
+   * Detecta los tipos de geometría de TODAS las capas en una sola request
+   * DescribeFeatureType (sin TYPENAME). Se llama desde el discover endpoint
+   * DESPUÉS de los inserts, como paso best-effort con timeout acotado.
+   *
+   * TODO: Implementar en ArcGIS (usa geometryType en el root JSON del servicio).
+   */
+  async getGeomTypes(params, timeoutMs = 4_000) {
     try {
-      const descUrl = buildUrl(params.url, {
+      const url = buildUrl(params.url, {
         SERVICE: 'WFS',
         REQUEST: 'DescribeFeatureType',
         VERSION: params.version || '1.1.0',
-        // Sin TYPENAME → el servidor devuelve todos los schemas en una sola request
       });
-      // Timeout corto: 5s presupuesto para detección de geometría dentro del límite de Vercel
-      const descRes = await fetchWithTimeout(descUrl, 5_000);
-      const descText = await descRes.text();
-
-      // Log diagnóstico — visible en Dashboard → Functions → logs de Vercel
-      console.log('[wfs.getLayers] DescribeFeatureType', {
-        status:          descRes.status,
-        contentType:     descRes.headers.get('content-type'),
-        bytes:           descText.length,
-        hasComplexType:  descText.includes('complexType'),
-        hasException:    descText.includes('ExceptionReport') || descText.includes('ExceptionText'),
-        preview:         descText.slice(0, 120).replace(/\s+/g, ' '),
-      });
-
-      if (descRes.ok && descText.includes('complexType')) {
-        Object.assign(geomTypes, parseGeomTypes(descText));
-        console.log('[wfs.getLayers] geometrías detectadas:', Object.keys(geomTypes).length,
-                    '— sample:', Object.entries(geomTypes).slice(0, 4));
-      }
-    } catch (e) {
-      console.warn('[wfs.getLayers] DescribeFeatureType falló:', e.message);
+      const res  = await fetchWithTimeout(url, timeoutMs);
+      const text = await res.text();
+      if (!res.ok || !text.includes('complexType')) return {};
+      return parseGeomTypes(text);
+    } catch (_) {
+      return {};
     }
-
-    return featureTypes.map(ft => {
-      const local    = ft.name.includes(':') ? ft.name.split(':').pop() : ft.name;
-      const geomType = geomTypes[local] || geomTypes[ft.name] || 'UNKNOWN';
-      return {
-        name:  ft.name,
-        title: ft.title,
-        metadata: {
-          crs:           ft.srs,
-          geometry_type: geomType,
-          feature_count: null,
-          abstract:      null,
-        },
-      };
-    });
   },
 
   /**
