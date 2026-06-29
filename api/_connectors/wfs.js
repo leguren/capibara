@@ -173,6 +173,57 @@ function parseDescribeFeatureType(xml) {
   return fields;
 }
 
+
+/**
+ * parseGeomTypes(xml) → { localLayerName: 'POINT'|'LINE'|'POLYGON'|'GEOMETRY' }
+ *
+ * Parsea un DescribeFeatureType multi-tipo y extrae el tipo de geometría por capa.
+ * Una sola request para todas las capas del servicio (batch).
+ *
+ * TODO: Aplicar patrón similar en los demás conectores (ArcGIS, etc.)
+ *       cuando sus APIs soporten introspección de esquema en batch.
+ */
+function parseGeomTypes(xml) {
+  const GML_MAP = {
+    'gml:PointPropertyType':        'POINT',
+    'gml:MultiPointPropertyType':   'POINT',
+    'gml:CurvePropertyType':        'LINE',
+    'gml:MultiCurvePropertyType':   'LINE',
+    'gml:LineStringPropertyType':   'LINE',
+    'gml:SurfacePropertyType':      'POLYGON',
+    'gml:MultiSurfacePropertyType': 'POLYGON',
+    'gml:PolygonPropertyType':      'POLYGON',
+    'gml:MultiPolygonPropertyType': 'POLYGON',
+    'gml:GeometryPropertyType':     'GEOMETRY',
+    'gml:AbstractGeometryType':     'GEOMETRY',
+  };
+
+  const result = {};
+  // Cada complexType corresponde a una capa. Su nombre es "NombreCapaType".
+  const blocks = xml.split(/<(?:xsd?:)complexType/);
+
+  for (let i = 1; i < blocks.length; i++) {
+    const block    = blocks[i];
+    const nameM    = block.match(/\bname="([^"]+)"/);
+    if (!nameM) continue;
+
+    const typeName = nameM[1]; // e.g. "LocalidadType" o "ign_LocalidadType"
+    // Quitar sufijo "Type" y posible prefijo de namespace
+    const stripped = typeName.replace(/Type$/, '');
+    const local    = stripped.includes('_') ? stripped.slice(stripped.indexOf('_') + 1) : stripped;
+
+    for (const [gmlType, geomLabel] of Object.entries(GML_MAP)) {
+      if (block.includes(`type="${gmlType}"`)) {
+        result[local]    = geomLabel;
+        result[stripped] = geomLabel; // clave alternativa
+        break;
+      }
+    }
+  }
+
+  return result;
+}
+
 // ---------------------------------------------------------------------------
 // Implementación del conector
 // ---------------------------------------------------------------------------
@@ -205,28 +256,51 @@ module.exports = makeConnector({
    * getLayers(params) → [{ name, title, metadata }]
    */
   async getLayers(params) {
-    const url = buildUrl(params.url, {
+    const capUrl = buildUrl(params.url, {
       SERVICE: 'WFS',
       REQUEST: 'GetCapabilities',
       VERSION: params.version || '1.1.0',
     });
 
-    const res = await fetchWithTimeout(url);
-    if (!res.ok) throw new Error(`HTTP ${res.status} al obtener capabilities`);
+    const capRes = await fetchWithTimeout(capUrl);
+    if (!capRes.ok) throw new Error(`HTTP ${capRes.status} al obtener capabilities`);
 
-    const xml              = await res.text();
+    const xml              = await capRes.text();
     const { featureTypes } = parseCapabilities(xml);
 
-    return featureTypes.map(ft => ({
-      name:  ft.name,
-      title: ft.title,
-      metadata: {
-        crs:           ft.srs,
-        geometry_type: 'UNKNOWN',
-        feature_count: null,
-        abstract:      null,
-      },
-    }));
+    // ── Geometry types en batch — 1 sola request para todas las capas ──────
+    // TODO: Aplicar patrón similar en ArcGIS (usa geometryType por capa en el
+    //       root JSON, verificar bug de mapeo), CSV, GeoJSON y demás conectores.
+    const geomTypes = {};
+    try {
+      const typeNames = featureTypes.map(ft => ft.name).join(',');
+      const descUrl   = buildUrl(params.url, {
+        SERVICE:   'WFS',
+        REQUEST:   'DescribeFeatureType',
+        VERSION:   params.version || '1.1.0',
+        TYPENAMES: typeNames, // WFS 2.0
+        TYPENAME:  typeNames, // WFS 1.x — algunos servidores solo aceptan este
+      });
+      const descRes = await fetchWithTimeout(descUrl, TIMEOUT_MS);
+      if (descRes.ok) Object.assign(geomTypes, parseGeomTypes(await descRes.text()));
+    } catch (_) {
+      // Falla silenciosa — geometry_type quedará UNKNOWN para las capas afectadas
+    }
+
+    return featureTypes.map(ft => {
+      const local   = ft.name.includes(':') ? ft.name.split(':').pop() : ft.name;
+      const geomType = geomTypes[local] || geomTypes[ft.name] || 'UNKNOWN';
+      return {
+        name:  ft.name,
+        title: ft.title,
+        metadata: {
+          crs:           ft.srs,
+          geometry_type: geomType,
+          feature_count: null,
+          abstract:      null,
+        },
+      };
+    });
   },
 
   /**
