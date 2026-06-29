@@ -289,16 +289,29 @@ module.exports = makeConnector({
     const geomTypes = {};
     try {
       const descUrl = buildUrl(params.url, {
-        SERVICE:  'WFS',
-        REQUEST:  'DescribeFeatureType',
-        VERSION:  params.version || '1.1.0',
-        // Sin TYPENAME → el servidor devuelve todos los schemas
+        SERVICE: 'WFS',
+        REQUEST: 'DescribeFeatureType',
+        VERSION: params.version || '1.1.0',
+        // Sin TYPENAME → el servidor devuelve todos los schemas en una sola request
       });
-      const descRes = await fetchWithTimeout(descUrl, TIMEOUT_MS);
-      if (descRes.ok) {
-        Object.assign(geomTypes, parseGeomTypes(await descRes.text()));
-      } else {
-        console.warn('[wfs.getLayers] DescribeFeatureType sin TYPENAME → HTTP', descRes.status);
+      // Timeout corto: 5s presupuesto para detección de geometría dentro del límite de Vercel
+      const descRes = await fetchWithTimeout(descUrl, 5_000);
+      const descText = await descRes.text();
+
+      // Log diagnóstico — visible en Dashboard → Functions → logs de Vercel
+      console.log('[wfs.getLayers] DescribeFeatureType', {
+        status:          descRes.status,
+        contentType:     descRes.headers.get('content-type'),
+        bytes:           descText.length,
+        hasComplexType:  descText.includes('complexType'),
+        hasException:    descText.includes('ExceptionReport') || descText.includes('ExceptionText'),
+        preview:         descText.slice(0, 120).replace(/\s+/g, ' '),
+      });
+
+      if (descRes.ok && descText.includes('complexType')) {
+        Object.assign(geomTypes, parseGeomTypes(descText));
+        console.log('[wfs.getLayers] geometrías detectadas:', Object.keys(geomTypes).length,
+                    '— sample:', Object.entries(geomTypes).slice(0, 4));
       }
     } catch (e) {
       console.warn('[wfs.getLayers] DescribeFeatureType falló:', e.message);
