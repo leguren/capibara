@@ -435,11 +435,11 @@
         <div class="pub-version-block" data-pub-id="${p.id ?? i}">
           <div class="pub-version-row js-pub-toggle">
             <div class="pub-version-info">
-              <span class="pub-version-label">${UTILS.escHtml(p.version_label)}</span>
+              <span class="pub-version-label">${UTILS.escHtml(p.version_label)}${i === 0 ? ' <span class="pub-version-active">activa</span>' : ''}</span>
               <span class="pub-version-date">${UTILS.formatDate(p.created_at)}</span>
             </div>
             <div class="pub-version-actions">
-              <button class="layer-btn js-pub-delete" data-pub-id="${p.id ?? i}" title="Eliminar versión">Eliminar</button>
+              <button class="layer-btn js-pub-delete" data-pub-id="${p.id ?? i}" data-version="${UTILS.escHtml(p.version_label)}" data-active="${i === 0}">Eliminar</button>
               <span class="layer-arrow pub-version-arrow"></span>
             </div>
           </div>
@@ -461,11 +461,26 @@
         });
       });
 
-      // Botones de eliminar (placeholder — conectar a API cuando esté disponible)
+      // Botones de eliminar
       el.querySelectorAll('.js-pub-delete').forEach(btn => {
-        btn.addEventListener('click', e => {
+        btn.addEventListener('click', async e => {
           e.stopPropagation();
-          TOAST.error('Eliminar versión', 'Esta acción no está disponible todavía.');
+          const pubId   = btn.dataset.pubId;
+          const version = btn.dataset.version;
+          const isActive = btn.dataset.active === 'true';
+
+          const msg = isActive
+            ? `¿Eliminar ${version}? Es la versión activa — la API pública quedará sin snapshot hasta la próxima publicación. Esta acción no se puede deshacer.`
+            : `¿Eliminar ${version}? Esta acción no se puede deshacer.`;
+
+          if (!confirm(msg)) return;
+
+          btn.disabled = true;
+          const { ok, error } = await API.deletePublication(pubId);
+          btn.disabled = false;
+          if (!ok) { TOAST.error('Error al eliminar', error); return; }
+          TOAST.ok(`Eliminada ${version}`);
+          loadHistory();
         });
       });
     }
