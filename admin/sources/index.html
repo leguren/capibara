@@ -237,34 +237,76 @@
           <button class="modal-close js-close"><span class="material-symbols-outlined" style="font-size:18px;line-height:1">close</span></button>
         </div>
         <div class="modal-body">
-          <div class="modal-field">
-            <label class="modal-label">Nombre del servicio</label>
-            <input class="input" value="${UTILS.escHtml(src.name_source)}" readonly>
-          </div>
           ${url ? `<div class="modal-field"><label class="modal-label">URL</label><input class="input input-mono" value="${UTILS.escHtml(url)}" readonly style="font-size:11px"></div>` : ''}
           <div class="modal-field">
-            <label class="modal-label">Tipo</label>
-            <select class="select" disabled><option selected>${FMTS.get(src.data_format).label}${src.access_method ? ' · ' + src.access_method : ''}</option></select>
+            <label class="modal-label">Formato</label>
+            <div class="dd-wrap">
+              <select class="select" id="edit-format">
+                <option value="">unknown</option>
+                <option value="arcgis_rest">arcgis rest</option>
+                <option value="csv">csv</option>
+                <option value="geojson">geojson</option>
+                <option value="json">json</option>
+                <option value="wfs">wfs</option>
+              </select>
+              <span class="dd-icon">expand_more</span>
+            </div>
           </div>
           <div class="modal-field">
-            <label class="modal-label" for="edit-alias">Nombre alias</label>
-            <input class="input" id="edit-alias" value="${UTILS.escHtml(src.name_alias || '')}" placeholder="Nombre visible en el panel">
+            <label class="modal-label" for="edit-alias">Alias</label>
+            <input class="input" id="edit-alias" value="${UTILS.escHtml(src.name_alias || '')}" placeholder="Pasos internacionales">
           </div>
           <div class="modal-field">
             <label class="modal-label">Proveedor del servicio</label>
             <input class="input" value="${UTILS.escHtml(src.provider_source || '')}" readonly>
           </div>
           <div class="modal-field">
-            <label class="modal-label" for="edit-provider-alias">Proveedor alias</label>
-            <input class="input" id="edit-provider-alias" value="${UTILS.escHtml(src.provider_alias || '')}" placeholder="Nombre legible del proveedor">
+            <label class="modal-label" for="edit-provider-alias">Alias</label>
+            <input class="input" id="edit-provider-alias" value="${UTILS.escHtml(src.provider_alias || '')}" placeholder="Ministerio de Seguridad Nacional">
           </div>
           <div class="modal-field">
-            <label class="modal-label" for="edit-countries">Países (códigos ISO)</label>
-            <input class="input" id="edit-countries" value="${(src.countries || []).join(' ')}" placeholder="AR BO BR CL CO UY">
+            <label class="modal-label" for="edit-countries">Países</label>
+            <select class="select" id="edit-countries" multiple style="height:60px">
+              <option value="AG">Antigua y Barbuda AG</option>
+              <option value="AR">Argentina AR</option>
+              <option value="BB">Barbados BB</option>
+              <option value="BZ">Belice BZ</option>
+              <option value="BO">Bolivia BO</option>
+              <option value="BR">Brasil BR</option>
+              <option value="CA">Canadá CA</option>
+              <option value="CL">Chile CL</option>
+              <option value="CO">Colombia CO</option>
+              <option value="CR">Costa Rica CR</option>
+              <option value="CU">Cuba CU</option>
+              <option value="DM">Dominica DM</option>
+              <option value="EC">Ecuador EC</option>
+              <option value="SV">El Salvador SV</option>
+              <option value="US">Estados Unidos US</option>
+              <option value="GD">Granada GD</option>
+              <option value="GT">Guatemala GT</option>
+              <option value="GY">Guyana GY</option>
+              <option value="HT">Haití HT</option>
+              <option value="HN">Honduras HN</option>
+              <option value="JM">Jamaica JM</option>
+              <option value="MX">México MX</option>
+              <option value="NI">Nicaragua NI</option>
+              <option value="PA">Panamá PA</option>
+              <option value="PY">Paraguay PY</option>
+              <option value="PE">Perú PE</option>
+              <option value="PR">Puerto Rico PR</option>
+              <option value="DO">República Dominicana DO</option>
+              <option value="KN">Saint Kitts y Nevis KN</option>
+              <option value="LC">Santa Lucía LC</option>
+              <option value="VC">San Vicente y las Granadinas VC</option>
+              <option value="SR">Surinam SR</option>
+              <option value="TT">Trinidad y Tobago TT</option>
+              <option value="UY">Uruguay UY</option>
+              <option value="VE">Venezuela VE</option>
+            </select>
           </div>
           <div class="modal-field">
             <label class="modal-label" for="edit-notes">Notas internas</label>
-            <textarea class="input" id="edit-notes" style="height:72px;resize:vertical;padding:8px 12px" placeholder="Notas sobre esta fuente">${UTILS.escHtml(src.notes || '')}</textarea>
+            <textarea class="input" id="edit-notes" style="height:72px;resize:vertical;padding:8px 12px">${UTILS.escHtml(src.notes || '')}</textarea>
           </div>
         </div>
         <div class="modal-footer">
@@ -274,6 +316,17 @@
       </div>
     `;
 
+    // Pre-seleccionar valores actuales
+    const formatSelect = overlay.querySelector('#edit-format');
+    if (formatSelect) formatSelect.value = src.data_format || '';
+
+    const countriesSelect = overlay.querySelector('#edit-countries');
+    if (countriesSelect && src.countries?.length) {
+      [...countriesSelect.options].forEach(o => {
+        o.selected = src.countries.includes(o.value);
+      });
+    }
+
     const close = () => document.body.removeChild(overlay);
     overlay.querySelector('.js-close').addEventListener('click', close);
     overlay.querySelector('.js-cancel').addEventListener('click', close);
@@ -282,17 +335,18 @@
     overlay.querySelector('.js-save').addEventListener('click', async () => {
       const alias          = overlay.querySelector('#edit-alias').value.trim() || null;
       const providerAlias  = overlay.querySelector('#edit-provider-alias').value.trim() || null;
-      const countries      = overlay.querySelector('#edit-countries').value.trim().toUpperCase().split(/[\s,]+/).filter(Boolean);
+      const countries      = [...overlay.querySelector('#edit-countries').selectedOptions].map(o => o.value);
       const notes          = overlay.querySelector('#edit-notes').value.trim() || null;
       const saveBtn   = overlay.querySelector('.js-save');
       saveBtn.disabled = true;
 
-      const { ok, error } = await API.updateSource(src.id, { name_alias: alias, provider_alias: providerAlias, notes, countries });
+      const { ok, error } = await API.updateSource(src.id, { name_alias: alias, provider_alias: providerAlias, notes, countries, data_format: overlay.querySelector('#edit-format').value || null });
       saveBtn.disabled = false;
       if (!ok) { TOAST.error('Error al guardar', error); return; }
 
       // Actualizar caché y UI
-      Object.assign(src, { name_alias: alias, provider_alias: providerAlias, notes, countries });
+      const newFormat = overlay.querySelector('#edit-format').value || src.data_format;
+      Object.assign(src, { name_alias: alias, provider_alias: providerAlias, notes, countries, data_format: newFormat });
       loadedSources.set(src.id, src);
       const blk = document.querySelector(`.source-block[data-id="${src.id}"]`);
       if (blk) blk.querySelector('.source-name').textContent = UTILS.displayName(src);
