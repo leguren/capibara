@@ -519,7 +519,7 @@
               <span class="pub-version-date">${UTILS.formatDate(p.created_at)}</span>
             </div>
             <div class="pub-version-actions">
-              <button class="layer-btn danger js-pub-delete" data-pub-id="${p.id}" data-version="${UTILS.escHtml(p.version_label)}" data-active="${i === 0}">Eliminar</button>
+              <span class="pub-source-count">${p.sources_count ?? '?'} fuentes</span>
               <span class="layer-arrow pub-version-arrow"></span>
             </div>
           </div>
@@ -528,80 +528,48 @@
       `).join('');
 
       el.querySelectorAll('.js-pub-toggle').forEach(row => {
-        row.addEventListener('click', async e => {
-          if (e.target.closest('.js-pub-delete')) return;
+        row.addEventListener('click', e => {
           const block  = row.closest('.pub-version-block');
           const body   = block.querySelector('.pub-version-body');
           const isOpen = block.classList.contains('open');
           block.classList.toggle('open');
           if (!isOpen && !body.dataset.loaded) {
             body.dataset.loaded = '1';
-            body.innerHTML = `<div class="inline-loading" style="padding:8px 12px">Cargando…</div>`;
             const pubId = block.dataset.pubId;
             const pub   = data.publications.find(p => p.id === pubId);
+            const isActivePub = (i === 0);
+            const catalogLink = isActivePub ? `<a href="/api/geo/1/catalog" target="_blank" class="pub-catalog-link">Ver catálogo</a>` : '';
             const notesHtml = pub?.notes ? `<div class="pub-version-notes">${UTILS.escHtml(pub.notes)}</div>` : '';
-            const byHtml    = pub?.published_by ? `<div class="pub-detail-row"><span class="pub-detail-label">publicado por</span><span class="pub-detail-value">${UTILS.escHtml(pub.published_by)}</span></div>` : '';
-            const { data: det, ok: dok } = await API.getPublication(pubId);
-            const isActivePub = block.dataset.pubId === data.publications[0]?.id;
-            const catalogHtml = isActivePub ? `<div class="pub-detail-row"><a href="/api/geo/1/catalog" target="_blank" class="pub-catalog-link">Ver catálogo</a></div>` : '';
-            body.innerHTML = notesHtml + byHtml + catalogHtml;
-
-            // Lista de fuentes del snapshot — igual a "fuentes a publicar"
-            if (dok && det.sources?.length) {
-              const snapList = document.createElement('div');
-              snapList.className = 'pub-sources-list pub-snap-list';
-              det.sources.forEach(s => {
-                const sname = s.name_alias || s.name_source;
-                const fmt   = s.data_format || '';
-                const pillHtml = fmt ? `<span class="pill pub-format-pill">${fmt.replace('_',' ')}</span>` : '';
-                const srcBlock = document.createElement('div');
-                srcBlock.className = 'pub-source-block';
-                srcBlock.innerHTML = `
-                  <div class="pub-source-row js-snap-src-toggle">
-                    <div class="pub-source-info">
-                      <span class="pub-source-name">${UTILS.escHtml(sname)}</span>
-                      ${pillHtml}
-                    </div>
-                    <span class="pub-source-count">${(s.layers||[]).length} capas</span>
-                    <span class="layer-arrow pub-source-arrow"></span>
-                  </div>
-                  <div class="pub-source-body pub-snap-layers"></div>
-                `;
-                const layerBody = srcBlock.querySelector('.pub-snap-layers');
-                layerBody.innerHTML = (s.layers || []).map(l => {
-                  const geom = l.geometry_type
-                    ? `<span class="pub-layer-geom">${UTILS.escHtml((l.geometry_type||'').toLowerCase())}</span>`
-                    : '';
-                  return `<div class="pub-layer-row"><span class="pub-layer-name">${UTILS.escHtml(l.name_alias || l.name_source)}</span>${geom}</div>`;
-                }).join('') || `<div style="padding:6px 12px;font-size:12px;color:var(--text2)">Sin capas.</div>`;
-
-                srcBlock.querySelector('.js-snap-src-toggle').addEventListener('click', () => {
-                  srcBlock.classList.toggle('open');
-                });
-                snapList.appendChild(srcBlock);
-              });
-              body.appendChild(snapList);
-            }
+            body.innerHTML = notesHtml;
+            // Fila de metadata: published_by + Eliminar
+            const metaRow = document.createElement('div');
+            metaRow.className = 'pub-version-meta-row';
+            metaRow.innerHTML = `
+              <div class="pub-version-by">
+                <span class="source-provider-label">publicado por</span>
+                <span class="source-provider-text">${pub?.published_by ? UTILS.escHtml(pub.published_by) : '—'}</span>
+                ${catalogLink}
+              </div>
+              <button class="layer-btn danger js-pub-delete" data-pub-id="${pubId}" data-version="${UTILS.escHtml(pub?.version_label||'')}" data-active="${isActivePub}">Eliminar</button>
+            `;
+            const deleteBtn = metaRow.querySelector('.js-pub-delete');
+            deleteBtn.addEventListener('click', async e => {
+              e.stopPropagation();
+              const version  = deleteBtn.dataset.version;
+              const isActive = deleteBtn.dataset.active === 'true';
+              const msg = isActive
+                ? `¿Eliminar ${version}? Es la versión activa — la API pública quedará sin snapshot hasta la próxima publicación. Esta acción no se puede deshacer.`
+                : `¿Eliminar ${version}? Esta acción no se puede deshacer.`;
+              if (!confirm(msg)) return;
+              deleteBtn.disabled = true;
+              const { ok, error } = await API.deletePublication(pubId);
+              deleteBtn.disabled = false;
+              if (!ok) { TOAST.error('Error al eliminar', error); return; }
+              TOAST.ok(`Eliminada ${version}`);
+              loadHistory();
+            });
+            body.appendChild(metaRow);
           }
-        });
-      });
-
-      el.querySelectorAll('.js-pub-delete').forEach(btn => {
-        btn.addEventListener('click', async e => {
-          e.stopPropagation();
-          const pubId    = btn.dataset.pubId;
-          const version  = btn.dataset.version;
-          const isActive = btn.dataset.active === 'true';
-          const msg = isActive
-            ? `¿Eliminar ${version}? Es la versión activa — la API pública quedará sin snapshot hasta la próxima publicación. Esta acción no se puede deshacer.`
-            : `¿Eliminar ${version}? Esta acción no se puede deshacer.`;
-          if (!confirm(msg)) return;
-          btn.disabled = true;
-          const { ok, error } = await API.deletePublication(pubId);
-          btn.disabled = false;
-          if (!ok) { TOAST.error('Error al eliminar', error); return; }
-          TOAST.ok(`Eliminada ${version}`);
-          loadHistory();
         });
       });
     }
