@@ -375,6 +375,8 @@
   cursor:      pointer;
   accent-color: var(--accent);
 }
+.layer-check:disabled { opacity: 0.35; cursor: default; }
+.source-check { margin-right: 2px; }
 .layer-geom-icon {
   font-family:            'Material Symbols Outlined';
   font-size:              16px;
