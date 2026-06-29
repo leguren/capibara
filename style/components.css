@@ -379,6 +379,6 @@
   user-select:            none;
   transition:             transform 0.22s ease;
 }
-.dd-wrap.open .dd-icon {
+.dd-wrap:focus-within .dd-icon {
   transform: translateY(-50%) rotate(-180deg);
 }
