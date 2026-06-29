@@ -541,9 +541,16 @@
       btn.classList.remove('btn-loading'); btn.disabled = false;
       if (!ok) { TOAST.error('Error', error); return; }
       TOAST.ok(data.added > 0 ? 'Campos descubiertos' : 'Campos actualizados', `${data.added} nuevos.`);
-      // Invalidar caché y refrescar si la capa está abierta
-      loadedFields.delete(layer.id);
-      if (block.classList.contains('open')) {
+      // Siempre fetch y cachear los campos tras discover, independiente del estado de la capa.
+      // Esto evita el cache-miss en el próximo open (que ocurre cuando la capa estaba cerrada
+      // durante el discover y SOURCES.load() reconstruyó el DOM entre medio).
+      const { data: fd, ok: fok } = await API.getLayerFields(layer.id);
+      if (fok && fd?.fields?.length) {
+        loadedFields.set(layer.id, fd.fields);
+        if (block.classList.contains('open')) {
+          renderFields(block.querySelector('.layer-body'), layer.id);
+        }
+      } else if (block.classList.contains('open')) {
         openLayerFields(block.querySelector('.layer-body'), layer);
       }
     });
