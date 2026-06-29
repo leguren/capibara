@@ -101,7 +101,7 @@ code, pre, .mono {
 }
 
 /* ── Scrollbar custom (Webkit) ──────────────────────────────────────────── */
-::-webkit-scrollbar       { width: 6px; height: 6px; }
+::-webkit-scrollbar       { width: 3px; height: 3px; }
 ::-webkit-scrollbar-track { background: var(--bg2); }
 ::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: var(--radius-full); }
 ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
