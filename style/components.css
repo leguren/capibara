@@ -210,6 +210,8 @@
   overflow-y:    auto;
   box-shadow:    var(--shadow-lg);
   animation:     slide-up 0.15s ease;
+  display:       flex;
+  flex-direction: column;
 }
 .modal-header {
   display:         flex;
@@ -218,6 +220,11 @@
   padding:         20px 20px 16px;
   border-bottom:   1px solid var(--border);
   margin-bottom:   20px;
+  position:        sticky;
+  top:             0;
+  background:      var(--bg);
+  z-index:         1;
+  flex-shrink:     0;
 }
 .modal-title { font-size: 16px; font-weight: 700; color: var(--text); }
 .modal-body  { padding: 0 20px; }
