@@ -268,27 +268,37 @@ module.exports = makeConnector({
     const xml              = await capRes.text();
     const { featureTypes } = parseCapabilities(xml);
 
-    // ── Geometry types en batch — 1 sola request para todas las capas ──────
+    // ── Geometry types en batches paralelos ────────────────────────────────
+    // Un batch único con 192 capas genera una URL de ~4000 chars que supera
+    // el límite HTTP estándar de ~2048 chars. Usamos batches de 20 capas en
+    // parallel — la URL de cada batch queda bajo 2000 chars.
+    //
     // TODO: Aplicar patrón similar en ArcGIS (usa geometryType por capa en el
     //       root JSON, verificar bug de mapeo), CSV, GeoJSON y demás conectores.
+    const BATCH = 20;
     const geomTypes = {};
-    try {
-      const typeNames = featureTypes.map(ft => ft.name).join(',');
-      const descUrl   = buildUrl(params.url, {
-        SERVICE:   'WFS',
-        REQUEST:   'DescribeFeatureType',
-        VERSION:   params.version || '1.1.0',
-        TYPENAMES: typeNames, // WFS 2.0
-        TYPENAME:  typeNames, // WFS 1.x — algunos servidores solo aceptan este
-      });
-      const descRes = await fetchWithTimeout(descUrl, TIMEOUT_MS);
-      if (descRes.ok) Object.assign(geomTypes, parseGeomTypes(await descRes.text()));
-    } catch (_) {
-      // Falla silenciosa — geometry_type quedará UNKNOWN para las capas afectadas
+    const batches = [];
+    for (let i = 0; i < featureTypes.length; i += BATCH) {
+      batches.push(featureTypes.slice(i, i + BATCH));
     }
 
+    await Promise.all(batches.map(async batch => {
+      try {
+        const typeNames = batch.map(ft => ft.name).join(',');
+        const descUrl   = buildUrl(params.url, {
+          SERVICE:   'WFS',
+          REQUEST:   'DescribeFeatureType',
+          VERSION:   params.version || '1.1.0',
+          TYPENAME:  typeNames, // WFS 1.x — soporta múltiples typeNames separados por coma
+          TYPENAMES: typeNames, // WFS 2.0
+        });
+        const descRes = await fetchWithTimeout(descUrl, TIMEOUT_MS);
+        if (descRes.ok) Object.assign(geomTypes, parseGeomTypes(await descRes.text()));
+      } catch (_) { /* falla silenciosa por batch */ }
+    }));
+
     return featureTypes.map(ft => {
-      const local   = ft.name.includes(':') ? ft.name.split(':').pop() : ft.name;
+      const local    = ft.name.includes(':') ? ft.name.split(':').pop() : ft.name;
       const geomType = geomTypes[local] || geomTypes[ft.name] || 'UNKNOWN';
       return {
         name:  ft.name,
