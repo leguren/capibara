@@ -494,7 +494,6 @@
   function buildLayerBlock(layer) {
     const displayName = layer.name_alias || layer.name_source;
     const showSource  = !!layer.name_alias; // solo mostrar name_source si hay alias
-    const count       = layer.feature_count != null ? UTILS.formatNumber(layer.feature_count) : '—';
 
     const block = document.createElement('div');
     block.className  = 'layer-block';
@@ -507,8 +506,7 @@
           <span class="layer-name">${UTILS.escHtml(displayName)}</span>
           ${showSource ? `<span class="layer-name-source">${UTILS.escHtml(layer.name_source)}</span>` : ''}
         </div>
-        <span class="layer-count">${count}</span>
-        <button class="layer-btn js-layer-edit">Editar</button>
+        <button class="action-btn js-layer-edit">Editar</button>
         <span class="layer-arrow"></span>
       </div>
       <div class="layer-body"></div>
@@ -523,7 +521,7 @@
     });
 
     block.querySelector('.layer-row').addEventListener('click', e => {
-      if (e.target.closest('.layer-check') || e.target.closest('.layer-btn')) return;
+      if (e.target.closest('.layer-check') || e.target.closest('.js-layer-edit')) return;
       toggleLayer(block, layer);
     });
 
