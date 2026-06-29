@@ -127,7 +127,7 @@ window.CAPIBARA_SOURCES = (() => {
           </div>
           <div class="modal-field">
             <label class="modal-label">Notas internas</label>
-            <textarea class="input" id="src-notes" style="height:72px;resize:vertical;padding:8px 12px"></textarea>
+            <textarea class="textarea" id="src-notes" style="height:72px;padding:8px 12px"></textarea>
           </div>
         </div>
         <div class="modal-footer">
