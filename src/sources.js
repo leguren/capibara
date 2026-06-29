@@ -72,7 +72,7 @@ window.CAPIBARA_SOURCES = (() => {
               <button type="button" class="select" id="country-trigger"
                 style="display:flex;align-items:center;text-align:left;cursor:pointer">
                 <span id="country-display" style="flex:1;color:var(--text2)">Seleccioná países…</span>
-                <span class="material-symbols-outlined" style="font-size:18px;color:var(--text3);flex-shrink:0;font-variation-settings:'FILL' 0,'wght' 300,'GRAD' 0,'opsz' 20">expand_more</span>
+
               </button>
               <div id="country-dropdown" style="
                 display:none;position:absolute;top:calc(100% + 2px);left:0;right:0;
@@ -134,6 +134,11 @@ window.CAPIBARA_SOURCES = (() => {
       cb.addEventListener('change', () => {
         if (cb.checked) selectedCodes.add(cb.value);
         else selectedCodes.delete(cb.value);
+        const row = cb.closest('label');
+        if (row) {
+          row.style.background = cb.checked ? 'rgba(61,82,160,0.08)' : '';
+          row.style.color      = cb.checked ? 'var(--accent)'        : '';
+        }
         updateTrigger();
       });
     });
@@ -163,11 +168,13 @@ window.CAPIBARA_SOURCES = (() => {
       btn.disabled = false;
       if (!ok) { TOAST.error('Error al detectar', error); return; }
       if (data.detected) {
-        overlay.querySelector('#src-format').value = data.detected.format;
+        overlay.querySelector('#src-format').value    = data.detected.format;
+        overlay.querySelector('#src-format').disabled = true; // bloqueado al detectar
         TOAST.ok('Detectado', FMTS.get(data.detected.format).label);
         if (data.preview?.name_source)     overlay.querySelector('#src-name-source').value     = data.preview.name_source;
         if (data.preview?.provider_source) overlay.querySelector('#src-provider-source').value = data.preview.provider_source;
       } else {
+        overlay.querySelector('#src-format').disabled = false; // habilitado si no se detecta
         TOAST.warn('Formato no detectado', 'Seleccionalo manualmente.');
       }
     });
