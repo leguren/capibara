@@ -567,18 +567,17 @@
 .pub-version-block.open .pub-version-arrow     { transform: rotate(-180deg); }
 
 .pub-version-body {
-  display:    none;
-  padding:    8px 12px 10px;
-  border-top: 1px solid var(--border);
-  gap:        4px;
+  display:        none;
+  border-top:     1px solid var(--border);
   flex-direction: column;
 }
 .pub-version-block.open .pub-version-body { display: flex; }
 
 .pub-version-notes {
-  font-size:  12px;
-  color:      var(--text2);
+  font-size:   12px;
+  color:       var(--text2);
   line-height: 1.5;
+  padding:     8px 12px 4px;
 }
 .pub-version-active {
   font-family:   var(--font);
@@ -692,7 +691,7 @@
   display:     flex;
   align-items: center;
   gap:         8px;
-  padding:     8px 12px;
+  padding:     6px 12px 8px;
 }
 .pub-version-by {
   flex:        1;
@@ -706,22 +705,8 @@
 .layer-btn.danger { color: var(--error); border-color: rgba(230,57,70,0.3); }
 .layer-btn.danger:hover { background: rgba(230,57,70,0.05); border-color: rgba(230,57,70,0.5); color: var(--error); }
 
-/* ── Lista de fuentes en versión publicada ───────────────────────── */
-.pub-snap-source-list {
-  display:        flex;
-  flex-direction: column;
-  border-top:     1px solid var(--bg3);
-}
-.pub-snap-source-row {
-  display:     flex;
-  align-items: baseline;
-  gap:         8px;
-  padding:     5px 12px;
-  border-top:  1px solid var(--bg3);
-}
-.pub-snap-source-row:first-child { border-top: none; }
-.pub-snap-source-name { font-size: 12px; color: var(--text); }
-.pub-snap-source-fmt  { font-family: var(--font-mono); font-size: 11px; color: var(--text3); }
+/* ── Lista de fuentes en versión publicada (reutiliza pub-layer-row) */
+.pub-snap-source-list { display: flex; flex-direction: column; border-top: 1px solid var(--bg3); }
 
 /* ── Pill neutra formato (modal Publicar) ────────────────────────── */
 .pub-format-pill {
