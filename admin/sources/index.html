@@ -434,7 +434,6 @@
 
     body.querySelector('.js-refresh-source')?.addEventListener('click', async e => {
       const btn = e.currentTarget;
-      btn.classList.add('btn-loading');
       btn.disabled = true;
       const { data, ok } = await API.getSource(src.id);
       if (ok && data) {
@@ -443,7 +442,6 @@
         renderSourceBody(block, data.source);
         loadLayers(block, src.id);
       }
-      btn.classList.remove('btn-loading');
       btn.disabled = false;
     });
 
@@ -550,17 +548,17 @@
       body.innerHTML = `
         <div style="padding:12px 16px;display:flex;align-items:center;gap:12px">
           <span style="font-size:13px;color:var(--text2)">Sin campos descubiertos.</span>
-          <button class="action-btn js-do-discover-fields">Descubrir campos</button>
+          <button class="field-alias-save js-do-discover-fields">Descubrir campos</button>
         </div>
       `;
       body.querySelector('.js-do-discover-fields').addEventListener('click', async e => {
         const btn = e.currentTarget;
-        btn.classList.add('btn-loading'); btn.disabled = true;
+        btn.disabled = true;
         const { data: dd, ok: dok, error: derr } = await API.discoverFields(layer.id);
-        if (!dok) { btn.classList.remove('btn-loading'); btn.disabled = false; TOAST.error('Error', derr); return; }
+        if (!dok) { btn.disabled = false; TOAST.error('Error', derr); return; }
         TOAST.ok(dd.added > 0 ? 'Campos descubiertos' : 'Sin campos nuevos', `${dd.added} nuevos.`);
         const { data: fd, ok: fok } = await API.getLayerFields(layer.id);
-        btn.classList.remove('btn-loading'); btn.disabled = false;
+        btn.disabled = false;
         if (fok && fd?.fields?.length) {
           loadedFields.set(layer.id, fd.fields);
           renderFields(body, layer.id);
@@ -610,9 +608,9 @@
         const inp   = row.querySelector('.js-field-alias');
         const alias = inp.value.trim() || null;
         const btn   = e.currentTarget;
-        btn.classList.add('btn-loading'); btn.disabled = true;
+        btn.disabled = true;
         const { ok, error } = await API.updateField(f.id, { name_alias: alias });
-        btn.classList.remove('btn-loading'); btn.disabled = false;
+        btn.disabled = false;
         if (!ok) { TOAST.error('Error', error); return; }
         f.name_alias = alias;
         TOAST.ok('Guardado');
