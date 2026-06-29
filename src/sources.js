@@ -57,28 +57,26 @@ window.CAPIBARA_SOURCES = (() => {
           </div>
           <div class="modal-field">
             <label class="modal-label">Formato</label>
-            <select class="select" id="src-format">
-              <option value="" selected>unknown</option>
-              <option value="arcgis_rest">arcgis rest</option>
-              <option value="csv">csv</option>
-              <option value="geojson">geojson</option>
-              <option value="json">json</option>
-              <option value="wfs">wfs</option>
-            </select>
+            <div style="position:relative" id="fmt-wrap">
+              <button type="button" class="select" id="fmt-trigger"
+                style="display:flex;align-items:center;text-align:left;cursor:pointer">
+                <span id="fmt-display" style="flex:1;color:var(--text2)">unknown</span>
+              </button>
+              <div id="fmt-dropdown" style="display:none;position:absolute;top:calc(100% + 2px);left:0;right:0;
+                background:var(--bg);border:1.5px solid var(--border);border-radius:var(--radius);
+                z-index:100;max-height:220px;overflow-y:auto"></div>
+            </div>
           </div>
           <div class="modal-field">
             <label class="modal-label">Países</label>
-            <div style="position:relative" id="country-picker-wrap">
-              <button type="button" class="select" id="country-trigger"
+            <div style="position:relative" id="ctry-wrap">
+              <button type="button" class="select" id="ctry-trigger"
                 style="display:flex;align-items:center;text-align:left;cursor:pointer">
-                <span id="country-display" style="flex:1;color:var(--text2)">Seleccioná países…</span>
-
+                <span id="ctry-display" style="flex:1;color:var(--text2)">Seleccioná países…</span>
               </button>
-              <div id="country-dropdown" style="
-                display:none;position:absolute;top:calc(100% + 2px);left:0;right:0;
+              <div id="ctry-dropdown" style="display:none;position:absolute;top:calc(100% + 2px);left:0;right:0;
                 background:var(--bg);border:1.5px solid var(--border);border-radius:var(--radius);
-                z-index:100;max-height:220px;overflow-y:auto">
-              </div>
+                z-index:100;max-height:220px;overflow-y:auto"></div>
             </div>
           </div>
           <div class="modal-field">
@@ -109,41 +107,96 @@ window.CAPIBARA_SOURCES = (() => {
       </div>
     `;
 
-    // Country picker con checkboxes
-    const COUNTRIES = window.CAPIBARA_COUNTRIES;
-    let selectedCodes = new Set();
-    const trigger    = overlay.querySelector('#country-trigger');
-    const dropdown   = overlay.querySelector('#country-dropdown');
+    // ── Helper: custom select (igual para formato y países) ───────────────
+    // multi=false → selección única, cierra al elegir
+    // multi=true  → selección múltiple, permanece abierto
+    function initCustomSelect({ prefix, options, multi, placeholder }) {
+      const dd   = overlay.querySelector(`#${prefix}-dropdown`);
+      const disp = overlay.querySelector(`#${prefix}-display`);
+      const btn  = overlay.querySelector(`#${prefix}-trigger`);
+      let   sel  = multi ? new Set() : null;
 
-    // Construir el dropdown agrupado por región
-    const display = overlay.querySelector('#country-display');
-    dropdown.innerHTML = COUNTRIES.LIST.map(c => `
-      <label style="display:flex;align-items:center;gap:8px;padding:6px 14px;cursor:pointer;font-size:13px;color:var(--text)">
-        <input type="checkbox" value="${c.code}" style="accent-color:var(--accent);cursor:pointer;flex-shrink:0">
-        ${c.name} <span style="font-family:var(--font-mono);font-size:11px;color:var(--text2)">${c.code}</span>
-      </label>
-    `).join('');
+      const OPT_STYLE = 'display:flex;align-items:center;gap:8px;padding:6px 14px;cursor:pointer;font-size:13px;color:var(--text)';
+      const CB_STYLE  = 'accent-color:var(--accent);cursor:pointer;flex-shrink:0';
 
-    function updateTrigger() {
-      const codes = [...selectedCodes].sort();
-      display.textContent = codes.length ? codes.join(', ') : 'Seleccioná países…';
-      display.style.color = codes.length ? 'var(--text)' : 'var(--text2)';
+      dd.innerHTML = options.map(o => `
+        <label style="${OPT_STYLE}">
+          <input type="checkbox" value="${o.value}" style="${CB_STYLE}">
+          <span style="flex:1">${o.label}</span>
+          ${o.sub ? `<span style="font-family:var(--font-mono);font-size:11px;color:var(--text2)">${o.sub}</span>` : ''}
+        </label>`).join('');
+
+      function refreshDisplay() {
+        let text, hasVal;
+        if (multi) {
+          const codes = [...sel].sort();
+          text   = codes.length ? codes.join(', ') : placeholder;
+          hasVal = codes.length > 0;
+        } else {
+          const opt = options.find(o => o.value === sel);
+          text   = opt ? opt.label : placeholder;
+          hasVal = !!opt;
+        }
+        disp.textContent = text;
+        disp.style.color = hasVal ? 'var(--text)' : 'var(--text2)';
+      }
+
+      dd.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+        cb.addEventListener('change', () => {
+          if (multi) {
+            if (cb.checked) sel.add(cb.value); else sel.delete(cb.value);
+          } else {
+            dd.querySelectorAll('input[type="checkbox"]').forEach(o => { if (o !== cb) o.checked = false; });
+            sel = cb.checked ? cb.value : null;
+            if (cb.checked) dd.style.display = 'none'; // cierra al elegir (single)
+          }
+          refreshDisplay();
+        });
+      });
+
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        dd.style.display = dd.style.display === 'none' ? 'block' : 'none';
+      });
+      overlay.addEventListener('click', e => {
+        if (!e.target.closest(`#${prefix}-wrap`)) dd.style.display = 'none';
+      });
+
+      return {
+        getValue: () => multi ? [...sel].sort() : sel,
+        setValue(val) {
+          sel = multi ? new Set(Array.isArray(val) ? val : [val]) : (val || null);
+          dd.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+            cb.checked = multi ? sel.has(cb.value) : cb.value === sel;
+          });
+          refreshDisplay();
+        },
+        lock()   { btn.disabled = true;  btn.style.opacity = '0.55'; },
+        unlock() { btn.disabled = false; btn.style.opacity = ''; },
+      };
     }
 
-    dropdown.querySelectorAll('input[type="checkbox"]').forEach(cb => {
-      cb.addEventListener('change', () => {
-        if (cb.checked) selectedCodes.add(cb.value);
-        else selectedCodes.delete(cb.value);
-        updateTrigger();
-      });
+    // Inicializar formato (single select)
+    const fmtSelect = initCustomSelect({
+      prefix: 'fmt',
+      options: [
+        { value: '',            label: 'unknown' },
+        { value: 'arcgis_rest', label: 'arcgis rest' },
+        { value: 'csv',         label: 'csv' },
+        { value: 'geojson',     label: 'geojson' },
+        { value: 'json',        label: 'json' },
+        { value: 'wfs',         label: 'wfs' },
+      ],
+      multi: false,
+      placeholder: 'unknown',
     });
 
-    trigger.addEventListener('click', e => {
-      e.stopPropagation();
-      dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
-    });
-    overlay.addEventListener('click', e => {
-      if (!e.target.closest('#country-picker-wrap')) dropdown.style.display = 'none';
+    // Inicializar países (multi select)
+    const ctrySelect = initCustomSelect({
+      prefix: 'ctry',
+      options: window.CAPIBARA_COUNTRIES.LIST.map(c => ({ value: c.code, label: c.name, sub: c.code })),
+      multi: true,
+      placeholder: 'Seleccioná países…',
     });
 
     document.body.appendChild(overlay);
@@ -163,13 +216,13 @@ window.CAPIBARA_SOURCES = (() => {
       btn.disabled = false;
       if (!ok) { TOAST.error('Error al detectar', error); return; }
       if (data.detected) {
-        overlay.querySelector('#src-format').value    = data.detected.format;
-        overlay.querySelector('#src-format').disabled = true; // bloqueado al detectar
+        fmtSelect.setValue(data.detected.format);
+        fmtSelect.lock();
         TOAST.ok('Detectado', FMTS.get(data.detected.format).label);
         if (data.preview?.name_source)     overlay.querySelector('#src-name-source').value     = data.preview.name_source;
         if (data.preview?.provider_source) overlay.querySelector('#src-provider-source').value = data.preview.provider_source;
       } else {
-        overlay.querySelector('#src-format').disabled = false; // habilitado si no se detecta
+        fmtSelect.unlock();
         TOAST.warn('Formato no detectado', 'Seleccionalo manualmente.');
       }
     });
@@ -177,8 +230,8 @@ window.CAPIBARA_SOURCES = (() => {
     // Guardar + cascade
     overlay.querySelector('#modal-save').addEventListener('click', async () => {
       const url    = overlay.querySelector('#src-url').value.trim();
-      const format = overlay.querySelector('#src-format').value;
-      if (!url || !format) { TOAST.warn('URL y formato son requeridos'); return; }
+      const format = fmtSelect.getValue();
+      if (!url) { TOAST.warn('URL es requerida'); return; }
 
       const body = {
         connection_params: { url },
@@ -186,7 +239,7 @@ window.CAPIBARA_SOURCES = (() => {
         name_alias:        overlay.querySelector('#src-alias').value.trim() || null,
         provider_alias:    overlay.querySelector('#src-provider').value.trim() || null,
         // name_source y provider_source se obtienen del connect step (GetCapabilities)
-        countries:         [...selectedCodes].sort(),
+        countries:         ctrySelect.getValue(),
         notes:             overlay.querySelector('#src-notes').value.trim() || null,
       };
 
