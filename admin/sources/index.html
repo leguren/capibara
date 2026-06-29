@@ -31,7 +31,7 @@
       <input class="admin-search" id="search-input" placeholder="Buscar fuentes…">
       <button class="search-clear" id="search-clear" title="Borrar búsqueda">×</button>
     </div>
-    <a href="/admin/sources/publish" class="filter-pill">Publicar</a>
+    <button class="filter-pill" id="btn-publish">Publicar</button>
   </div>
 
   <!-- Filtros de estado + actualizar + nueva fuente -->
@@ -121,6 +121,8 @@
     searchInput.focus();
     renderSources(window._adminSources);
   });
+
+  document.getElementById('btn-publish').addEventListener('click', () => openPublishModal());
 
   document.getElementById('btn-new-source').addEventListener('click', () =>
     SOURCES.openCreateModal()
@@ -236,20 +238,27 @@
         <div class="modal-body">
           <div class="modal-field">
             <label class="modal-label">Nombre del servicio</label>
-            <span class="modal-readonly">${UTILS.escHtml(src.name_source)}</span>
+            <input class="input" value="${UTILS.escHtml(src.name_source)}" readonly>
           </div>
-          ${url ? `<div class="modal-field"><label class="modal-label">URL</label><span class="modal-readonly" style="font-size:11px;font-family:var(--font-mono);word-break:break-all">${UTILS.escHtml(url)}</span></div>` : ''}
+          ${url ? `<div class="modal-field"><label class="modal-label">URL</label><input class="input input-mono" value="${UTILS.escHtml(url)}" readonly style="font-size:11px"></div>` : ''}
           <div class="modal-field">
             <label class="modal-label">Tipo</label>
-            <span class="modal-readonly">${FMTS.get(src.data_format).label} · ${src.access_method || ''}</span>
-          </div>
-          <div style="border-top:1px solid var(--border);margin:12px 0"></div>
-          <div class="modal-field">
-            <label class="modal-label" for="edit-alias">Alias (nombre legible)</label>
-            <input class="input" id="edit-alias" value="${UTILS.escHtml(src.name_alias || '')}" placeholder="Nombre que aparece en el panel">
+            <select class="select" disabled><option selected>${FMTS.get(src.data_format).label}${src.access_method ? ' · ' + src.access_method : ''}</option></select>
           </div>
           <div class="modal-field">
-            <label class="modal-label" for="edit-countries">Países (códigos ISO separados por espacio)</label>
+            <label class="modal-label" for="edit-alias">Nombre alias</label>
+            <input class="input" id="edit-alias" value="${UTILS.escHtml(src.name_alias || '')}" placeholder="Nombre visible en el panel">
+          </div>
+          <div class="modal-field">
+            <label class="modal-label">Proveedor del servicio</label>
+            <input class="input" value="${UTILS.escHtml(src.provider_source || '')}" readonly>
+          </div>
+          <div class="modal-field">
+            <label class="modal-label" for="edit-provider-alias">Proveedor alias</label>
+            <input class="input" id="edit-provider-alias" value="${UTILS.escHtml(src.provider_alias || '')}" placeholder="Nombre legible del proveedor">
+          </div>
+          <div class="modal-field">
+            <label class="modal-label" for="edit-countries">Países (códigos ISO)</label>
             <input class="input" id="edit-countries" value="${(src.countries || []).join(' ')}" placeholder="AR BO BR CL CO UY">
           </div>
           <div class="modal-field">
@@ -270,23 +279,114 @@
     overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
 
     overlay.querySelector('.js-save').addEventListener('click', async () => {
-      const alias     = overlay.querySelector('#edit-alias').value.trim() || null;
-      const countries = overlay.querySelector('#edit-countries').value.trim().toUpperCase().split(/[\s,]+/).filter(Boolean);
-      const notes     = overlay.querySelector('#edit-notes').value.trim() || null;
+      const alias          = overlay.querySelector('#edit-alias').value.trim() || null;
+      const providerAlias  = overlay.querySelector('#edit-provider-alias').value.trim() || null;
+      const countries      = overlay.querySelector('#edit-countries').value.trim().toUpperCase().split(/[\s,]+/).filter(Boolean);
+      const notes          = overlay.querySelector('#edit-notes').value.trim() || null;
       const saveBtn   = overlay.querySelector('.js-save');
       saveBtn.classList.add('btn-loading'); saveBtn.disabled = true;
 
-      const { ok, error } = await API.updateSource(src.id, { name_alias: alias, notes, countries });
+      const { ok, error } = await API.updateSource(src.id, { name_alias: alias, provider_alias: providerAlias, notes, countries });
       saveBtn.classList.remove('btn-loading'); saveBtn.disabled = false;
       if (!ok) { TOAST.error('Error al guardar', error); return; }
 
       // Actualizar caché y UI
-      Object.assign(src, { name_alias: alias, notes, countries });
+      Object.assign(src, { name_alias: alias, provider_alias: providerAlias, notes, countries });
       loadedSources.set(src.id, src);
       const blk = document.querySelector(`.source-block[data-id="${src.id}"]`);
       if (blk) blk.querySelector('.source-name').textContent = UTILS.displayName(src);
       TOAST.ok('Guardado', 'Fuente actualizada.');
       close();
+    });
+
+    document.body.appendChild(overlay);
+  }
+
+  // ── Modal de publicación ─────────────────────────────────────────────────
+  function openPublishModal() {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.innerHTML = `
+      <div class="modal" style="max-width:560px">
+        <div class="modal-header">
+          <span class="modal-title">Publicar</span>
+          <button class="modal-close js-close">
+            <span class="material-symbols-outlined" style="font-size:18px;line-height:1">close</span>
+          </button>
+        </div>
+        <div class="modal-body" style="display:flex;flex-direction:column;gap:16px">
+
+          <!-- Stats -->
+          <div style="display:flex;gap:8px" id="pub-stats">
+            <div class="stat-chip"><span class="stat-n" id="pub-stat-sources">—</span> fuentes activas</div>
+            <div class="stat-chip"><span class="stat-n" id="pub-stat-layers">—</span> capas</div>
+            <div class="stat-chip"><span class="stat-n" id="pub-stat-fields">—</span> campos</div>
+          </div>
+
+          <!-- Acción -->
+          <div style="display:flex;gap:8px">
+            <input class="input" id="pub-notes" placeholder="Nota de versión (opcional)" style="flex:1">
+            <button class="action-btn primary" id="pub-btn">Publicar</button>
+          </div>
+
+          <!-- Historial -->
+          <div id="pub-history" style="display:flex;flex-direction:column;gap:6px;max-height:220px;overflow-y:auto"></div>
+
+          <!-- Info -->
+          <details style="font-size:12px;color:var(--text2);border-top:1px solid var(--border);padding-top:12px">
+            <summary style="cursor:pointer;font-weight:600;color:var(--text);margin-bottom:8px">¿Cómo funciona?</summary>
+            <p style="margin-bottom:6px;line-height:1.6">La API pública no lee directamente de la base de datos — lee el último snapshot publicado. Podés modificar fuentes sin afectar a los clientes hasta que publiques.</p>
+            <p style="line-height:1.6">Cada publicación tiene un <span style="font-family:var(--font-mono);font-size:11px">version_label</span> semántico (v1.0.0, v1.0.1…) y queda registrado con quién la hizo y cuándo. Las credenciales de conexión se eliminan del snapshot antes de guardarlo.</p>
+          </details>
+
+        </div>
+      </div>
+    `;
+
+    const close = () => document.body.removeChild(overlay);
+    overlay.querySelector('.js-close').addEventListener('click', close);
+    overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+
+    async function loadStats() {
+      const { data, ok } = await API.getSources();
+      if (!ok) return;
+      const sources = data.sources || [];
+      overlay.querySelector('#pub-stat-sources').textContent = sources.filter(s => s.status === 'ok' && s.included).length;
+      overlay.querySelector('#pub-stat-layers').textContent  = UTILS.formatNumber(sources.reduce((a, s) => a + (s.layers_included || 0), 0));
+      overlay.querySelector('#pub-stat-fields').textContent  = UTILS.formatNumber(sources.reduce((a, s) => a + (s.fields_included || 0), 0));
+    }
+
+    async function loadHistory() {
+      const el = overlay.querySelector('#pub-history');
+      const { data, ok } = await API.getPublications();
+      if (!ok || !data?.publications?.length) {
+        el.innerHTML = `<div style="text-align:center;padding:16px;font-size:12px;color:var(--text2)">Sin publicaciones todavía.</div>`;
+        return;
+      }
+      el.innerHTML = data.publications.map(p => `
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--bg3)">
+          <div style="flex:1;min-width:0">
+            <span style="font-family:var(--font-mono);font-size:12px;font-weight:600">${UTILS.escHtml(p.version_label)}</span>
+            ${p.notes ? `<span style="font-size:11px;color:var(--text2);margin-left:8px">${UTILS.escHtml(p.notes)}</span>` : ''}
+          </div>
+          <span style="font-size:11px;color:var(--text2);white-space:nowrap">${UTILS.formatNumber(p.sources_count)} fuentes · ${UTILS.formatNumber(p.layers_count)} capas</span>
+          <span style="font-size:11px;color:var(--text3);white-space:nowrap;flex-shrink:0">${UTILS.formatDate(p.created_at)}</span>
+        </div>
+      `).join('');
+    }
+
+    Promise.all([loadStats(), loadHistory()]);
+
+    overlay.querySelector('#pub-btn').addEventListener('click', async e => {
+      const btn   = e.currentTarget;
+      const notes = overlay.querySelector('#pub-notes').value.trim();
+      btn.disabled = true;
+      const { data, ok, error } = await API.publish({ notes: notes || null });
+      btn.disabled = false;
+      if (!ok) { TOAST.error('Error al publicar', error); return; }
+      TOAST.ok(`Publicado ${data.version}`, `${data.layers_count} capas, ${data.fields_count} campos.`);
+      overlay.querySelector('#pub-notes').value = '';
+      Promise.all([loadStats(), loadHistory()]);
     });
 
     document.body.appendChild(overlay);
@@ -417,7 +517,9 @@
     body.innerHTML = `
       <div class="source-top-bar">
         <div class="source-provider-info">
-          ${(src.provider_alias || src.provider_source) ? `<span class="source-provider-text">${UTILS.escHtml(src.provider_alias || src.provider_source)}</span>` : ''}
+          ${(src.provider_alias || src.provider_source)
+            ? `<span class="source-provider-label">provider</span><span class="source-provider-text">${UTILS.escHtml(src.provider_alias || src.provider_source)}</span>`
+            : ''}
         </div>
         <div class="source-top-actions">
           <button class="action-btn js-edit">Editar</button>
