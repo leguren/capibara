@@ -70,5 +70,17 @@ module.exports = async function handler(req, res) {
     return ok(res, { ok: true, id: pubId, version, sources_count: sources.length, layers_count: totalLayers, fields_count: totalFields, config }, 201);
   }
 
+  if (req.method === 'DELETE') {
+    const pubId = req.query?.id;
+    if (!pubId) return err(res, 400, 'Falta el parámetro id');
+
+    // Verificar que la publicación existe
+    const existing = await db.execute({ sql: 'SELECT id FROM publications WHERE id = ?', args: [pubId] });
+    if (!existing.rows.length) return err(res, 404, 'Publicación no encontrada');
+
+    await db.execute({ sql: 'DELETE FROM publications WHERE id = ?', args: [pubId] });
+    return ok(res, { ok: true });
+  }
+
   return err(res, 405, 'Method not allowed');
 };
