@@ -133,12 +133,14 @@
 }
 .search-clear {
   position:    absolute;
-  right:       12px;
+  right:       6px;
   top:         50%;
   transform:   translateY(-50%);
   display:     none;
   align-items: center;
   justify-content: center;
+  width:       22px;
+  height:      22px;
   border:      none;
   background:  transparent;
   color:       var(--text3);
@@ -146,9 +148,10 @@
   line-height: 1;
   cursor:      pointer;
   padding:     0;
-  transition:  color var(--transition);
+  border-radius: 50%;
+  transition:  color var(--transition), background var(--transition);
 }
-.search-clear:hover { color: var(--text); }
+.search-clear:hover { color: var(--text); background: var(--bg3); }
 
 
 /* ── Dot variants dentro de pills ────────────────────────────────── */
@@ -709,6 +712,17 @@
 /* ── Eliminar peligro (layer-btn.danger) ─────────────────────────── */
 .layer-btn.danger { color: var(--error); border-color: rgba(230,57,70,0.3); }
 .layer-btn.danger:hover { background: rgba(230,57,70,0.05); border-color: rgba(230,57,70,0.5); color: var(--error); }
+
+/* ── Snapshot de versión previa (lista anidada) ─────────────────── */
+/* Elimina el border-radius del contenedor cuando está dentro de un version-body */
+.pub-snap-list {
+  border-radius: 0;
+  border-left:   none;
+  border-right:  none;
+  border-bottom: none;
+  margin-top:    8px;
+}
+.pub-snap-list .pub-source-block:first-child .pub-source-row { border-top: 1px solid var(--border); }
 
 /* ── Pill neutra formato (modal Publicar) ────────────────────────── */
 .pub-format-pill {
