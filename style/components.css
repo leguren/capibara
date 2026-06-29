@@ -354,3 +354,31 @@
   cursor:     default;
   border-color: var(--border);
 }
+
+/* ── Dropdown wrapper con ícono expand_more (formato y países) ────────── */
+.dd-wrap {
+  position: relative;
+}
+.dd-wrap .select {
+  appearance:         none;
+  -webkit-appearance: none;
+  padding-right:      36px;
+  width:              100%;
+}
+.dd-icon {
+  position:               absolute;
+  right:                  10px;
+  top:                    50%;
+  transform:              translateY(-50%);
+  pointer-events:         none;
+  font-family:            'Material Symbols Outlined';
+  font-size:              18px;
+  font-variation-settings:'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 20;
+  color:                  var(--text3);
+  line-height:            1;
+  user-select:            none;
+  transition:             transform 0.22s ease;
+}
+.dd-wrap.open .dd-icon {
+  transform: translateY(-50%) rotate(-180deg);
+}
