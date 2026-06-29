@@ -38,7 +38,34 @@ module.exports = async function handler(req, res) {
   const db = getDb();
 
   if (req.method === 'GET') {
-    const result = await db.execute(`SELECT p.id, p.version_label, p.sources_count, p.layers_count, p.fields_count, p.notes, p.created_at, u.name AS published_by_name, u.email AS published_by_email FROM publications p JOIN users u ON u.id = p.published_by ORDER BY p.created_at DESC LIMIT 10`);
+    const pubId = req.query?.id;
+
+    // Detalle de una publicación (sources + layers, sin fields)
+    if (pubId) {
+      const result = await db.execute({ sql: `SELECT p.id, p.version_label, p.config_json, p.published_by, p.created_at FROM publications p WHERE p.id = ?`, args: [pubId] });
+      if (!result.rows.length) return err(res, 404, 'Publicación no encontrada');
+      const pub = result.rows[0];
+      const config = safeJson(pub.config_json, {});
+      const sources = (config.sources || []).map(s => ({
+        id:              s.id,
+        name_source:     s.name_source,
+        name_alias:      s.name_alias,
+        provider_source: s.provider_source,
+        provider_alias:  s.provider_alias,
+        data_format:     s.data_format,
+        layers: (s.layers || []).map(l => ({
+          id:            l.id,
+          name_source:   l.name_source,
+          name_alias:    l.name_alias,
+          geometry_type: l.geometry_type,
+          domain:        l.domain,
+        })),
+      }));
+      return ok(res, { id: pub.id, version_label: pub.version_label, published_by: pub.published_by, created_at: pub.created_at, sources });
+    }
+
+    // Lista de publicaciones
+    const result = await db.execute(`SELECT p.id, p.version_label, p.sources_count, p.layers_count, p.fields_count, p.notes, p.published_by, p.created_at FROM publications p ORDER BY p.created_at DESC LIMIT 20`);
     return ok(res, { publications: result.rows });
   }
 
@@ -64,7 +91,7 @@ module.exports = async function handler(req, res) {
     if (!sources.length) return err(res, 400, 'No hay fuentes activas con capas incluidas');
 
     const config  = { version: '1', generated_at: now(), sources };
-    const version = await nextVersionLabel(db);
+    const version = req.body?.version_label || await nextVersionLabel(db);
     const pubId   = id('pub');
     await db.execute({ sql: 'INSERT INTO publications (id, published_by, version_label, config_json, sources_count, layers_count, fields_count, notes, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)', args: [pubId, session.userId, version, JSON.stringify(config), sources.length, totalLayers, totalFields, req.body?.notes || null, now()] });
     return ok(res, { ok: true, id: pubId, version, sources_count: sources.length, layers_count: totalLayers, fields_count: totalFields, config }, 201);
