@@ -70,8 +70,9 @@ window.CAPIBARA_SOURCES = (() => {
             <label class="modal-label">Países</label>
             <div style="position:relative" id="ctry-wrap">
               <button type="button" class="select" id="ctry-trigger"
-                style="text-align:left;cursor:pointer">
-                <span id="ctry-display" style="color:var(--text2)">Seleccioná países…</span>
+                style="text-align:left;cursor:pointer;display:flex;align-items:center">
+                <span id="ctry-display" style="flex:1;color:var(--text2)">Seleccioná países…</span>
+                <span style="color:var(--text3)">▾</span>
               </button>
               <div id="ctry-dropdown" style="display:none;position:absolute;top:calc(100% + 2px);left:0;right:0;
                 background:var(--bg);border:1px solid var(--border);z-index:100;max-height:220px;overflow-y:auto"></div>
