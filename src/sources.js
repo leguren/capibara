@@ -71,7 +71,7 @@ window.CAPIBARA_SOURCES = (() => {
           </div>
           <div class="modal-field">
             <label class="modal-label">Países</label>
-            <select class="select" id="src-countries" multiple size="5">
+            <select class="select" id="src-countries" multiple style="height:60px">
               <option value="AG">Antigua y Barbuda AG</option>
               <option value="AR">Argentina AR</option>
               <option value="BB">Barbados BB</option>
@@ -137,14 +137,6 @@ window.CAPIBARA_SOURCES = (() => {
       </div>
     `;
 
-    // Rotar ícono del formato al abrir/cerrar el select nativo
-    const fmtWrap = overlay.querySelector('#fmt-wrap');
-    const fmtSel  = overlay.querySelector('#src-format');
-    const closeFmt = () => fmtWrap.classList.remove('open');
-    fmtSel.addEventListener('mousedown', () => fmtWrap.classList.add('open'));
-    fmtSel.addEventListener('change', closeFmt);
-    fmtSel.addEventListener('blur',   closeFmt);
-    document.addEventListener('mousedown', e => { if (!fmtWrap.contains(e.target)) closeFmt(); }, true);
 
     document.body.appendChild(overlay);
 
