@@ -512,8 +512,6 @@
   border:         1px solid var(--border);
   border-radius:  var(--radius-lg);
   overflow:       hidden;
-  max-height:     240px;
-  overflow-y:     auto;
 }
 
 .pub-version-block { display: flex; flex-direction: column; }
@@ -714,7 +712,6 @@
 .layer-btn.danger:hover { background: rgba(230,57,70,0.05); border-color: rgba(230,57,70,0.5); color: var(--error); }
 
 /* ── Snapshot de versión previa (lista anidada) ─────────────────── */
-/* Elimina el border-radius del contenedor cuando está dentro de un version-body */
 .pub-snap-list {
   border-radius: 0;
   border-left:   none;
@@ -723,6 +720,8 @@
   margin-top:    8px;
 }
 .pub-snap-list .pub-source-block:first-child .pub-source-row { border-top: 1px solid var(--border); }
+/* Sin scroll anidado en el snapshot — todo en cascada */
+.pub-snap-list .pub-source-body { max-height: none; overflow-y: visible; }
 
 /* ── Pill neutra formato (modal Publicar) ────────────────────────── */
 .pub-format-pill {
