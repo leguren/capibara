@@ -594,3 +594,123 @@
   color:       var(--text3);
   font-family: var(--font-mono);
 }
+
+/* ── Fuentes a publicar (modal Publicar) ──────────────────────────── */
+.pub-sources-list {
+  display:        flex;
+  flex-direction: column;
+  border:         1px solid var(--border);
+  border-radius:  var(--radius-lg);
+  overflow:       hidden;
+  max-height:     200px;
+  overflow-y:     auto;
+}
+
+.pub-source-block { display: flex; flex-direction: column; }
+.pub-source-block + .pub-source-block { border-top: 1px solid var(--bg3); }
+
+.pub-source-row {
+  display:     flex;
+  align-items: center;
+  gap:         10px;
+  padding:     8px 12px;
+  cursor:      pointer;
+  user-select: none;
+}
+.pub-source-row:hover { background: var(--bg2); }
+.pub-source-block.open .pub-source-row { background: var(--bg2); }
+
+.pub-source-info {
+  flex:      1;
+  min-width: 0;
+  display:   flex;
+  align-items: baseline;
+  gap:       8px;
+}
+.pub-source-name  { font-size: 13px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pub-source-count { font-size: 11px; color: var(--text3); font-family: var(--font-mono); white-space: nowrap; flex-shrink: 0; }
+.pub-source-arrow {
+  font-family:            'Material Symbols Outlined';
+  font-size:              18px;
+  font-variation-settings:'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 20;
+  color:                  var(--text3);
+  flex-shrink:            0;
+  user-select:            none;
+  line-height:            1;
+  transition:             transform 0.22s ease;
+}
+.pub-source-arrow::before                    { content: 'expand_more'; }
+.pub-source-block.open .pub-source-arrow     { transform: rotate(-180deg); }
+
+.pub-source-body { display: none; border-top: 1px solid var(--border); }
+.pub-source-block.open .pub-source-body { display: block; }
+
+/* ── Capas dentro de fuente/snapshot ─────────────────────────────── */
+.pub-layer-row {
+  padding:     4px 12px 4px 24px;
+  border-top:  1px solid var(--bg3);
+}
+.pub-layer-row:first-child { border-top: none; }
+.pub-layer-name { font-size: 12px; color: var(--text2); }
+
+/* ── Próxima versión con candado ─────────────────────────────────── */
+.pub-version-input-wrap {
+  position: relative;
+  display:  flex;
+}
+.pub-version-input-wrap .input { padding-right: 36px; }
+.pub-lock-btn {
+  position:   absolute;
+  right:      8px;
+  top:        50%;
+  transform:  translateY(-50%);
+  display:    flex;
+  align-items: center;
+  justify-content: center;
+  width:      24px;
+  height:     24px;
+  border:     none;
+  background: transparent;
+  color:      var(--text3);
+  cursor:     pointer;
+  border-radius: var(--radius-sm);
+  transition: color var(--transition), background var(--transition);
+}
+.pub-lock-btn:hover { color: var(--text); background: var(--bg2); }
+
+/* ── Fecha mono en historial ─────────────────────────────────────── */
+.pub-version-date { font-family: var(--font-mono); }
+
+/* ── Detalle expandido de versión ────────────────────────────────── */
+.pub-detail-row {
+  display:  flex;
+  gap:      8px;
+  padding:  6px 12px 2px;
+  font-size: 11px;
+  align-items: baseline;
+}
+.pub-detail-label { color: var(--text3); flex-shrink: 0; }
+.pub-detail-value { font-family: var(--font-mono); color: var(--text2); word-break: break-all; }
+
+.pub-snap-sources { padding: 4px 0 4px; }
+.pub-snap-source  { padding: 4px 0; }
+.pub-snap-source-name {
+  padding:     4px 12px;
+  font-size:   12px;
+  font-weight: 500;
+  color:       var(--text);
+}
+
+/* ── Eliminar peligro (layer-btn.danger) ─────────────────────────── */
+.layer-btn.danger { color: var(--error); border-color: rgba(230,57,70,0.3); }
+.layer-btn.danger:hover { background: rgba(230,57,70,0.05); border-color: rgba(230,57,70,0.5); color: var(--error); }
+
+/* ── Link catálogo en footer ─────────────────────────────────────── */
+.pub-catalog-link {
+  font-size:   12px;
+  color:       var(--text3);
+  margin-right: auto;
+  transition:  color var(--transition);
+  align-self:  center;
+}
+.pub-catalog-link:hover { color: var(--accent); }
