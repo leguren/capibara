@@ -51,7 +51,7 @@ window.CAPIBARA_SOURCES = (() => {
           <div class="modal-field">
             <label class="modal-label">URL</label>
             <div style="display:flex;gap:8px">
-              <input class="input input-mono" id="src-url" placeholder="https://..." style="flex:1">
+              <input class="input" id="src-url" placeholder="https://..." style="flex:1">
               <button class="action-btn" id="btn-detect">Detectar</button>
             </div>
           </div>
@@ -83,19 +83,19 @@ window.CAPIBARA_SOURCES = (() => {
           </div>
           <div class="modal-field">
             <label class="modal-label">Nombre del servicio</label>
-            <input class="input" id="src-name-source" placeholder="se completa al detectar" readonly>
+            <input class="input" id="src-name-source" readonly>
           </div>
           <div class="modal-field">
             <label class="modal-label">Alias</label>
-            <input class="input" id="src-alias" placeholder="nombre legible para el panel">
+            <input class="input" id="src-alias" placeholder="Pasos internacionales">
           </div>
           <div class="modal-field">
             <label class="modal-label">Proveedor del servicio</label>
-            <input class="input" id="src-provider-source" placeholder="se completa al detectar" readonly>
+            <input class="input" id="src-provider-source" readonly>
           </div>
           <div class="modal-field">
             <label class="modal-label">Alias</label>
-            <input class="input" id="src-provider" placeholder="nombre legible del proveedor">
+            <input class="input" id="src-provider" placeholder="Ministerio de Seguridad Nacional">
           </div>
           <div class="modal-field">
             <label class="modal-label">Notas internas</label>
