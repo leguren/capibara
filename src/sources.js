@@ -40,23 +40,25 @@ window.CAPIBARA_SOURCES = (() => {
     const overlay = document.createElement('div');
     overlay.className = 'modal-overlay';
     overlay.innerHTML = `
-      <div class="modal" style="max-width:520px">
+      <div class="modal" style="max-width:480px">
         <div class="modal-header">
           <div class="modal-title">Nueva fuente</div>
-          <button class="btn btn-ghost btn-icon" id="modal-close">×</button>
+          <button class="modal-close" id="modal-close">
+            <span class="material-symbols-outlined" style="font-size:18px;line-height:1">close</span>
+          </button>
         </div>
         <div class="modal-body">
-          <div class="form-group" style="margin-bottom:14px">
-            <label class="form-label">URL del servicio</label>
+          <div class="modal-field">
+            <label class="modal-label">URL del servicio</label>
             <div style="display:flex;gap:8px">
               <input class="input input-mono" id="src-url" style="flex:1">
-              <button class="btn btn-secondary" id="btn-detect">Detectar</button>
+              <button class="action-btn" id="btn-detect">Detectar</button>
             </div>
-            <span class="form-hint" id="detect-hint">Pegá la URL y hacé clic en Detectar para auto-completar el formato.</span>
+            <span style="font-size:11px;color:var(--text2);margin-top:4px;display:block" id="detect-hint">Pegá la URL y hacé clic en Detectar para auto-completar el formato.</span>
           </div>
-          <div class="form-grid-2">
-            <div class="form-group">
-              <label class="form-label">Formato</label>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            <div class="modal-field">
+              <label class="modal-label">Formato</label>
               <select class="select" id="src-format">
                 <option value="">— seleccionar —</option>
                 <option value="wfs">WFS (OGC)</option>
@@ -66,27 +68,27 @@ window.CAPIBARA_SOURCES = (() => {
                 <option value="json">JSON</option>
               </select>
             </div>
-            <div class="form-group">
-              <label class="form-label">País (opcional)</label>
-              <input class="input" id="src-country" style="text-transform:uppercase">
+            <div class="modal-field">
+              <label class="modal-label">Países (códigos ISO)</label>
+              <input class="input" id="src-country" placeholder="AR BO BR" style="text-transform:uppercase">
             </div>
-            <div class="form-group">
-              <label class="form-label">Nombre alias (opcional)</label>
+            <div class="modal-field">
+              <label class="modal-label">Alias (opcional)</label>
               <input class="input" id="src-alias">
             </div>
-            <div class="form-group">
-              <label class="form-label">Proveedor alias (opcional)</label>
+            <div class="modal-field">
+              <label class="modal-label">Proveedor alias (opcional)</label>
               <input class="input" id="src-provider">
             </div>
           </div>
-          <div class="form-group" style="margin-top:12px">
-            <label class="form-label">Notas internas (opcional)</label>
-            <textarea class="textarea" id="src-notes" rows="2"></textarea>
+          <div class="modal-field" style="margin-top:4px">
+            <label class="modal-label">Notas internas (opcional)</label>
+            <textarea class="input" id="src-notes" rows="2" style="height:60px;resize:vertical;padding:8px 12px"></textarea>
           </div>
         </div>
         <div class="modal-footer">
-          <button class="btn btn-secondary" id="modal-cancel">Cancelar</button>
-          <button class="btn btn-primary" id="modal-save">Crear y conectar</button>
+          <button class="action-btn" id="modal-cancel">Cancelar</button>
+          <button class="action-btn primary" id="modal-save">Crear y conectar</button>
         </div>
       </div>
     `;
@@ -128,8 +130,7 @@ window.CAPIBARA_SOURCES = (() => {
         name_alias:        overlay.querySelector('#src-alias').value.trim() || null,
         provider_alias:    overlay.querySelector('#src-provider').value.trim() || null,
         countries:         overlay.querySelector('#src-country').value.trim()
-                            ? [overlay.querySelector('#src-country').value.trim().toUpperCase()]
-                            : [],
+                            .toUpperCase().split(/[\s,]+/).filter(Boolean),
         notes:             overlay.querySelector('#src-notes').value.trim() || null,
       };
 
