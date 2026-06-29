@@ -356,7 +356,10 @@
         <span class="dot ${STATUS.get(source.status).dotClass}" title="${STATUS.get(source.status).label}"></span>
         <div class="source-info">
           <span class="source-name">${UTILS.escHtml(name)}</span>
-          ${source.countries?.length ? `<div class="source-countries">${source.countries.map(c => `<span class="country-pill">${c}</span>`).join('')}</div>` : ''}
+          <div class="source-type-pills-sm">
+            ${FMTS.pillHtml(source.data_format)}
+            ${source.access_method ? `<span class="pill pill-default">${source.access_method}</span>` : ''}
+          </div>
         </div>
         <span class="source-meta-right">${source.layers_total || 0} capas</span>
         <span class="source-arrow"></span>
@@ -410,9 +413,8 @@
 
     body.innerHTML = `
       <div class="source-top-bar">
-        <div class="source-type-pills">
-          ${FMTS.pillHtml(src.data_format)}
-          ${src.access_method ? `<span class="pill pill-default">${src.access_method}</span>` : ''}
+        <div class="source-provider-info">
+          ${(src.provider_alias || src.provider_source) ? `<span class="source-provider-text">${UTILS.escHtml(src.provider_alias || src.provider_source)}</span>` : ''}
         </div>
         <div class="source-top-actions">
           <button class="action-btn js-edit">Editar</button>
