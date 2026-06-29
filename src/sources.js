@@ -69,14 +69,15 @@ window.CAPIBARA_SOURCES = (() => {
           <div class="modal-field">
             <label class="modal-label">Países</label>
             <div style="position:relative" id="country-picker-wrap">
-              <button type="button" class="input" id="country-trigger"
-                style="text-align:left;cursor:pointer;color:var(--text2)">
-                Seleccioná países…
+              <button type="button" class="select" id="country-trigger"
+                style="display:flex;align-items:center;text-align:left;cursor:pointer">
+                <span id="country-display" style="flex:1;color:var(--text2)">Seleccioná países…</span>
+                <span class="material-symbols-outlined" style="font-size:18px;color:var(--text3);flex-shrink:0;font-variation-settings:'FILL' 0,'wght' 300,'GRAD' 0,'opsz' 20">expand_more</span>
               </button>
               <div id="country-dropdown" style="
-                display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;
-                background:var(--bg);border:1.5px solid var(--border);border-radius:var(--radius-lg);
-                box-shadow:0 4px 16px rgba(0,0,0,0.10);z-index:100;max-height:220px;overflow-y:auto;padding:8px 0">
+                display:none;position:absolute;top:calc(100% + 2px);left:0;right:0;
+                background:var(--bg);border:1.5px solid var(--border);border-radius:var(--radius);
+                z-index:100;max-height:220px;overflow-y:auto">
               </div>
             </div>
           </div>
@@ -115,24 +116,18 @@ window.CAPIBARA_SOURCES = (() => {
     const dropdown   = overlay.querySelector('#country-dropdown');
 
     // Construir el dropdown agrupado por región
-    dropdown.innerHTML = COUNTRIES.REGIONS.map(region => `
-      <div style="padding:4px 12px 2px;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em">
-        ${region.label}
-      </div>
-      ${region.countries.map(c => `
-        <label style="display:flex;align-items:center;gap:8px;padding:5px 14px;cursor:pointer;font-size:13px;color:var(--text)" data-code="${c.code}">
-          <input type="checkbox" value="${c.code}" style="accent-color:var(--accent);cursor:pointer">
-          <span style="font-family:var(--font-mono);font-size:11px;color:var(--text2);min-width:24px">${c.code}</span>
-          ${c.name}
-        </label>
-      `).join('')}
+    const display = overlay.querySelector('#country-display');
+    dropdown.innerHTML = COUNTRIES.LIST.map(c => `
+      <label style="display:flex;align-items:center;gap:8px;padding:6px 14px;cursor:pointer;font-size:13px;color:var(--text)">
+        <input type="checkbox" value="${c.code}" style="accent-color:var(--accent);cursor:pointer;flex-shrink:0">
+        ${c.name} <span style="font-family:var(--font-mono);font-size:11px;color:var(--text2)">${c.code}</span>
+      </label>
     `).join('');
 
     function updateTrigger() {
-      trigger.textContent = selectedCodes.size
-        ? [...selectedCodes].sort().join(', ')
-        : 'Seleccioná países…';
-      trigger.style.color = selectedCodes.size ? 'var(--text)' : 'var(--text2)';
+      const codes = [...selectedCodes].sort();
+      display.textContent = codes.length ? codes.join(', ') : 'Seleccioná países…';
+      display.style.color = codes.length ? 'var(--text)' : 'var(--text2)';
     }
 
     dropdown.querySelectorAll('input[type="checkbox"]').forEach(cb => {
