@@ -546,7 +546,7 @@
             metaRow.className = 'pub-version-meta-row';
             metaRow.innerHTML = `
               <div class="pub-version-by">
-                <span class="source-provider-label">publicado por</span>
+                <span class="source-provider-label">published_by</span>
                 <span class="source-provider-text">${pub?.published_by ? UTILS.escHtml(pub.published_by) : '—'}</span>
               </div>
               <button class="layer-btn danger js-pub-delete" data-pub-id="${pubId}" data-version="${UTILS.escHtml(pub?.version_label||'')}" data-active="${isActivePub}">Eliminar</button>
