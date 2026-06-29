@@ -196,6 +196,7 @@
     block.dataset.id = source.id;
     block.innerHTML  = `
       <div class="source-header">
+        <span class="dot ${STATUS.get(source.status).dotClass}" title="${STATUS.get(source.status).label}"></span>
         <div class="source-info">
           <span class="source-name">${UTILS.escHtml(name)}</span>
           ${source.countries?.length ? `<div class="source-countries">${source.countries.map(c => `<span class="country-pill">${c}</span>`).join('')}</div>` : ''}
@@ -258,6 +259,7 @@
         </div>
         <div class="source-top-actions">
           <button class="action-btn js-edit">Editar</button>
+          <button class="action-btn js-refresh-source">Actualizar</button>
           <button class="action-btn danger js-delete">Eliminar</button>
         </div>
       </div>
@@ -273,6 +275,21 @@
     // Bind acciones
     body.querySelector('.js-edit')?.addEventListener('click', () => {
       // TODO: abrir modal de edición de fuente
+    });
+
+    body.querySelector('.js-refresh-source')?.addEventListener('click', async e => {
+      const btn = e.currentTarget;
+      btn.classList.add('btn-loading');
+      btn.disabled = true;
+      const { data, ok } = await API.getSource(src.id);
+      if (ok && data) {
+        loadedSources.set(src.id, data.source);
+        loadedLayers.delete(src.id);
+        renderSourceBody(block, data.source);
+        loadLayers(block, src.id);
+      }
+      btn.classList.remove('btn-loading');
+      btn.disabled = false;
     });
 
     body.querySelector('.js-delete')?.addEventListener('click', () => {
