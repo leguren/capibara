@@ -211,19 +211,20 @@
   background:   rgba(230,57,70,0.02);
 }
 
-.source-info   { flex: 1; min-width: 0; }
-.source-name   { font-size: 14px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
-.source-countries { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 3px; }
+/* source-info: fila con nombre + pills de país en línea */
+.source-info     { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; overflow: hidden; }
+.source-name     { font-size: 14px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-shrink: 1; min-width: 0; }
+.source-countries { display: flex; gap: 4px; flex-wrap: nowrap; flex-shrink: 0; align-items: center; }
 .country-pill {
+  background:    transparent;
+  border:        1px solid var(--border);
+  color:         var(--text2);
   font-family:   var(--font-mono);
   font-size:     10px;
-  font-weight:   600;
-  color:         var(--text2);
-  background:    var(--bg2);
-  border:        1px solid var(--border);
-  border-radius: 4px;
-  padding:       1px 5px;
-  letter-spacing: 0.03em;
+  font-weight:   400;
+  border-radius: 999px;
+  padding:       1px 6px;
+  white-space:   nowrap;
 }
 .source-sub    { font-size: 11px; color: var(--text2); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .source-badge  { font-family: var(--font-mono); font-size: 11px; color: var(--text2); font-weight: 400; }
