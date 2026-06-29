@@ -220,9 +220,9 @@ window.CAPIBARA_SOURCES = (() => {
   // ── Acciones sobre una fuente ────────────────────────────────────────────
 
   async function connect(sourceId, btn) {
-    if (btn) { btn.classList.add('btn-loading'); btn.disabled = true; }
+    if (btn) { btn.disabled = true; }
     const { data, ok, error } = await API.connectSource(sourceId);
-    if (btn) { btn.classList.remove('btn-loading'); btn.disabled = false; }
+    if (btn) { btn.disabled = false; }
 
     if (!ok) { TOAST.error('Error de conexión', error); return false; }
     if (data.ok) {
@@ -237,9 +237,9 @@ window.CAPIBARA_SOURCES = (() => {
   }
 
   async function discoverLayers(sourceId, btn) {
-    if (btn) { btn.classList.add('btn-loading'); btn.disabled = true; }
+    if (btn) { btn.disabled = true; }
     const { data, ok, error } = await API.discoverLayers(sourceId);
-    if (btn) { btn.classList.remove('btn-loading'); btn.disabled = false; }
+    if (btn) { btn.disabled = false; }
 
     if (!ok) { TOAST.error('Error al descubrir capas', error); return false; }
     TOAST.ok(
