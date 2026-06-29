@@ -311,6 +311,14 @@
 .action-btn.danger:hover { background: rgba(230,57,70,0.05); border-color: rgba(230,57,70,0.5); }
 
 /* ── Source body: top bar con tipo + acciones ────────────────────── */
+/* Pills de tipo en la lista (inline con el nombre) */
+.source-type-pills-sm { display: flex; gap: 4px; align-items: center; flex-shrink: 0; }
+.source-type-pills-sm .pill { font-size: 10px; padding: 1px 6px; font-weight: 400; background: transparent; border: 1px solid var(--border); color: var(--text2); }
+
+/* Provider en el top-bar expandido */
+.source-provider-info { flex: 1; min-width: 0; }
+.source-provider-text { font-size: 12px; color: var(--text2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
 /* Pills de info de fuente: sin relleno ni color */
 .source-top-bar .pill {
   background:   transparent;
@@ -382,7 +390,7 @@
 /* ── Layer block (legado, en desuso) ─────────────────────────────── */
 .layers-section { display: flex; flex-direction: column; }
 .layers-accordion {
-  max-height:   224px;
+  max-height:   280px;
   overflow-y:   auto;
   overscroll-behavior: contain;
 }
@@ -417,7 +425,7 @@
 
 /* ── Refresh button ──────────────────────────────────────────────── */
 @keyframes spin { to { transform: rotate(360deg); } }
-.refresh-icon { display: inline-block; }
+.refresh-icon { display: inline-block; font-size: 13px; vertical-align: middle; }
 #btn-refresh.is-refreshing .refresh-icon {
   animation: spin 0.7s linear infinite;
 }
