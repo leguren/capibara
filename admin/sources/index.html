@@ -241,7 +241,7 @@
           <div class="modal-field">
             <label class="modal-label">Formato</label>
             <div class="dd-wrap">
-              <select class="select" id="edit-format">
+              <select class="select" id="edit-format" ${src.data_format ? 'disabled' : ''}>
                 <option value="">unknown</option>
                 <option value="arcgis_rest">arcgis rest</option>
                 <option value="csv">csv</option>
@@ -251,6 +251,10 @@
               </select>
               <span class="dd-icon">expand_more</span>
             </div>
+          </div>
+          <div class="modal-field">
+            <label class="modal-label">Nombre del servicio</label>
+            <input class="input" value="${UTILS.escHtml(src.name_source || '')}" readonly>
           </div>
           <div class="modal-field">
             <label class="modal-label" for="edit-alias">Alias</label>
@@ -340,12 +344,14 @@
       const saveBtn   = overlay.querySelector('.js-save');
       saveBtn.disabled = true;
 
-      const { ok, error } = await API.updateSource(src.id, { name_alias: alias, provider_alias: providerAlias, notes, countries, data_format: overlay.querySelector('#edit-format').value || null });
+      const formatSelect = overlay.querySelector('#edit-format');
+      const dataFormat = formatSelect.disabled ? src.data_format : (formatSelect.value || null);
+      const { ok, error } = await API.updateSource(src.id, { name_alias: alias, provider_alias: providerAlias, notes, countries, data_format: dataFormat });
       saveBtn.disabled = false;
       if (!ok) { TOAST.error('Error al guardar', error); return; }
 
       // Actualizar caché y UI
-      const newFormat = overlay.querySelector('#edit-format').value || src.data_format;
+      const newFormat = dataFormat || src.data_format;
       Object.assign(src, { name_alias: alias, provider_alias: providerAlias, notes, countries, data_format: newFormat });
       loadedSources.set(src.id, src);
       const blk = document.querySelector(`.source-block[data-id="${src.id}"]`);
