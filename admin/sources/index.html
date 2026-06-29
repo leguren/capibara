@@ -381,19 +381,31 @@
         </div>
         <div class="modal-body">
 
-          <!-- Stats -->
+          <!-- Fuentes a publicar -->
           <div class="modal-field">
-            <div id="pub-stats" style="display:flex;gap:8px;flex-wrap:wrap">
-              <div class="stat-chip"><span class="stat-n" id="pub-stat-sources">—</span> fuentes activas</div>
-              <div class="stat-chip"><span class="stat-n" id="pub-stat-layers">—</span> capas</div>
-              <div class="stat-chip"><span class="stat-n" id="pub-stat-fields">—</span> campos</div>
+            <label class="modal-label">Fuentes a publicar</label>
+            <div id="pub-sources" class="pub-sources-list">
+              <div class="inline-loading" style="padding:10px 12px">Cargando…</div>
             </div>
           </div>
 
           <!-- Historial -->
           <div class="modal-field">
             <label class="modal-label">Versiones publicadas</label>
-            <div id="pub-history" class="pub-history-list"></div>
+            <div id="pub-history" class="pub-history-list">
+              <div class="inline-loading" style="padding:10px 12px">Cargando…</div>
+            </div>
+          </div>
+
+          <!-- Próxima versión -->
+          <div class="modal-field">
+            <label class="modal-label">Próxima versión</label>
+            <div class="pub-version-input-wrap">
+              <input class="input input-mono" id="pub-version" readonly style="font-size:12px">
+              <button class="pub-lock-btn js-pub-lock" title="Desbloquear para editar">
+                <span class="material-symbols-outlined js-lock-icon" style="font-size:16px;line-height:1;font-variation-settings:'FILL' 0,'wght' 300,'GRAD' 0,'opsz' 20">lock</span>
+              </button>
+            </div>
           </div>
 
           <!-- Notas internas -->
@@ -404,6 +416,7 @@
 
         </div>
         <div class="modal-footer">
+          <a href="/api/geo/1/catalog" target="_blank" class="pub-catalog-link">Ver catálogo</a>
           <button class="action-btn js-cancel">Cancelar</button>
           <button class="action-btn primary" id="pub-btn">Publicar</button>
         </div>
@@ -415,66 +428,138 @@
     overlay.querySelector('.js-cancel').addEventListener('click', close);
     overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
 
-    async function loadStats() {
+    // ── Lock/unlock de próxima versión ──────────────────────────────────────────────
+    overlay.querySelector('.js-pub-lock').addEventListener('click', () => {
+      const input  = overlay.querySelector('#pub-version');
+      const icon   = overlay.querySelector('.js-lock-icon');
+      const locked = input.hasAttribute('readonly');
+      input.toggleAttribute('readonly', !locked);
+      icon.textContent = locked ? 'lock_open' : 'lock';
+      if (locked) input.focus();
+    });
+
+    // ── Fuentes a publicar ────────────────────────────────────────────────────────
+    async function loadSources() {
+      const el = overlay.querySelector('#pub-sources');
       const { data, ok } = await API.getSources();
-      if (!ok) return;
-      const sources = data.sources || [];
-      overlay.querySelector('#pub-stat-sources').textContent = sources.filter(s => s.status === 'ok' && s.included).length;
-      overlay.querySelector('#pub-stat-layers').textContent  = UTILS.formatNumber(sources.reduce((a, s) => a + (s.layers_included || 0), 0));
-      overlay.querySelector('#pub-stat-fields').textContent  = UTILS.formatNumber(sources.reduce((a, s) => a + (s.fields_included || 0), 0));
+      if (!ok) { el.innerHTML = `<div style="padding:10px 12px;font-size:12px;color:var(--error)">Error al cargar fuentes.</div>`; return; }
+
+      const sources    = (data.sources || []).filter(s => s.included && s.status === 'ok');
+      const withErrors = (data.sources || []).filter(s => s.included && s.status !== 'ok');
+      overlay._sourcesWithErrors = withErrors;
+
+      if (!sources.length) {
+        el.innerHTML = `<div style="padding:10px 12px;font-size:12px;color:var(--text2)">Sin fuentes activas para publicar.</div>`;
+        return;
+      }
+
+      el.innerHTML = sources.map(s => {
+        const name = s.name_alias || s.name_source || '(sin nombre)';
+        return `
+          <div class="pub-source-block" data-source-id="${s.id}">
+            <div class="pub-source-row js-pub-src-toggle">
+              <div class="pub-source-info">
+                <span class="pub-source-name">${UTILS.escHtml(name)}</span>
+                <span class="pub-source-count">${s.layers_included ?? '?'} capas</span>
+              </div>
+              <span class="layer-arrow pub-source-arrow"></span>
+            </div>
+            <div class="pub-source-body" id="pub-src-${s.id}"></div>
+          </div>
+        `;
+      }).join('');
+
+      el.querySelectorAll('.js-pub-src-toggle').forEach(row => {
+        row.addEventListener('click', async () => {
+          const block    = row.closest('.pub-source-block');
+          const sourceId = block.dataset.sourceId;
+          const body     = block.querySelector('.pub-source-body');
+          const isOpen   = block.classList.contains('open');
+          block.classList.toggle('open');
+          if (!isOpen && !body.dataset.loaded) {
+            body.dataset.loaded = '1';
+            body.innerHTML = `<div class="inline-loading" style="padding:6px 12px">Cargando capas…</div>`;
+            const { data: ld, ok: lok } = await API.getSourceLayers(sourceId);
+            if (!lok) { body.innerHTML = `<div style="padding:6px 12px;font-size:12px;color:var(--error)">Error.</div>`; return; }
+            const layers = (ld.layers || []).filter(l => l.included);
+            body.innerHTML = layers.length
+              ? layers.map(l => `<div class="pub-layer-row"><span class="pub-layer-name">${UTILS.escHtml(l.name_alias || l.name_source)}</span></div>`).join('')
+              : `<div style="padding:6px 12px;font-size:12px;color:var(--text2)">Sin capas incluidas.</div>`;
+          }
+        });
+      });
     }
 
+    // ── Historial de versiones ──────────────────────────────────────────────────
     async function loadHistory() {
       const el = overlay.querySelector('#pub-history');
       const { data, ok } = await API.getPublications();
+
       if (!ok || !data?.publications?.length) {
-        el.innerHTML = `<div style="text-align:center;padding:16px 0;font-size:12px;color:var(--text2)">Sin publicaciones todavía.</div>`;
+        el.innerHTML = `<div style="padding:10px 12px;font-size:12px;color:var(--text2)">Sin publicaciones todavía.</div>`;
+        overlay.querySelector('#pub-version').value = 'v1.0.0';
         return;
       }
+
+      const latest = data.publications[0].version_label;
+      const match  = latest.match(/^v(\d+)\.(\d+)\.(\d+)$/);
+      const next   = match ? `v${match[1]}.${match[2]}.${+match[3] + 1}` : 'v1.0.0';
+      overlay.querySelector('#pub-version').value = next;
+
       el.innerHTML = data.publications.map((p, i) => `
-        <div class="pub-version-block" data-pub-id="${p.id ?? i}">
+        <div class="pub-version-block" data-pub-id="${p.id}">
           <div class="pub-version-row js-pub-toggle">
             <div class="pub-version-info">
               <span class="pub-version-label">${UTILS.escHtml(p.version_label)}${i === 0 ? ' <span class="pub-version-active">activa</span>' : ''}</span>
               <span class="pub-version-date">${UTILS.formatDate(p.created_at)}</span>
             </div>
             <div class="pub-version-actions">
-              <button class="layer-btn js-pub-delete" data-pub-id="${p.id ?? i}" data-version="${UTILS.escHtml(p.version_label)}" data-active="${i === 0}">Eliminar</button>
+              <button class="layer-btn danger js-pub-delete" data-pub-id="${p.id}" data-version="${UTILS.escHtml(p.version_label)}" data-active="${i === 0}">Eliminar</button>
               <span class="layer-arrow pub-version-arrow"></span>
             </div>
           </div>
-          <div class="pub-version-body">
-            ${p.notes ? `<div class="pub-version-notes">${UTILS.escHtml(p.notes)}</div>` : ''}
-            <div class="pub-version-sources">
-              <span class="pub-version-count">${UTILS.formatNumber(p.sources_count)} fuentes · ${UTILS.formatNumber(p.layers_count)} capas</span>
-            </div>
-          </div>
+          <div class="pub-version-body"></div>
         </div>
       `).join('');
 
-      // Toggle expand/collapse de cada versión
       el.querySelectorAll('.js-pub-toggle').forEach(row => {
-        row.addEventListener('click', e => {
+        row.addEventListener('click', async e => {
           if (e.target.closest('.js-pub-delete')) return;
-          const block = row.closest('.pub-version-block');
+          const block  = row.closest('.pub-version-block');
+          const body   = block.querySelector('.pub-version-body');
+          const isOpen = block.classList.contains('open');
           block.classList.toggle('open');
+          if (!isOpen && !body.dataset.loaded) {
+            body.dataset.loaded = '1';
+            body.innerHTML = `<div class="inline-loading" style="padding:8px 12px">Cargando…</div>`;
+            const pubId = block.dataset.pubId;
+            const pub   = data.publications.find(p => p.id === pubId);
+            const notesHtml = pub?.notes ? `<div class="pub-version-notes">${UTILS.escHtml(pub.notes)}</div>` : '';
+            const byHtml    = pub?.published_by ? `<div class="pub-detail-row"><span class="pub-detail-label">publicado por</span><span class="pub-detail-value">${UTILS.escHtml(pub.published_by)}</span></div>` : '';
+            const { data: det, ok: dok } = await API.getPublication(pubId);
+            let sourcesHtml = '';
+            if (dok && det.sources?.length) {
+              sourcesHtml = det.sources.map(s => {
+                const sname  = s.name_alias || s.name_source;
+                const layers = (s.layers || []).map(l => `<div class="pub-layer-row"><span class="pub-layer-name">${UTILS.escHtml(l.name_alias || l.name_source)}</span></div>`).join('');
+                return `<div class="pub-snap-source"><div class="pub-snap-source-name">${UTILS.escHtml(sname)}</div>${layers}</div>`;
+              }).join('');
+            }
+            body.innerHTML = notesHtml + byHtml + (sourcesHtml ? `<div class="pub-snap-sources">${sourcesHtml}</div>` : '');
+          }
         });
       });
 
-      // Botones de eliminar
       el.querySelectorAll('.js-pub-delete').forEach(btn => {
         btn.addEventListener('click', async e => {
           e.stopPropagation();
-          const pubId   = btn.dataset.pubId;
-          const version = btn.dataset.version;
+          const pubId    = btn.dataset.pubId;
+          const version  = btn.dataset.version;
           const isActive = btn.dataset.active === 'true';
-
           const msg = isActive
             ? `¿Eliminar ${version}? Es la versión activa — la API pública quedará sin snapshot hasta la próxima publicación. Esta acción no se puede deshacer.`
             : `¿Eliminar ${version}? Esta acción no se puede deshacer.`;
-
           if (!confirm(msg)) return;
-
           btn.disabled = true;
           const { ok, error } = await API.deletePublication(pubId);
           btn.disabled = false;
@@ -485,20 +570,30 @@
       });
     }
 
-    Promise.all([loadStats(), loadHistory()]);
-
+    // ── Publicar ────────────────────────────────────────────────────────────────────────
     overlay.querySelector('#pub-btn').addEventListener('click', async e => {
-      const btn   = e.currentTarget;
-      const notes = overlay.querySelector('#pub-notes').value.trim();
+      const btn     = e.currentTarget;
+      const notes   = overlay.querySelector('#pub-notes').value.trim();
+      const version = overlay.querySelector('#pub-version').value.trim();
+      const withErrors = overlay._sourcesWithErrors || [];
+      if (withErrors.length) {
+        const names = withErrors.map(s => s.name_alias || s.name_source).join(', ');
+        if (!confirm(`Hay ${withErrors.length} fuente(s) incluida(s) con errores que no se publicarán: ${names}.\n¿Publicar de todas formas?`)) return;
+      }
       btn.disabled = true;
-      const { data, ok, error } = await API.publish({ notes: notes || null });
+      const { data, ok, error } = await API.publish({ notes: notes || null, version_label: version || null });
       btn.disabled = false;
       if (!ok) { TOAST.error('Error al publicar', error); return; }
       TOAST.ok(`Publicado ${data.version}`, `${data.layers_count} capas, ${data.fields_count} campos.`);
       overlay.querySelector('#pub-notes').value = '';
-      Promise.all([loadStats(), loadHistory()]);
+      const input = overlay.querySelector('#pub-version');
+      const icon  = overlay.querySelector('.js-lock-icon');
+      input.setAttribute('readonly', '');
+      icon.textContent = 'lock';
+      Promise.all([loadSources(), loadHistory()]);
     });
 
+    Promise.all([loadSources(), loadHistory()]);
     document.body.appendChild(overlay);
   }
 
