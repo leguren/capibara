@@ -856,9 +856,12 @@
     const check = block.querySelector('.layer-check');
     check.addEventListener('change', async e => {
       e.stopPropagation();
-      const { ok, error } = await API.updateLayer(layer.id, { included: e.target.checked ? 1 : 0 });
-      if (!ok) { TOAST.error('Error', error); e.target.checked = !e.target.checked; }
-      else { layer.included = e.target.checked ? 1 : 0; }
+      const included = e.target.checked ? 1 : 0;
+      const { ok, error } = await API.updateLayer(layer.id, { included });
+      if (!ok) { TOAST.error('Error', error); e.target.checked = !e.target.checked; return; }
+      layer.included = included;
+      // habilitar/deshabilitar checkboxes de campos del bloque
+      block.querySelectorAll('.js-field-check').forEach(cb => { cb.disabled = !included; });
     });
 
     block.querySelector('.layer-row').addEventListener('click', e => {
@@ -924,12 +927,15 @@
     body.innerHTML = '';
     const frag = document.createDocumentFragment();
 
+    const layerCheck = body.closest('.layer-block')?.querySelector('.layer-check');
+    const layerActive = layerCheck ? (layerCheck.checked && !layerCheck.disabled) : true;
+
     for (const f of fields) {
       const row = document.createElement('div');
       row.className  = 'field-row';
       row.dataset.id = f.id;
       row.innerHTML  = `
-        <input type="checkbox" class="layer-check js-field-check" ${f.included ? 'checked' : ''}
+        <input type="checkbox" class="layer-check js-field-check" ${f.included ? 'checked' : ''} ${layerActive ? '' : 'disabled'}
                title="${f.included ? 'Activo' : 'Inactivo'}">
         <div class="field-name-wrap">
           <span class="field-name">${UTILS.escHtml(f.name_source)}</span>
