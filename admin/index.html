@@ -9,6 +9,7 @@
   <link rel="stylesheet" href="/style/components.css">
   <link rel="stylesheet" href="/style/toast.css">
   <link rel="stylesheet" href="/style/admin.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20,300,0,0">
 </head>
 <body>
 
@@ -16,34 +17,613 @@
 
 <main class="page-content">
 
-  <h1 class="admin-title">Admin</h1>
+  <nav class="breadcrumb">
+    <a href="/admin" class="breadcrumb-link">Admin</a>
+    <span class="breadcrumb-sep">/</span>
+    <span class="breadcrumb-current">Fuentes</span>
+  </nav>
 
-  <div class="sources-list">
+  <h1 class="admin-title">Gestión de fuentes</h1>
 
-    <a href="/admin/sources" class="source-block" style="text-decoration:none">
-      <div class="source-header">
-        <div class="source-info">
-          <span class="source-name">Fuentes</span>
-          <span class="source-sub">Gestión de fuentes, capas y campos</span>
-        </div>
-        <span class="source-arrow">▶</span>
-      </div>
-    </a>
-
-
+  <!-- Buscador + acciones principales -->
+  <div class="search-row">
+    <div class="search-wrap">
+      <input class="admin-search" id="search-input" placeholder="Buscar fuentes…">
+      <button class="search-clear" id="search-clear" title="Borrar búsqueda">×</button>
+    </div>
+    <a href="/admin/sources/publish" class="filter-pill">Publicar</a>
   </div>
+
+  <!-- Filtros de estado + actualizar + nueva fuente -->
+  <div class="filter-row" style="margin-top:20px">
+    <div class="filter-pills" id="status-pills">
+      <button class="filter-pill" data-value="ok">
+        <span class="dot dot-ok"></span><span id="count-ok">0</span>en línea
+      </button>
+      <button class="filter-pill" data-value="error">
+        <span class="dot dot-error"></span><span id="count-error">0</span>sin respuesta
+      </button>
+      <button class="filter-pill" data-value="unverified">
+        <span class="dot dot-unverified"></span><span id="count-unverified">0</span>sin verificar
+      </button>
+    </div>
+    <button class="filter-pill" id="btn-refresh" title="Actualizar"><span class="material-symbols-outlined refresh-icon">refresh</span>Actualizar</button>
+    <button class="filter-pill" id="btn-new-source">Nueva fuente</button>
+  </div>
+
+  <!-- Filtros de formato -->
+
+  <!-- Lista de fuentes en cascada -->
+  <div class="sources-list" id="sources-list"></div>
 
 </main>
 
 <script src="/config/app.js"></script>
+<script src="/vocab/status.js"></script>
+<script src="/vocab/formats.js"></script>
+<script src="/vocab/domains.js"></script>
+<script src="/vocab/frequencies.js"></script>
 <script src="/src/api.js"></script>
 <script src="/src/toast.js"></script>
 <script src="/src/utils.js"></script>
 <script src="/src/auth.js"></script>
+<script src="/src/sources.js"></script>
+
 <script>
 (async () => {
-  const user = await window.CAPIBARA_AUTH.requireAdmin();
+  'use strict';
+
+  const UTILS   = window.CAPIBARA_UTILS;
+  const SOURCES = window.CAPIBARA_SOURCES;
+  const AUTH    = window.CAPIBARA_AUTH;
+  const API     = window.CAPIBARA_API;
+  const TOAST   = window.CAPIBARA_TOAST;
+  const STATUS  = window.CAPIBARA_STATUS;
+  const DOM     = window.CAPIBARA_DOMAINS;
+  const FREQ    = window.CAPIBARA_FREQUENCIES;
+  const FMTS    = window.CAPIBARA_FORMATS;
+
+  const user = await AUTH.requireAdmin();
   if (!user) return;
+  // ── Estado de filtros (multi-select) ──────────────────────────────
+
+  const activeStatuses = new Set();
+  // Fuentes expandidas (set de ids) y datos cargados (map id → data)
+  const openSources  = new Set();
+  const loadedSources = new Map(); // id → source detail data
+  const openLayers   = new Set();
+  const loadedFields  = new Map();  // layerId → fields[]
+  const loadedLayers  = new Map();  // sourceId → layers[]
+
+  function bindPills(containerId, activeSet) {
+    document.querySelectorAll(`#${containerId} .filter-pill`).forEach(btn => {
+      btn.addEventListener('click', () => {
+        const val = btn.dataset.value;
+        if (activeSet.has(val)) { activeSet.delete(val); btn.classList.remove('is-active'); }
+        else                    { activeSet.add(val);    btn.classList.add('is-active');    }
+        renderSources(window._adminSources);
+      });
+    });
+  }
+
+  bindPills('status-pills', activeStatuses);
+  const searchInput = document.getElementById('search-input');
+  const searchClear = document.getElementById('search-clear');
+
+  searchInput.addEventListener('input', () => {
+    searchClear.style.display = searchInput.value ? 'flex' : 'none';
+    renderSources(window._adminSources);
+  });
+
+  searchClear.addEventListener('click', () => {
+    searchInput.value = '';
+    searchClear.style.display = 'none';
+    searchInput.focus();
+    renderSources(window._adminSources);
+  });
+
+  document.getElementById('btn-new-source').addEventListener('click', () =>
+    SOURCES.openCreateModal()
+  );
+
+  document.getElementById('btn-refresh').addEventListener('click', async () => {
+    const btn = document.getElementById('btn-refresh');
+    btn.classList.add('is-refreshing');
+    btn.disabled = true;
+    await SOURCES.load();
+    btn.classList.remove('is-refreshing');
+    btn.disabled = false;
+  });
+
+  // ── Modal de edición de capa ──────────────────────────────────────────
+  function openLayerEditModal(layer, block) {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.innerHTML = `
+      <div class="modal" style="max-width:480px">
+        <div class="modal-header">
+          <span class="modal-title">Editar capa</span>
+          <button class="modal-close js-close">
+            <span class="material-symbols-outlined" style="font-size:18px;line-height:1">close</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="modal-field">
+            <label class="modal-label">Nombre de la capa</label>
+            <span class="modal-readonly">${UTILS.escHtml(layer.name_source)}</span>
+          </div>
+          <div style="border-top:1px solid var(--border);margin:12px 0"></div>
+          <div class="modal-field">
+            <label class="modal-label" for="lyr-alias">Alias (nombre legible)</label>
+            <input class="input" id="lyr-alias" value="${UTILS.escHtml(layer.name_alias || '')}" placeholder="Nombre visible en el panel">
+          </div>
+          <div class="modal-field">
+            <label class="modal-label" for="lyr-domain">Dominio temático</label>
+            <select class="select" id="lyr-domain">
+              <option value="">— sin dominio —</option>
+              ${DOM.options()}
+            </select>
+          </div>
+          <div class="modal-field">
+            <label class="modal-label" for="lyr-freq">Frecuencia de actualización</label>
+            <select class="select" id="lyr-freq">
+              ${FREQ.options()}
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="action-btn js-cancel">Cancelar</button>
+          <button class="action-btn primary js-save">Guardar</button>
+        </div>
+      </div>
+    `;
+
+    overlay.querySelector('#lyr-domain').value = layer.domain || '';
+    overlay.querySelector('#lyr-freq').value   = layer.update_frequency || 'unknown';
+
+    const close = () => document.body.removeChild(overlay);
+    overlay.querySelector('.js-close').addEventListener('click', close);
+    overlay.querySelector('.js-cancel').addEventListener('click', close);
+    overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+
+    overlay.querySelector('.js-save').addEventListener('click', async () => {
+      const alias  = overlay.querySelector('#lyr-alias').value.trim() || null;
+      const domain = overlay.querySelector('#lyr-domain').value || null;
+      const freq   = overlay.querySelector('#lyr-freq').value || 'unknown';
+      const saveBtn = overlay.querySelector('.js-save');
+      saveBtn.classList.add('btn-loading'); saveBtn.disabled = true;
+
+      const { ok, error } = await API.updateLayer(layer.id, { name_alias: alias, domain, update_frequency: freq });
+      saveBtn.classList.remove('btn-loading'); saveBtn.disabled = false;
+      if (!ok) { TOAST.error('Error', error); return; }
+
+      Object.assign(layer, { name_alias: alias, domain, update_frequency: freq });
+      // Actualizar nombre en la fila
+      if (block) {
+        const displayName = alias || layer.name_source;
+        const nameEl = block.querySelector('.layer-name');
+        if (nameEl) nameEl.textContent = displayName;
+        const sourceEl = block.querySelector('.layer-name-source');
+        if (alias && !sourceEl) {
+          const span = document.createElement('span');
+          span.className = 'layer-name-source';
+          span.textContent = layer.name_source;
+          block.querySelector('.layer-name-wrap')?.appendChild(span);
+        } else if (!alias && sourceEl) {
+          sourceEl.remove();
+        }
+      }
+      TOAST.ok('Guardado', 'Capa actualizada.');
+      close();
+    });
+
+    document.body.appendChild(overlay);
+  }
+
+  // ── Modal de edición de fuente ────────────────────────────────────────
+  function openEditModal(src) {
+    const connParams = (() => { try { return typeof src.connection_params === 'string' ? JSON.parse(src.connection_params) : (src.connection_params || {}); } catch { return {}; } })();
+    const url = connParams?.url || '';
+
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.innerHTML = `
+      <div class="modal" style="max-width:480px">
+        <div class="modal-header">
+          <span class="modal-title">Editar fuente</span>
+          <button class="modal-close js-close"><span class="material-symbols-outlined" style="font-size:18px;line-height:1">close</span></button>
+        </div>
+        <div class="modal-body">
+          <div class="modal-field">
+            <label class="modal-label">Nombre del servicio</label>
+            <span class="modal-readonly">${UTILS.escHtml(src.name_source)}</span>
+          </div>
+          ${url ? `<div class="modal-field"><label class="modal-label">URL</label><span class="modal-readonly" style="font-size:11px;font-family:var(--font-mono);word-break:break-all">${UTILS.escHtml(url)}</span></div>` : ''}
+          <div class="modal-field">
+            <label class="modal-label">Tipo</label>
+            <span class="modal-readonly">${FMTS.get(src.data_format).label} · ${src.access_method || ''}</span>
+          </div>
+          <div style="border-top:1px solid var(--border);margin:12px 0"></div>
+          <div class="modal-field">
+            <label class="modal-label" for="edit-alias">Alias (nombre legible)</label>
+            <input class="input" id="edit-alias" value="${UTILS.escHtml(src.name_alias || '')}" placeholder="Nombre que aparece en el panel">
+          </div>
+          <div class="modal-field">
+            <label class="modal-label" for="edit-countries">Países (códigos ISO separados por espacio)</label>
+            <input class="input" id="edit-countries" value="${(src.countries || []).join(' ')}" placeholder="AR BO BR CL CO UY">
+          </div>
+          <div class="modal-field">
+            <label class="modal-label" for="edit-notes">Notas internas</label>
+            <textarea class="input" id="edit-notes" style="height:72px;resize:vertical;padding:8px 12px" placeholder="Notas sobre esta fuente">${UTILS.escHtml(src.notes || '')}</textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="action-btn js-cancel">Cancelar</button>
+          <button class="action-btn primary js-save">Guardar</button>
+        </div>
+      </div>
+    `;
+
+    const close = () => document.body.removeChild(overlay);
+    overlay.querySelector('.js-close').addEventListener('click', close);
+    overlay.querySelector('.js-cancel').addEventListener('click', close);
+    overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+
+    overlay.querySelector('.js-save').addEventListener('click', async () => {
+      const alias     = overlay.querySelector('#edit-alias').value.trim() || null;
+      const countries = overlay.querySelector('#edit-countries').value.trim().toUpperCase().split(/[\s,]+/).filter(Boolean);
+      const notes     = overlay.querySelector('#edit-notes').value.trim() || null;
+      const saveBtn   = overlay.querySelector('.js-save');
+      saveBtn.classList.add('btn-loading'); saveBtn.disabled = true;
+
+      const { ok, error } = await API.updateSource(src.id, { name_alias: alias, notes, countries });
+      saveBtn.classList.remove('btn-loading'); saveBtn.disabled = false;
+      if (!ok) { TOAST.error('Error al guardar', error); return; }
+
+      // Actualizar caché y UI
+      Object.assign(src, { name_alias: alias, notes, countries });
+      loadedSources.set(src.id, src);
+      const blk = document.querySelector(`.source-block[data-id="${src.id}"]`);
+      if (blk) blk.querySelector('.source-name').textContent = UTILS.displayName(src);
+      TOAST.ok('Guardado', 'Fuente actualizada.');
+      close();
+    });
+
+    document.body.appendChild(overlay);
+  }
+
+  SOURCES.onUpdate(renderSources);
+  await SOURCES.load();
+
+  // ── renderSources ─────────────────────────────────────────────────
+
+  function renderSources(sources) {
+    window._adminSources = sources;
+    const list = document.getElementById('sources-list');
+    const q    = searchInput.value.toLowerCase();
+
+    // Conteos en pills de estado
+    document.getElementById('count-ok').textContent         = sources.filter(s => s.status === 'ok').length;
+    document.getElementById('count-error').textContent      = sources.filter(s => s.status === 'error').length;
+    document.getElementById('count-unverified').textContent = sources.filter(s => s.status === 'unverified' || !s.status).length;
+
+    const filtered = sources
+      .slice()
+      .sort((a, b) => {
+        const na = (a.name_alias || a.name_source || '').toLowerCase();
+        const nb = (b.name_alias || b.name_source || '').toLowerCase();
+        return na.localeCompare(nb, 'es');
+      })
+      .filter(s => {
+      const name = ((s.name_alias || s.name_source || '') + ' ' + (s.provider_alias || s.provider_source || '')).toLowerCase();
+        if (q && !name.includes(q)) return false;
+        if (activeStatuses.size && !activeStatuses.has(s.status)) return false;
+          return true;
+      });
+
+    if (!filtered.length) {
+      list.innerHTML = `<div style="text-align:center;padding:40px;font-size:13px;color:var(--text2)">Sin fuentes${q || activeStatuses.size ? ' para los filtros aplicados' : ''}.</div>`;
+      return;
+    }
+
+    list.innerHTML = '';
+    for (const source of filtered) {
+      list.appendChild(buildSourceBlock(source));
+    }
+
+    // Restaurar estado abierto
+    for (const id of openSources) {
+      const block = document.querySelector(`.source-block[data-id="${id}"]`);
+      if (block && loadedSources.has(id)) {
+        block.classList.add('open');
+        renderSourceBody(block, loadedSources.get(id));
+      }
+    }
+  }
+
+  // ── Source block ──────────────────────────────────────────────────
+
+  function buildSourceBlock(source) {
+    const name     = UTILS.displayName(source);
+    const provider = source.provider_alias || source.provider_source || '';
+    const stClass  = `status-${source.status}`;
+
+    const block = document.createElement('div');
+    block.className  = `source-block ${stClass}`;
+    block.dataset.id = source.id;
+    block.innerHTML  = `
+      <div class="source-header">
+        <span class="dot ${STATUS.get(source.status).dotClass}" title="${STATUS.get(source.status).label}"></span>
+        <div class="source-info">
+          <span class="source-name">${UTILS.escHtml(name)}</span>
+          ${source.countries?.length ? `<div class="source-countries">${source.countries.map(c => `<span class="country-pill">${c}</span>`).join('')}</div>` : ''}
+        </div>
+        <span class="source-meta-right">${source.layers_total || 0} capas</span>
+        <span class="source-arrow"></span>
+      </div>
+      <div class="source-body"></div>
+    `;
+
+    block.querySelector('.source-header').addEventListener('click', () => toggleSource(block, source));
+    return block;
+  }
+
+  async function toggleSource(block, source) {
+    const isOpen = block.classList.toggle('open');
+    const body   = block.querySelector('.source-body');
+
+    if (!isOpen) { openSources.delete(source.id); return; }
+    openSources.add(source.id);
+
+    if (loadedSources.has(source.id)) {
+      renderSourceBody(block, loadedSources.get(source.id));
+      if (!loadedLayers.has(source.id)) loadLayers(block, source.id);
+      else renderLayers(block, source.id, loadedLayers.get(source.id));
+      return;
+    }
+
+    body.innerHTML = `<div class="inline-loading">Cargando…</div>`;
+
+    const { data, ok, error } = await API.getSource(source.id);
+    if (!ok) { body.innerHTML = `<div class="inline-loading" style="color:var(--error)">${error}</div>`; return; }
+
+    loadedSources.set(source.id, data.source);
+    renderSourceBody(block, data.source);
+    loadLayers(block, source.id); // sin await — carga en paralelo
+  }
+
+  function renderSourceBody(block, src) {
+    const body = block.querySelector('.source-body');
+    const connParams = (() => { try { return typeof src.connection_params === 'string' ? JSON.parse(src.connection_params) : (src.connection_params || {}); } catch { return {}; } })();
+    const url = connParams?.url || '';
+
+    const isConnected   = src.status === 'ok';
+    const layersTotal   = src.layers_total    || 0;
+    const layersActive  = src.layers_included || 0;
+    const hasLayers     = layersTotal > 0;
+
+    const infoRows = [
+      url           ? `<div class="info-row"><span class="info-label">URL</span><span class="info-value">${UTILS.escHtml(url)}</span></div>` : '',
+      src.last_checked ? `<div class="info-row"><span class="info-label">último chequeo</span><span class="info-value">${UTILS.formatDate(src.last_checked)}</span></div>` : '',
+      src.error_message ? `<div class="info-row"><span class="info-label">error</span><span class="info-error">${UTILS.escHtml(src.error_message)}</span></div>` : '',
+    ].filter(Boolean).join('');
+
+    body.innerHTML = `
+      <div class="source-top-bar">
+        <div class="source-type-pills">
+          ${FMTS.pillHtml(src.data_format)}
+          ${src.access_method ? `<span class="pill pill-default">${src.access_method}</span>` : ''}
+        </div>
+        <div class="source-top-actions">
+          <button class="action-btn js-edit">Editar</button>
+          <button class="action-btn js-refresh-source">Actualizar</button>
+          <button class="action-btn danger js-delete">Eliminar</button>
+        </div>
+      </div>
+      <div class="layers-section">
+        ${!hasLayers
+          ? `<div class="inline-loading">Sin capas descubiertas.</div>`
+          : `<div class="layers-accordion" id="layers-${src.id}">
+               <div class="inline-loading" style="padding:12px 16px">Cargando capas…</div>
+             </div>`}
+      </div>
+    `;
+
+    // Bind acciones
+    body.querySelector('.js-edit')?.addEventListener('click', () => openEditModal(src));
+
+    body.querySelector('.js-refresh-source')?.addEventListener('click', async e => {
+      const btn = e.currentTarget;
+      btn.classList.add('btn-loading');
+      btn.disabled = true;
+      const { data, ok } = await API.getSource(src.id);
+      if (ok && data) {
+        loadedSources.set(src.id, data.source);
+        loadedLayers.delete(src.id);
+        renderSourceBody(block, data.source);
+        loadLayers(block, src.id);
+      }
+      btn.classList.remove('btn-loading');
+      btn.disabled = false;
+    });
+
+    body.querySelector('.js-delete')?.addEventListener('click', () => {
+      openSources.delete(src.id);
+      loadedSources.delete(src.id);
+      SOURCES.deleteSource(src.id);
+    });
+
+  }
+
+  // ── Carga y render de capas (separado del source body) ─────────────
+
+  async function loadLayers(block, sourceId) {
+    const { data, ok } = await API.getSourceLayers(sourceId);
+    if (!ok || !data?.layers) return;
+    loadedLayers.set(sourceId, data.layers);
+    renderLayers(block, sourceId, data.layers);
+  }
+
+  function renderLayers(block, sourceId, layers) {
+    const acc = block.querySelector(`#layers-${sourceId}`);
+    if (!acc) return;
+
+    if (!layers.length) {
+      acc.innerHTML = `<div class="inline-loading">Sin capas descubiertas.</div>`;
+      return;
+    }
+
+    const fragment = document.createDocumentFragment();
+    for (const layer of layers) {
+      fragment.appendChild(buildLayerBlock(layer));
+    }
+    acc.innerHTML = '';
+    acc.appendChild(fragment);
+  }
+
+  // ── Layer block ───────────────────────────────────────────────────
+
+  function geomIcon(type) {
+    const t = (type || '').toUpperCase();
+    if (t.includes('POINT'))   return 'radio_button_unchecked';
+    if (t.includes('LINE'))    return 'horizontal_rule';
+    if (t.includes('POLYGON')) return 'hexagon';
+    return 'layers';
+  }
+
+  function buildLayerBlock(layer) {
+    const displayName = layer.name_alias || layer.name_source;
+    const showSource  = !!layer.name_alias; // solo mostrar name_source si hay alias
+    const count       = layer.feature_count != null ? UTILS.formatNumber(layer.feature_count) : '—';
+
+    const block = document.createElement('div');
+    block.className  = 'layer-block';
+    block.dataset.id = layer.id;
+    block.innerHTML  = `
+      <div class="layer-row">
+        <input type="checkbox" class="layer-check" ${layer.included ? 'checked' : ''} title="${layer.included ? 'Incluida en API' : 'Excluida de API'}">
+        <span class="material-symbols-outlined layer-geom-icon">${geomIcon(layer.geometry_type)}</span>
+        <div class="layer-name-wrap">
+          <span class="layer-name">${UTILS.escHtml(displayName)}</span>
+          ${showSource ? `<span class="layer-name-source">${UTILS.escHtml(layer.name_source)}</span>` : ''}
+        </div>
+        <span class="layer-count">${count}</span>
+        <button class="layer-btn js-layer-edit">Editar</button>
+        <button class="layer-btn js-discover-fields-btn">Campos</button>
+        <span class="layer-arrow"></span>
+      </div>
+      <div class="layer-body"></div>
+    `;
+
+    const check = block.querySelector('.layer-check');
+    check.addEventListener('change', async e => {
+      e.stopPropagation();
+      const { ok, error } = await API.updateLayer(layer.id, { included: e.target.checked ? 1 : 0 });
+      if (!ok) { TOAST.error('Error', error); e.target.checked = !e.target.checked; }
+      else { layer.included = e.target.checked ? 1 : 0; }
+    });
+
+    block.querySelector('.layer-row').addEventListener('click', e => {
+      if (e.target.closest('.layer-check') || e.target.closest('.layer-btn')) return;
+      toggleLayer(block, layer);
+    });
+
+    block.querySelector('.js-layer-edit').addEventListener('click', e => {
+      e.stopPropagation();
+      openLayerEditModal(layer, block);
+    });
+
+    block.querySelector('.js-discover-fields-btn').addEventListener('click', async e => {
+      e.stopPropagation();
+      const btn = e.currentTarget;
+      btn.classList.add('btn-loading'); btn.disabled = true;
+      const { data, ok, error } = await API.discoverFields(layer.id);
+      btn.classList.remove('btn-loading'); btn.disabled = false;
+      if (!ok) { TOAST.error('Error', error); return; }
+      TOAST.ok(data.added > 0 ? 'Campos descubiertos' : 'Campos actualizados', `${data.added} nuevos.`);
+      // Invalidar caché y refrescar si la capa está abierta
+      loadedFields.delete(layer.id);
+      if (block.classList.contains('open')) {
+        openLayerFields(block.querySelector('.layer-body'), layer);
+      }
+    });
+
+    return block;
+  }
+
+  function toggleLayer(block, layer) {
+    const isOpen = block.classList.toggle('open');
+    const body   = block.querySelector('.layer-body');
+
+    if (!isOpen) { openLayers.delete(layer.id); body.innerHTML = ''; return; }
+    openLayers.add(layer.id);
+    openLayerFields(body, layer);
+  }
+
+  async function openLayerFields(body, layer) {
+    body.innerHTML = `<div class="inline-loading" style="padding:10px 16px">Cargando campos…</div>`;
+    if (loadedFields.has(layer.id)) { renderFields(body, layer.id); return; }
+    const { data, ok } = await API.getLayerFields(layer.id);
+    if (!ok || !data?.fields?.length) {
+      body.innerHTML = `<div class="inline-loading" style="padding:10px 16px">Sin campos descubiertos. Usá el botón Campos en la fila.</div>`;
+      return;
+    }
+    loadedFields.set(layer.id, data.fields);
+    renderFields(body, layer.id);
+  }
+
+
+  function renderFields(body, layerId) {
+    const fields = loadedFields.get(layerId) || [];
+    if (!fields.length) {
+      body.innerHTML = `<div class="inline-loading" style="padding:10px 16px">Sin campos. Usá el botón Campos en la fila.</div>`;
+      return;
+    }
+
+    body.innerHTML = '';
+    const frag = document.createDocumentFragment();
+
+    for (const f of fields) {
+      const row = document.createElement('div');
+      row.className  = 'field-row';
+      row.dataset.id = f.id;
+      row.innerHTML  = `
+        <input type="checkbox" class="layer-check js-field-check" ${f.included ? 'checked' : ''}
+               title="${f.included ? 'Activo' : 'Inactivo'}">
+        <div class="field-name-wrap">
+          <span class="field-name">${UTILS.escHtml(f.name_source)}</span>
+          <span class="field-type">${f.type || '?'}</span>
+        </div>
+        <div class="field-alias-wrap">
+          <input class="field-alias-input js-field-alias" value="${UTILS.escHtml(f.name_alias || '')}" placeholder="alias">
+          <button class="field-alias-save js-field-save">Guardar</button>
+        </div>
+      `;
+
+      row.querySelector('.js-field-check').addEventListener('change', async e => {
+        const { ok, error } = await API.updateField(f.id, { included: e.target.checked ? 1 : 0 });
+        if (!ok) { TOAST.error('Error', error); e.target.checked = !e.target.checked; }
+        else { f.included = e.target.checked ? 1 : 0; }
+      });
+
+      row.querySelector('.js-field-save').addEventListener('click', async e => {
+        const inp   = row.querySelector('.js-field-alias');
+        const alias = inp.value.trim() || null;
+        const btn   = e.currentTarget;
+        btn.classList.add('btn-loading'); btn.disabled = true;
+        const { ok, error } = await API.updateField(f.id, { name_alias: alias });
+        btn.classList.remove('btn-loading'); btn.disabled = false;
+        if (!ok) { TOAST.error('Error', error); return; }
+        f.name_alias = alias;
+        TOAST.ok('Guardado');
+      });
+
+      frag.appendChild(row);
+    }
+
+    body.appendChild(frag);
+  }
+
 })();
 </script>
 
