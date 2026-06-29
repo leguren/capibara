@@ -33,10 +33,17 @@ module.exports = async function handler(req, res) {
   // GET /api/admin/layers?source_id=xxx — carga liviana solo con columnas del panel
   if (req.method === 'GET' && sourceId) {
     const result = await db.execute({
-      sql: 'SELECT id, name_source, name_alias, domain, update_frequency, geometry_type, feature_count, included FROM layers WHERE source_id = ? ORDER BY name_source ASC',
+      sql: 'SELECT id, name_source, name_alias, domain, update_frequency, geometry_type, feature_count, included FROM layers WHERE source_id = ?',
       args: [sourceId],
     });
-    return ok(res, { layers: result.rows });
+    // Ordenar en JS para respetar tildes y caracteres especiales del español
+    // (SQLite ORDER BY usa collation binaria — las tildes quedan al final)
+    const sorted = result.rows.slice().sort((a, b) => {
+      const na = (a.name_alias || a.name_source || '').normalize('NFC');
+      const nb = (b.name_alias || b.name_source || '').normalize('NFC');
+      return na.localeCompare(nb, 'es', { sensitivity: 'base' });
+    });
+    return ok(res, { layers: sorted });
   }
 
   if (!layerId) return err(res, 400, 'Se requiere id');
