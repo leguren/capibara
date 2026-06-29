@@ -194,10 +194,10 @@
       const domain = overlay.querySelector('#lyr-domain').value || null;
       const freq   = overlay.querySelector('#lyr-freq').value || 'unknown';
       const saveBtn = overlay.querySelector('.js-save');
-      saveBtn.classList.add('btn-loading'); saveBtn.disabled = true;
+      saveBtn.disabled = true;
 
       const { ok, error } = await API.updateLayer(layer.id, { name_alias: alias, domain, update_frequency: freq });
-      saveBtn.classList.remove('btn-loading'); saveBtn.disabled = false;
+      saveBtn.disabled = false;
       if (!ok) { TOAST.error('Error', error); return; }
 
       Object.assign(layer, { name_alias: alias, domain, update_frequency: freq });
@@ -285,10 +285,10 @@
       const countries      = overlay.querySelector('#edit-countries').value.trim().toUpperCase().split(/[\s,]+/).filter(Boolean);
       const notes          = overlay.querySelector('#edit-notes').value.trim() || null;
       const saveBtn   = overlay.querySelector('.js-save');
-      saveBtn.classList.add('btn-loading'); saveBtn.disabled = true;
+      saveBtn.disabled = true;
 
       const { ok, error } = await API.updateSource(src.id, { name_alias: alias, provider_alias: providerAlias, notes, countries });
-      saveBtn.classList.remove('btn-loading'); saveBtn.disabled = false;
+      saveBtn.disabled = false;
       if (!ok) { TOAST.error('Error al guardar', error); return; }
 
       // Actualizar caché y UI
