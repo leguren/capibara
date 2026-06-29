@@ -5,13 +5,13 @@ window.CAPIBARA_FORMATS = (() => {
   'use strict';
 
   const FORMATS = {
-    wfs:         { label: 'WFS',          pillClass: 'pill-wfs' },
-    arcgis_rest: { label: 'ArcGIS REST',  pillClass: 'pill-arcgis-rest' },
-    csv:         { label: 'CSV',          pillClass: 'pill-csv' },
-    geojson:     { label: 'GeoJSON',      pillClass: 'pill-geojson' },
-    json:        { label: 'JSON',         pillClass: 'pill-json' },
-    xlsx:        { label: 'Excel',        pillClass: 'pill-default' },
-    rss:         { label: 'RSS',          pillClass: 'pill-default' },
+    wfs:         { label: 'wfs',          pillClass: 'pill-wfs' },
+    arcgis_rest: { label: 'arcgis rest',  pillClass: 'pill-arcgis-rest' },
+    csv:         { label: 'csv',          pillClass: 'pill-csv' },
+    geojson:     { label: 'geojson',      pillClass: 'pill-geojson' },
+    json:        { label: 'json',         pillClass: 'pill-json' },
+    xlsx:        { label: 'excel',        pillClass: 'pill-default' },
+    rss:         { label: 'rss',          pillClass: 'pill-default' },
   };
 
   function get(format) {
