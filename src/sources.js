@@ -134,11 +134,6 @@ window.CAPIBARA_SOURCES = (() => {
       cb.addEventListener('change', () => {
         if (cb.checked) selectedCodes.add(cb.value);
         else selectedCodes.delete(cb.value);
-        const row = cb.closest('label');
-        if (row) {
-          row.style.background = cb.checked ? 'rgba(61,82,160,0.08)' : '';
-          row.style.color      = cb.checked ? 'var(--accent)'        : '';
-        }
         updateTrigger();
       });
     });
