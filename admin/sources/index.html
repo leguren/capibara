@@ -440,8 +440,7 @@
     body.querySelector('.js-refresh-source')?.addEventListener('click', async e => {
       const btn = e.currentTarget;
       btn.disabled = true;
-      // Re-descubrir capas (actualiza geometría, añade capas nuevas)
-      await API.discoverLayers(src.id);
+      // Solo recarga metadatos y capas desde la BD — no llama al servidor WFS externo
       const { data, ok } = await API.getSource(src.id);
       if (ok && data) {
         loadedSources.set(src.id, data.source);
