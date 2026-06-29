@@ -47,7 +47,7 @@
         <span class="dot dot-unverified"></span><span id="count-unverified">0</span>sin verificar
       </button>
     </div>
-    <button class="filter-pill" id="btn-refresh" title="Actualizar"><span class="refresh-icon">↻</span>Actualizar</button>
+    <button class="filter-pill" id="btn-refresh" title="Actualizar"><span class="material-symbols-outlined refresh-icon">refresh</span>Actualizar</button>
     <button class="filter-pill" id="btn-new-source">Nueva fuente</button>
   </div>
 
@@ -251,45 +251,28 @@
     ].filter(Boolean).join('');
 
     body.innerHTML = `
-      ${infoRows ? `<div class="source-info-section">${infoRows}</div>` : ''}
-      <div class="source-actions">
-        ${!isConnected ? `<button class="action-btn primary js-connect">Conectar</button>` : ''}
-        ${isConnected  ? `<button class="action-btn js-discover">${hasLayers ? 'Actualizar capas' : 'Descubrir capas'}</button>` : ''}
-        <button class="action-btn danger js-delete">Eliminar</button>
+      <div class="source-top-bar">
+        <div class="source-type-pills">
+          ${FORMATS.pillHtml(src.data_format)}
+          ${src.access_method ? `<span class="pill pill-default">${src.access_method}</span>` : ''}
+        </div>
+        <div class="source-top-actions">
+          <button class="action-btn js-edit">Editar</button>
+          <button class="action-btn danger js-delete">Eliminar</button>
+        </div>
       </div>
       <div class="layers-section">
         ${!hasLayers
           ? `<div class="inline-loading">Sin capas descubiertas.</div>`
-          : `<div class="layers-header">
-               <span class="js-layers-count">${layersTotal} capas</span>
-               <span class="js-layers-active">${layersActive} activas</span>
-             </div>
-             <div class="layers-accordion" id="layers-${src.id}">
-               <div class="inline-loading" style="padding:12px 28px">Cargando capas…</div>
+          : `<div class="layers-accordion" id="layers-${src.id}">
+               <div class="inline-loading" style="padding:12px 16px">Cargando capas…</div>
              </div>`}
       </div>
     `;
 
     // Bind acciones
-    body.querySelector('.js-connect')?.addEventListener('click', async e => {
-      const btn = e.currentTarget;
-      const ok  = await SOURCES.connect(src.id, btn);
-      if (ok) {
-        const { data } = await API.getSource(src.id);
-        if (data) { loadedSources.set(src.id, data.source); renderSourceBody(block, data.source); }
-      }
-    });
-
-    body.querySelector('.js-discover')?.addEventListener('click', async e => {
-      const btn = e.currentTarget;
-      await SOURCES.discoverLayers(src.id, btn);
-      const { data } = await API.getSource(src.id);
-      if (data) {
-        loadedSources.set(src.id, data.source);
-        loadedLayers.delete(src.id); // invalidar caché de capas tras descubrir
-        renderSourceBody(block, data.source);
-        loadLayers(block, src.id);
-      }
+    body.querySelector('.js-edit')?.addEventListener('click', () => {
+      // TODO: abrir modal de edición de fuente
     });
 
     body.querySelector('.js-delete')?.addEventListener('click', () => {
@@ -313,12 +296,6 @@
     const acc = block.querySelector(`#layers-${sourceId}`);
     if (!acc) return;
 
-    // Actualizar conteos en el header con valores reales
-    const countEl  = block.querySelector('.js-layers-count');
-    const activeEl = block.querySelector('.js-layers-active');
-    if (countEl)  countEl.textContent  = `${layers.length} capas`;
-    if (activeEl) activeEl.textContent = `${layers.filter(l => l.included).length} activas`;
-
     if (!layers.length) {
       acc.innerHTML = `<div class="inline-loading">Sin capas descubiertas.</div>`;
       return;
@@ -334,37 +311,38 @@
 
   // ── Layer block ───────────────────────────────────────────────────
 
+  function geomIcon(type) {
+    const t = (type || '').toUpperCase();
+    if (t.includes('POINT'))   return 'radio_button_unchecked';
+    if (t.includes('LINE'))    return 'horizontal_rule';
+    if (t.includes('POLYGON')) return 'hexagon';
+    return 'layers';
+  }
+
   function buildLayerBlock(layer) {
+    const displayName = layer.name_alias || layer.name_source;
+    const showSource  = !!layer.name_alias; // solo mostrar name_source si hay alias
+    const count       = layer.feature_count != null ? UTILS.formatNumber(layer.feature_count) : '—';
+
     const block = document.createElement('div');
-    block.className  = 'layer-block';
+    block.className  = 'layer-row';
     block.dataset.id = layer.id;
     block.innerHTML  = `
-      <div class="layer-header">
-        <label class="toggle" title="${layer.included ? 'Incluida en API' : 'Excluida'}">
-          <input type="checkbox" ${layer.included ? 'checked' : ''}>
-          <span class="toggle-track"><span class="toggle-thumb"></span></span>
-        </label>
-        <div class="layer-name-wrap">
-          <span class="layer-name">${UTILS.escHtml(layer.name_source)}</span>
-          ${layer.name_alias ? `<span class="layer-alias-sub">→ ${UTILS.escHtml(layer.name_alias)}</span>` : ''}
-        </div>
-        <span class="layer-geom-badge">${(layer.geometry_type || '').toUpperCase()}</span>
-        <span class="layer-arrow"></span>
+      <input type="checkbox" class="layer-check" ${layer.included ? 'checked' : ''} title="${layer.included ? 'Incluida en API' : 'Excluida de API'}">
+      <span class="material-symbols-outlined layer-geom-icon">${geomIcon(layer.geometry_type)}</span>
+      <div class="layer-name-wrap">
+        <span class="layer-name">${UTILS.escHtml(displayName)}</span>
+        ${showSource ? `<span class="layer-name-source">${UTILS.escHtml(layer.name_source)}</span>` : ''}
       </div>
-      <div class="layer-body"></div>
+      <span class="layer-count">${count}</span>
     `;
 
-    const toggle = block.querySelector('input[type="checkbox"]');
-    toggle.addEventListener('change', async e => {
+    const check = block.querySelector('.layer-check');
+    check.addEventListener('change', async e => {
       e.stopPropagation();
       const { ok, error } = await API.updateLayer(layer.id, { included: e.target.checked ? 1 : 0 });
       if (!ok) { TOAST.error('Error', error); e.target.checked = !e.target.checked; }
       else { layer.included = e.target.checked ? 1 : 0; }
-    });
-
-    block.querySelector('.layer-header').addEventListener('click', e => {
-      if (e.target.closest('.toggle')) return;
-      toggleLayer(block, layer);
     });
 
     return block;
