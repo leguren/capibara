@@ -381,6 +381,17 @@
         </div>
         <div class="modal-body">
 
+          <!-- Próxima versión -->
+          <div class="modal-field">
+            <label class="modal-label">Próxima versión</label>
+            <div class="pub-version-input-wrap">
+              <input class="input input-mono" id="pub-version" readonly style="font-size:12px">
+              <button class="pub-lock-btn js-pub-lock" title="Desbloquear para editar">
+                <span class="material-symbols-outlined js-lock-icon" style="font-size:16px;line-height:1;font-variation-settings:'FILL' 0,'wght' 300,'GRAD' 0,'opsz' 20">lock</span>
+              </button>
+            </div>
+          </div>
+
           <!-- Fuentes a publicar -->
           <div class="modal-field">
             <label class="modal-label">Fuentes a publicar</label>
@@ -397,17 +408,6 @@
             </div>
           </div>
 
-          <!-- Próxima versión -->
-          <div class="modal-field">
-            <label class="modal-label">Próxima versión</label>
-            <div class="pub-version-input-wrap">
-              <input class="input input-mono" id="pub-version" readonly style="font-size:12px">
-              <button class="pub-lock-btn js-pub-lock" title="Desbloquear para editar">
-                <span class="material-symbols-outlined js-lock-icon" style="font-size:16px;line-height:1;font-variation-settings:'FILL' 0,'wght' 300,'GRAD' 0,'opsz' 20">lock</span>
-              </button>
-            </div>
-          </div>
-
           <!-- Notas internas -->
           <div class="modal-field">
             <label class="modal-label" for="pub-notes">Notas internas</label>
@@ -416,7 +416,6 @@
 
         </div>
         <div class="modal-footer">
-          <a href="/api/geo/1/catalog" target="_blank" class="pub-catalog-link">Ver catálogo</a>
           <button class="action-btn js-cancel">Cancelar</button>
           <button class="action-btn primary" id="pub-btn">Publicar</button>
         </div>
@@ -545,7 +544,8 @@
                 return `<div class="pub-snap-source"><div class="pub-snap-source-name">${UTILS.escHtml(sname)}</div>${layers}</div>`;
               }).join('');
             }
-            body.innerHTML = notesHtml + byHtml + (sourcesHtml ? `<div class="pub-snap-sources">${sourcesHtml}</div>` : '');
+            const catalogHtml = (i === 0) ? `<div class="pub-detail-row"><a href="/api/geo/1/catalog" target="_blank" class="pub-catalog-link">Ver catálogo</a></div>` : '';
+            body.innerHTML = notesHtml + byHtml + catalogHtml + (sourcesHtml ? `<div class="pub-snap-sources">${sourcesHtml}</div>` : '');
           }
         });
       });
