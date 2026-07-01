@@ -112,6 +112,9 @@ window.CAPIBARA_API = (() => {
 
     // User
     getKeys:    ()         => get(`${USER_API}/keys`),
+    getUserUsage: (days)   => get(`${USER_API}/usage${days ? `?days=${days}` : ''}`),
+    getApiStatus: ()       => get(`${USER_API}/status`),
+    getChangelog: ()       => get(`${USER_API}/changelog`),
     createKey:  (body)     => post(`${USER_API}/keys`, body),
     updateKey:  (id, body) => patch(`${USER_API}/keys?id=${id}`, body),
     deleteKey:  (id)       => del(`${USER_API}/keys?id=${id}`),
