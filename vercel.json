@@ -89,6 +89,18 @@
       "destination": "/api/admin/fields?sub=sample"
     },
     {
+      "source": "/explore",
+      "destination": "/explore/index.html"
+    },
+    {
+      "source": "/api/geo/1/query/demo",
+      "destination": "/api/geo/query?sub=demo"
+    },
+    {
+      "source": "/api/geo/1/query/preview",
+      "destination": "/api/geo/query?sub=preview"
+    },
+    {
       "source": "/api/geo/1/query",
       "destination": "/api/geo/query"
     },
