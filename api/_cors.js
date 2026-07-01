@@ -19,10 +19,13 @@
  */
 
 // Dominios exactos autorizados a llamar a las APIs del panel y la API pública.
+// capibara-ten.vercel.app es el dominio real de producción (Vercel, sin dominio
+// propio todavía). También cubierto por ALLOWED_PATTERNS más abajo, pero se
+// deja explícito acá para que quede claro y no dependa solo del patrón.
 const ALLOWED_ORIGINS = new Set([
-  'https://capibara.io',
-  'https://www.capibara.io',
-  'https://capibara.vercel.app',
+  'https://capibara-ten.vercel.app',
+  // Agregar acá un dominio propio (ej. 'https://capibara.io') si se
+  // configura uno en el futuro — ver docs/deploy.md.
 ]);
 
 // Patrones de preview deploys de Vercel (capibara-<hash>-<usuario>.vercel.app)
