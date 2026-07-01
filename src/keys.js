@@ -105,7 +105,7 @@ window.CAPIBARA_KEYS = (() => {
     await load();
   }
 
-  function renderList(container) {
+  function renderList(container, usageByKey = {}) {
     if (!container) return;
     if (!_keys.length) {
       container.innerHTML = `
@@ -119,14 +119,19 @@ window.CAPIBARA_KEYS = (() => {
 
     container.innerHTML = '';
     for (const key of _keys) {
+      const usageCount = usageByKey[key.id];
+      const usageHtml  = usageCount != null
+        ? `<span class="api-key-usage">${usageCount.toLocaleString('es')} req (30d)</span>`
+        : '';
       const el = document.createElement('div');
       el.className = `api-key-row${!key.active ? ' is-disabled' : ''}`;
       el.innerHTML = `
-        <div>
+        <div style="flex:1;min-width:0">
           <div class="api-key-label">${UTILS.escHtml(key.label)}</div>
           <div class="api-key-type">${key.type} · ${key.active ? 'activa' : 'inactiva'}</div>
         </div>
-        <div class="api-key-used" style="margin-left:auto">
+        ${usageHtml}
+        <div class="api-key-used">
           ${key.last_used_at ? `Usada ${UTILS.timeAgo(key.last_used_at)}` : 'Nunca usada'}
         </div>
         <button class="btn btn-danger btn-sm js-revoke" data-id="${key.id}">Eliminar</button>
