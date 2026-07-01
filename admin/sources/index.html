@@ -13,7 +13,17 @@
 </head>
 <body>
 
-<div style="height:var(--navbar-h)"></div>
+<nav class="navbar">
+  <a href="/admin" class="navbar-brand">Capibara</a>
+  <div class="navbar-nav">
+    <a href="/admin/sources"   class="navbar-link is-active">Fuentes</a>
+    <a href="/admin/analytics" class="navbar-link">Analytics</a>
+    <a href="/admin/users"     class="navbar-link">Usuarios</a>
+    <a href="/admin/keys"      class="navbar-link">Keys</a>
+  </div>
+  <div class="navbar-spacer"></div>
+  <div class="navbar-user" id="nav-user"></div>
+</nav>
 
 <main class="page-content">
 
@@ -136,12 +146,80 @@
     const btn = document.getElementById('btn-refresh');
     btn.classList.add('is-refreshing');
     btn.disabled = true;
-    await SOURCES.load();
+    AUTH.renderNavUser(document.getElementById('nav-user'), user);
+  await SOURCES.load();
     btn.classList.remove('is-refreshing');
     btn.disabled = false;
   });
 
   // ── Modal de edición de capa ──────────────────────────────────────────
+  async function openLayerPreviewModal(layer) {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    const name = layer.name_alias || layer.name_source;
+    overlay.innerHTML = `
+      <div class="modal" style="max-width:820px">
+        <div class="modal-header">
+          <div class="modal-title">Preview — ${UTILS.escHtml(name)}</div>
+          <button class="modal-close js-close">
+            <span class="material-symbols-outlined" style="font-size:18px;line-height:1">close</span>
+          </button>
+        </div>
+        <div class="modal-body" id="preview-body">
+          <div class="inline-loading" style="padding:20px">Cargando datos…</div>
+        </div>
+        <div class="modal-footer">
+          <button class="action-btn js-close">Cerrar</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+    const close = () => overlay.remove();
+    overlay.querySelectorAll('.js-close').forEach(b => b.addEventListener('click', close));
+    overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+
+    PROGRESS.start();
+    const { data, ok, error } = await API.getLayerSample(layer.id, 5);
+    const body = overlay.querySelector('#preview-body');
+
+    if (!ok) {
+      PROGRESS.done(true);
+      body.innerHTML = `<div style="padding:16px;color:var(--error);font-size:13px">Error al obtener datos: ${UTILS.escHtml(error)}</div>`;
+      return;
+    }
+    PROGRESS.done();
+
+    if (!data.features?.length) {
+      body.innerHTML = `<div style="padding:16px;font-size:13px;color:var(--text2)">Sin datos disponibles para esta capa.</div>`;
+      return;
+    }
+
+    // Construir tabla con las propiedades del primer feature
+    const props = data.features[0]?.properties || {};
+    const cols   = Object.keys(props).filter(k => k !== 'geometry');
+
+    const thead = cols.map(c => `<th style="padding:7px 12px;white-space:nowrap;font-size:11px;color:var(--text2);font-weight:500;text-align:left;border-bottom:1px solid var(--border)">${UTILS.escHtml(c)}</th>`).join('');
+    const rows  = data.features.map(f => {
+      const p = f.properties || {};
+      const cells = cols.map(c => {
+        const v = p[c];
+        const s = v == null ? '' : String(v);
+        return `<td style="padding:7px 12px;font-size:12px;font-family:var(--font-mono);color:var(--text);border-bottom:1px solid var(--border);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${UTILS.escHtml(s)}">${UTILS.escHtml(s.slice(0, 80))}</td>`;
+      }).join('');
+      return `<tr>${cells}</tr>`;
+    }).join('');
+
+    body.innerHTML = `
+      <div style="font-size:12px;color:var(--text2);margin-bottom:10px">${data.features.length} features de ${data.total?.toLocaleString('es') || '?'} totales</div>
+      <div style="overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse">
+          <thead><tr>${thead}</tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+    `;
+  }
+
   function openLayerEditModal(layer, block) {
     const overlay = document.createElement('div');
     overlay.className = 'modal-overlay';
@@ -458,6 +536,9 @@
             const { data: ld, ok: lok } = await API.getSourceLayers(sourceId);
             if (!lok) { body.innerHTML = `<div style="padding:6px 12px;font-size:12px;color:var(--error)">Error.</div>`; return; }
             const layers = (ld.layers || []).filter(l => l.included);
+            // Acumular conteos para warnings al publicar
+            overlay._layersSinDominio = (overlay._layersSinDominio || 0) + layers.filter(l => !l.domain).length;
+            overlay._layersSinGeom    = (overlay._layersSinGeom    || 0) + layers.filter(l => !l.geometry_type || l.geometry_type === 'UNKNOWN' || l.geometry_type === 'GEOMETRY').length;
             body.innerHTML = layers.length
               ? layers.map(l => {
                   const geom = l.geometry_type ? `<span class="pub-layer-geom">${UTILS.escHtml((l.geometry_type||"").toLowerCase())}</span>` : '';
@@ -575,6 +656,14 @@
         const names = withErrors.map(s => s.name_alias || s.name_source).join(', ');
         if (!confirm(`Hay ${withErrors.length} fuente(s) incluida(s) con errores que no se publicarán: ${names}.\n¿Publicar de todas formas?`)) return;
       }
+
+      // 1.2: warning capas sin dominio
+      const sinDominio = overlay._layersSinDominio || 0;
+      if (sinDominio > 0 && !confirm(`${sinDominio} capa(s) se publicarán sin dominio temático y no aparecerán en filtros por dominio.\n¿Publicar de todas formas?`)) return;
+
+      // 3.3: warning capas con geometría sin resolver
+      const sinGeom = overlay._layersSinGeom || 0;
+      if (sinGeom > 0 && !confirm(`${sinGeom} capa(s) tienen tipo de geometría sin detectar (GEOMETRY o UNKNOWN). El filtro de cobertura espacial puede no funcionar correctamente para ellas.\n¿Publicar de todas formas?`)) return;
       btn.disabled = true;
       PROGRESS.start();
       const { data, ok, error } = await API.publish({ notes: notes || null, version_label: version || null });
@@ -595,6 +684,7 @@
   }
 
   SOURCES.onUpdate(renderSources);
+  AUTH.renderNavUser(document.getElementById('nav-user'), user);
   await SOURCES.load();
 
   // ── renderSources ─────────────────────────────────────────────────
@@ -754,6 +844,7 @@
         </div>
         <div class="source-top-actions">
           <button class="action-btn js-edit">Editar</button>
+          ${src.status !== 'ok' ? '<button class="action-btn js-connect">Conectar</button>' : ''}
           <button class="action-btn js-refresh-source">Actualizar</button>
           <button class="action-btn danger js-delete">Eliminar</button>
         </div>
@@ -772,6 +863,13 @@
     // TODO: el modal de editar capa podría mostrar y editar abstract y bbox
     // (min_lat, max_lat, min_lon, max_lon). Esos datos ya están en DB desde el
     // discover, solo falta exponerlos en la UI.
+
+    body.querySelector('.js-connect')?.addEventListener('click', async e => {
+      const btn = e.currentTarget;
+      await SOURCES.connect(src.id, btn);
+      loadedSources.delete(src.id);
+      renderSourceBody(block, { ...src, status: 'ok' });
+    });
 
     body.querySelector('.js-refresh-source')?.addEventListener('click', async e => {
       const btn = e.currentTarget;
@@ -865,6 +963,9 @@
           <span class="layer-name">${UTILS.escHtml(displayName)}</span>
           ${showSource ? `<span class="layer-name-source">${UTILS.escHtml(layer.name_source)}</span>` : ''}
         </div>
+        ${layer.domain ? `<span class="pill">${UTILS.escHtml(layer.domain.replace('_',' '))}</span>` : ''}
+        ${layer.update_frequency && layer.update_frequency !== 'unknown' ? `<span class="pill">${UTILS.escHtml(layer.update_frequency.replace('_',' '))}</span>` : ''}
+        <button class="action-btn js-layer-preview" title="Preview de datos">Preview</button>
         <button class="action-btn js-layer-edit">Editar</button>
         <span class="layer-arrow"></span>
       </div>
@@ -885,6 +986,11 @@
     block.querySelector('.layer-row').addEventListener('click', e => {
       if (e.target.closest('.layer-check') || e.target.closest('.js-layer-edit')) return;
       toggleLayer(block, layer);
+    });
+
+    block.querySelector('.js-layer-preview').addEventListener('click', async e => {
+      e.stopPropagation();
+      await openLayerPreviewModal(layer);
     });
 
     block.querySelector('.js-layer-edit').addEventListener('click', e => {
@@ -955,11 +1061,11 @@
       // Extraer sample_value del metadata del campo
       const fMeta        = (() => { try { return JSON.parse(f.metadata || '{}'); } catch { return {}; } })();
       const sampleVal    = fMeta.sample_value != null ? String(fMeta.sample_value) : null;
-      // Si hay sample_value guardado en DB lo mostramos directamente.
-      // Si no, mostramos un botón "Muestra" que llama a getFieldSample al hacer click.
-      const sampleHtml   = sampleVal != null
+      // sample_value: si está en metadata lo mostramos. Ya no hay botón "Muestra"
+      // individual — el Preview de la capa muestra todos los valores juntos.
+      const sampleHtml = sampleVal != null
         ? `<span class="field-sample" title="${UTILS.escHtml(sampleVal)}">${UTILS.escHtml(sampleVal)}</span>`
-        : `<button class="field-alias-save js-field-sample" title="Ver valores de ejemplo">Muestra</button>`;
+        : '';
 
       row.innerHTML  = `
         <input type="checkbox" class="layer-check js-field-check" ${f.included ? 'checked' : ''} ${layerActive ? '' : 'disabled'}
@@ -974,25 +1080,6 @@
           <button class="field-alias-save js-field-save">Guardar</button>
         </div>
       `;
-
-      // Botón Muestra: llama al endpoint getFieldSample y muestra valores inline
-      row.querySelector('.js-field-sample')?.addEventListener('click', async e => {
-        const btn = e.currentTarget;
-        btn.disabled = true;
-        btn.textContent = '…';
-        const { data, ok } = await API.getFieldSample(f.id);
-        if (!ok || !data?.values?.length) {
-          btn.textContent = '(sin datos)';
-          return;
-        }
-        // Reemplazar el botón por un pill con el primer valor de muestra
-        const sample = String(data.values[0]);
-        const pill   = document.createElement('span');
-        pill.className   = 'field-sample';
-        pill.title       = data.values.slice(0, 5).join(', ');
-        pill.textContent = sample;
-        btn.replaceWith(pill);
-      });
 
       row.querySelector('.js-field-check').addEventListener('change', async e => {
         const { ok, error } = await API.updateField(f.id, { included: e.target.checked ? 1 : 0 });
