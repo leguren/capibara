@@ -7,6 +7,7 @@
 const { requireAdmin } = require('../_auth');
 const { checkOrigin }  = require('../_cors');
 const { initSchema }   = require('../_db');
+const { getConnector } = require('../_connectors/_registry');
 
 const TIMEOUT_MS = 15_000;
 
@@ -19,6 +20,34 @@ function extractWfsPreview(sample) {
     name_source:     titleM?.[1]?.trim() || null,
     provider_source: provM?.[1]?.trim()  || null,
   };
+}
+
+/**
+ * extractWfsVersion(text) → string | null
+ *
+ * Extrae la versión WFS del capabilities XML sin inventar un fallback.
+ * Usa <ows:ServiceTypeVersion> como fuente primaria (canónica en WFS 1.1.0+).
+ * El primer atributo version= del documento puede pertenecer a xsi:schemaLocation
+ * u otros elementos, dando un valor incorrecto — por eso no se usa directamente.
+ */
+function extractWfsVersion(text) {
+  const stv = text.match(/<ows:ServiceTypeVersion>([^<]+)<\/ows:ServiceTypeVersion>/);
+  if (stv?.[1]?.trim()) return stv[1].trim();
+  const attr = text.match(/WFS_Capabilities[^>]+version="([\d.]+)"/);
+  if (attr?.[1]?.trim()) return attr[1].trim();
+  return null;
+}
+
+/**
+ * withImplemented(detected) → detected con flag implemented del registry
+ *
+ * Agrega implemented: true/false según el registry del conector.
+ * El frontend usa este flag en lugar de mantener su propia lista hardcodeada.
+ */
+function withImplemented(detected) {
+  if (!detected) return detected;
+  const entry = getConnector(detected.format);
+  return { ...detected, implemented: entry?.implemented ?? false };
 }
 
 function extractArcgisPreview(sample) {
@@ -53,7 +82,7 @@ function detectFromContentType(ct) {
 }
 
 function detectFromBody(sample, ct) {
-  if (sample.includes('WFS_Capabilities') || sample.includes('wfs:WFS_Capabilities')) { const v = sample.match(/version="([\d.]+)"/); return { format: 'wfs', confidence: 'high', from: 'response_body', detected_params: { version: v?.[1] || '1.1.0' } }; }
+  if (sample.includes('WFS_Capabilities') || sample.includes('wfs:WFS_Capabilities')) { return { format: 'wfs', confidence: 'high', from: 'response_body', detected_params: { version: extractWfsVersion(sample) } }; }
   if (sample.includes('"type"') && sample.includes('"FeatureCollection"')) return { format: 'geojson', confidence: 'high', from: 'response_body', detected_params: {} };
   if (sample.includes('"serviceDescription"') || sample.includes('"currentVersion"')) return { format: 'arcgis_rest', confidence: 'high', from: 'response_body', detected_params: {} };
   if (sample.includes('"majorDimension"') && sample.includes('"values"')) return { format: 'json', confidence: 'high', from: 'response_body', detected_params: { json_type: 'google_sheets' } };
@@ -86,7 +115,8 @@ module.exports = async function handler(req, res) {
       if (fromUrl.format === 'wfs')         preview = extractWfsPreview(text);
       else if (fromUrl.format === 'arcgis_rest') preview = extractArcgisPreview(text);
     } catch { /* preview queda vacío */ }
-    return res.status(200).json({ url, detected: { ...fromUrl, detected_params: {} }, raw: null, fetch_error: null, preview });
+    const detectedParams = fromUrl.format === 'wfs' ? { version: extractWfsVersion(text) } : {};
+    return res.status(200).json({ url, detected: withImplemented({ ...fromUrl, detected_params: detectedParams }), raw: null, fetch_error: null, preview });
   }
 
   let fetchError = null, contentType = null, sample = '', statusCode = null;
@@ -112,7 +142,7 @@ module.exports = async function handler(req, res) {
     const preview = best.format === 'wfs'         ? extractWfsPreview(sample)
                   : best.format === 'arcgis_rest' ? extractArcgisPreview(sample)
                   : { name_source: null, provider_source: null };
-    return res.status(200).json({ url, detected: { ...best, detected_params: best.detected_params || {}, note: null }, raw, fetch_error: null, preview });
+    return res.status(200).json({ url, detected: withImplemented({ ...best, detected_params: best.detected_params || {}, note: null }), raw, fetch_error: null, preview });
   }
 
   try {
@@ -125,7 +155,7 @@ module.exports = async function handler(req, res) {
     if (body.includes('WFS_Capabilities')) {
       const vMatch = body.match(/version="([\d.]+)"/);
       const previewP = extractWfsPreview(body);
-      return res.status(200).json({ url, detected: { format: 'wfs', confidence: 'medium', from: 'capabilities_probe', detected_params: { version: vMatch?.[1] || '1.1.0' }, note: 'Detectado por probe' }, raw, fetch_error: null, preview: previewP });
+      return res.status(200).json({ url, detected: withImplemented({ format: 'wfs', confidence: 'medium', from: 'capabilities_probe', detected_params: { version: extractWfsVersion(body) }, note: 'Detectado por probe' }), raw, fetch_error: null, preview: previewP });
     }
   } catch { /* no es WFS */ }
 
