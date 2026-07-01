@@ -191,14 +191,13 @@ window.CAPIBARA_SOURCES = (() => {
       `;
     }
 
-    const IMPLEMENTED_FORMATS = new Set(['wfs', 'arcgis_rest', 'csv', 'geojson', 'json']);
-
     // Renderiza los campos dinámicos y muestra/oculta el botón Conectar
-    function renderFields(format, preview, detectedParams) {
+    // implemented viene del registry vía detect.js — no se hardcodea acá
+    function renderFields(format, preview, detectedParams, implemented) {
       const container = overlay.querySelector('#src-dynamic-fields');
       const saveBtn   = overlay.querySelector('#modal-save');
 
-      if (!IMPLEMENTED_FORMATS.has(format)) {
+      if (!implemented) {
         container.innerHTML     = unsupportedHTML(format);
         saveBtn.style.display   = 'none';
         return;
@@ -237,7 +236,8 @@ window.CAPIBARA_SOURCES = (() => {
         renderFields(
           data.detected.format,
           data.preview || {},
-          data.detected.detected_params || {}
+          data.detected.detected_params || {},
+          data.detected.implemented ?? false
         );
         TOAST.ok('Detectado', FMTS.get(data.detected.format)?.label || data.detected.format);
       } else {
