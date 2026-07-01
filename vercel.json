@@ -1,6 +1,22 @@
 {
   "rewrites": [
     {
+      "source": "/admin/analytics",
+      "destination": "/admin/analytics/index.html"
+    },
+    {
+      "source": "/admin/users",
+      "destination": "/admin/users/index.html"
+    },
+    {
+      "source": "/admin/keys",
+      "destination": "/admin/keys/index.html"
+    },
+    {
+      "source": "/api/admin/layers/sample",
+      "destination": "/api/admin/layers?sub=sample"
+    },
+    {
       "source": "/admin",
       "destination": "/admin/index.html"
     },
