@@ -101,23 +101,24 @@
   if (!user) return;
   AUTH.renderNavUser(document.getElementById('nav-user'), user);
 
-  // Cargar stats del sistema
-  const { data, ok } = await API.getStats();
-  if (!ok) return;
-
-  document.getElementById('st-sources').textContent = data.sources.ok;
-  document.getElementById('st-layers').textContent  = data.layers.included.toLocaleString('es');
-  document.getElementById('st-fields').textContent  = data.fields.included.toLocaleString('es');
-
-  if (data.latest_publication) {
-    const chip = document.getElementById('st-pub-chip');
-    chip.style.display = '';
-    document.getElementById('st-pub').textContent = `${data.latest_publication.version} publicada ${UTILS.timeAgo(data.latest_publication.created_at)}`;
-    if (data.sources.error > 0) {
-      chip.style.color = 'var(--error)';
-      chip.innerHTML += ` · <span style="color:var(--error)">${data.sources.error} con error</span>`;
+  // Cargar stats en background — no bloqueamos la renderización de la página.
+  // panel.js puede tener cold start de 2-4s en Vercel Hobby; si esperamos el await
+  // el usuario percibe el login como lento. Los stats aparecen cuando llegan.
+  API.getStats().then(({ data, ok }) => {
+    if (!ok) return;
+    document.getElementById('st-sources').textContent = data.sources.ok;
+    document.getElementById('st-layers').textContent  = data.layers.included.toLocaleString('es');
+    document.getElementById('st-fields').textContent  = data.fields.included.toLocaleString('es');
+    if (data.latest_publication) {
+      const chip = document.getElementById('st-pub-chip');
+      chip.style.display = '';
+      document.getElementById('st-pub').textContent = `${data.latest_publication.version} publicada ${UTILS.timeAgo(data.latest_publication.created_at)}`;
+      if (data.sources.error > 0) {
+        chip.style.color = 'var(--error)';
+        chip.innerHTML += ` · <span style="color:var(--error)">${data.sources.error} con error</span>`;
+      }
     }
-  }
+  });
 })();
 </script>
 
