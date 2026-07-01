@@ -8,10 +8,11 @@
 window.CAPIBARA_SOURCES = (() => {
   'use strict';
 
-  const API    = window.CAPIBARA_API;
-  const TOAST  = window.CAPIBARA_TOAST;
-  const UTILS  = window.CAPIBARA_UTILS;
-  const FMTS   = window.CAPIBARA_FORMATS;
+  const API      = window.CAPIBARA_API;
+  const TOAST    = window.CAPIBARA_TOAST;
+  const UTILS    = window.CAPIBARA_UTILS;
+  const FMTS     = window.CAPIBARA_FORMATS;
+  const PROGRESS = window.CAPIBARA_PROGRESS;
 
   let _sources  = [];
   let _onUpdate = null;
@@ -268,89 +269,39 @@ window.CAPIBARA_SOURCES = (() => {
         notes:             overlay.querySelector('#src-notes')?.value.trim() || null,
       };
 
-      // ── Mostrar progress bar en el modal (no cerrarlo durante el cascade) ──
-      const modalBody   = overlay.querySelector('.modal-body');
-      const modalFooter = overlay.querySelector('.modal-footer');
-      modalBody.innerHTML = `
-        <div class="cascade-progress-track">
-          <div class="cascade-progress-bar" id="cascade-bar" style="width:0%"></div>
-        </div>
-        <div class="cascade-steps">
-          <div class="cascade-step cascade-step-pending" id="cs-1">
-            <span class="cascade-step-icon material-symbols-outlined">radio_button_unchecked</span>
-            <span class="cascade-step-label">Crear fuente</span>
-            <span class="cascade-step-msg"></span>
-          </div>
-          <div class="cascade-step cascade-step-pending" id="cs-2">
-            <span class="cascade-step-icon material-symbols-outlined">radio_button_unchecked</span>
-            <span class="cascade-step-label">Conectar</span>
-            <span class="cascade-step-msg"></span>
-          </div>
-          <div class="cascade-step cascade-step-pending" id="cs-3">
-            <span class="cascade-step-icon material-symbols-outlined">radio_button_unchecked</span>
-            <span class="cascade-step-label">Descubrir capas</span>
-            <span class="cascade-step-msg"></span>
-          </div>
-        </div>
-      `;
-      modalFooter.style.display = 'none';
-
-      const setStep = (id, status, icon, msg) => {
-        const el = overlay.querySelector(`#cs-${id}`);
-        if (!el) return;
-        el.className = `cascade-step cascade-step-${status}`;
-        el.querySelector('.cascade-step-icon').textContent = icon;
-        el.querySelector('.cascade-step-msg').textContent  = msg || '';
-      };
-      const setBar = pct => {
-        const bar = overlay.querySelector('#cascade-bar');
-        if (bar) bar.style.width = `${pct}%`;
-      };
-      const showDoneBtn = () => {
-        modalFooter.style.display = '';
-        modalFooter.innerHTML = `<button class="action-btn primary js-cascade-done">Listo</button>`;
-        modalFooter.querySelector('.js-cascade-done').addEventListener('click', close);
-      };
-
       // 1. Crear fuente
-      setStep(1, 'loading', 'sync', '');
-      setBar(10);
+      PROGRESS.start();
       const { data: createData, ok: createOk, error: createErr } = await API.createSource(body);
       if (!createOk) {
-        setStep(1, 'error', 'error', createErr);
-        showDoneBtn();
+        PROGRESS.done(true);
+        TOAST.error('Error al crear fuente', createErr);
+        overlay.querySelector('#modal-save').disabled = false;
         return;
       }
-      setStep(1, 'done', 'check_circle', '');
-      setBar(33);
+      const sourceId = createData.source.id;
+      close();
+      await load();
 
       // 2. Auto-conectar
-      const sourceId = createData.source.id;
-      await load();
-      setStep(2, 'loading', 'sync', '');
       const { data: connData, ok: connOk } = await API.connectSource(sourceId);
       if (!connOk || !connData?.ok) {
-        setStep(2, 'error', 'error', connData?.error || 'Error de conexión');
-        setStep(3, 'pending', 'radio_button_unchecked', '');
+        PROGRESS.done(true);
+        TOAST.warn('Fuente creada', 'No se pudo conectar. Usá el botón Actualizar.');
         await load();
-        showDoneBtn();
         return;
       }
-      setStep(2, 'done', 'check_circle', '');
-      setBar(66);
+      await load();
 
       // 3. Auto-descubrir capas
-      await load();
-      setStep(3, 'loading', 'sync', '');
       const { data: discData, ok: discOk } = await API.discoverLayers(sourceId);
       await load();
       if (discOk) {
-        setStep(3, 'done', 'check_circle', `${discData.added} capas descubiertas`);
-        setBar(100);
+        PROGRESS.done();
+        TOAST.ok('Listo', `${discData.added} capas descubiertas.`);
       } else {
-        setStep(3, 'error', 'error', 'No se pudieron descubrir las capas');
+        PROGRESS.done(true);
+        TOAST.warn('Conectada', 'No se pudieron descubrir las capas automáticamente.');
       }
-      showDoneBtn();
     });
   }
 
@@ -358,15 +309,18 @@ window.CAPIBARA_SOURCES = (() => {
 
   async function connect(sourceId, btn) {
     if (btn) { btn.disabled = true; }
+    PROGRESS.start();
     const { data, ok, error } = await API.connectSource(sourceId);
     if (btn) { btn.disabled = false; }
 
-    if (!ok) { TOAST.error('Error de conexión', error); return false; }
+    if (!ok) { PROGRESS.done(true); TOAST.error('Error de conexión', error); return false; }
     if (data.ok) {
+      PROGRESS.done();
       TOAST.ok('Conectada', data.auto_populated?.length
         ? `Auto-completado: ${data.auto_populated.join(', ')}`
         : 'La fuente responde correctamente.');
     } else {
+      PROGRESS.done(true);
       TOAST.error('Conexión fallida', data.error);
     }
     await load();
@@ -375,10 +329,12 @@ window.CAPIBARA_SOURCES = (() => {
 
   async function discoverLayers(sourceId, btn) {
     if (btn) { btn.disabled = true; }
+    PROGRESS.start();
     const { data, ok, error } = await API.discoverLayers(sourceId);
     if (btn) { btn.disabled = false; }
 
-    if (!ok) { TOAST.error('Error al descubrir capas', error); return false; }
+    if (!ok) { PROGRESS.done(true); TOAST.error('Error al descubrir capas', error); return false; }
+    PROGRESS.done();
     TOAST.ok(
       data.added > 0 ? 'Capas descubiertas' : 'Capas actualizadas',
       `${data.added} nuevas, ${data.skipped} ya existían.`
@@ -389,8 +345,10 @@ window.CAPIBARA_SOURCES = (() => {
 
   async function deleteSource(sourceId) {
     if (!confirm('¿Eliminar esta fuente y todas sus capas y campos? Esta acción no se puede deshacer.')) return;
+    PROGRESS.start();
     const { ok, error } = await API.deleteSource(sourceId);
-    if (!ok) { TOAST.error('Error al eliminar', error); return; }
+    if (!ok) { PROGRESS.done(true); TOAST.error('Error al eliminar', error); return; }
+    PROGRESS.done();
     TOAST.ok('Fuente eliminada');
     await load();
   }
