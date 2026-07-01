@@ -147,7 +147,7 @@ window.CAPIBARA_SOURCES = (() => {
       return `
         <div class="modal-field">
           <label class="modal-label">Formato</label>
-          <input class="input" value="WFS" readonly>
+          <input class="input" value="${FMTS.get('wfs').label}" readonly>
         </div>
         <div class="modal-field">
           <label class="modal-label">Versión</label>
