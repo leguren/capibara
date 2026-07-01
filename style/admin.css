@@ -727,3 +727,61 @@
   align-self:  center;
 }
 .pub-catalog-link:hover { color: var(--accent); }
+
+/* ── Progress bar de cascade en modal de nueva fuente ──────────── */
+.cascade-progress-track {
+  height:        3px;
+  background:    var(--border);
+  border-radius: 999px;
+  margin-bottom: 20px;
+  overflow:      hidden;
+}
+.cascade-progress-bar {
+  height:     100%;
+  background: var(--accent);
+  width:      0%;
+  transition: width 0.4s ease;
+}
+.cascade-steps {
+  display:        flex;
+  flex-direction: column;
+  gap:            12px;
+}
+.cascade-step {
+  display:     flex;
+  align-items: center;
+  gap:         10px;
+  font-size:   13px;
+}
+.cascade-step-icon {
+  font-size:   18px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+.cascade-step-label { color: var(--text); font-weight: 500; flex: 1; }
+.cascade-step-msg   { font-size: 12px; color: var(--text3); }
+.cascade-step-pending .cascade-step-icon { color: var(--text3); }
+.cascade-step-loading .cascade-step-icon { color: var(--accent); animation: spin 1s linear infinite; }
+.cascade-step-done    .cascade-step-icon { color: var(--success, #22c55e); }
+.cascade-step-error   .cascade-step-icon { color: var(--error); }
+.cascade-step-error   .cascade-step-msg  { color: var(--error); }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Sample value en field row ──────────────────────────────────── */
+.field-sample {
+  font-size:     11px;
+  font-family:   var(--font-mono);
+  color:         var(--text3);
+  background:    var(--bg2);
+  border:        1px solid var(--border);
+  border-radius: 999px;
+  padding:       0 8px;
+  height:        22px;
+  line-height:   22px;
+  max-width:     120px;
+  overflow:      hidden;
+  text-overflow: ellipsis;
+  white-space:   nowrap;
+  display:       inline-block;
+  flex-shrink:   0;
+}
