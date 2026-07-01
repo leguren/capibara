@@ -730,6 +730,7 @@
         <div class="source-top-actions">
           <button class="action-btn js-edit">Editar</button>
           <button class="action-btn js-refresh-source">Actualizar</button>
+          <button class="action-btn js-rediscover">Redescubrir</button>
           <button class="action-btn danger js-delete">Eliminar</button>
         </div>
       </div>
@@ -744,6 +745,9 @@
 
     // Bind acciones
     body.querySelector('.js-edit')?.addEventListener('click', () => openEditModal(src));
+    // TODO: el modal de editar capa podría mostrar y editar abstract y bbox
+    // (min_lat, max_lat, min_lon, max_lon). Esos datos ya están en DB desde el
+    // discover, solo falta exponerlos en la UI.
 
     body.querySelector('.js-refresh-source')?.addEventListener('click', async e => {
       const btn = e.currentTarget;
@@ -759,6 +763,25 @@
       btn.disabled = false;
     });
 
+    // Redescubrir: vuelve a correr getLayers + getGeomTypes sobre la fuente.
+    // Útil cuando el servicio WFS agregó nuevas capas o cuando geometry_type
+    // quedó UNKNOWN/GEOMETRY y se quiere reintentar la detección.
+    body.querySelector('.js-rediscover')?.addEventListener('click', async e => {
+      const btn = e.currentTarget;
+      btn.disabled = true;
+      btn.textContent = 'Redescubriendo…';
+      const { data, ok, error } = await API.discoverLayers(src.id);
+      btn.disabled = false;
+      btn.textContent = 'Redescubrir';
+      if (!ok) { TOAST.error('Error al redescubrir', error); return; }
+      TOAST.ok(
+        data.added > 0 ? 'Capas descubiertas' : 'Capas actualizadas',
+        `${data.added} nuevas, ${data.skipped} ya existían.`
+      );
+      loadedLayers.delete(src.id);
+      loadLayers(block, src.id);
+    });
+
     body.querySelector('.js-delete')?.addEventListener('click', () => {
       openSources.delete(src.id);
       loadedSources.delete(src.id);
@@ -770,6 +793,10 @@
   // ── Carga y render de capas (separado del source body) ─────────────
 
   async function loadLayers(block, sourceId) {
+    // TODO: el endpoint GET /api/admin/layers actualmente no incluye abstract,
+    // min_lat, max_lat, min_lon, max_lon en su SELECT. Cuando se quieran mostrar
+    // en el panel (resumen de cobertura, abstract por capa), agregar esas columnas
+    // al query en api/admin/layers.js.
     const { data, ok } = await API.getSourceLayers(sourceId);
     if (!ok || !data?.layers) return;
     loadedLayers.set(sourceId, data.layers);
@@ -777,6 +804,8 @@
   }
 
   function renderLayers(block, sourceId, layers) {
+    // TODO: para fuentes con muchas capas (ej. IGN con 192), agregar un input
+    // de búsqueda/filtro dentro del acordeón de capas.
     const acc = block.querySelector(`#layers-${sourceId}`);
     if (!acc) return;
 
@@ -914,6 +943,15 @@
       const row = document.createElement('div');
       row.className  = 'field-row';
       row.dataset.id = f.id;
+      // Extraer sample_value del metadata del campo
+      const fMeta        = (() => { try { return JSON.parse(f.metadata || '{}'); } catch { return {}; } })();
+      const sampleVal    = fMeta.sample_value != null ? String(fMeta.sample_value) : null;
+      // Si hay sample_value guardado en DB lo mostramos directamente.
+      // Si no, mostramos un botón "Muestra" que llama a getFieldSample al hacer click.
+      const sampleHtml   = sampleVal != null
+        ? `<span class="field-sample" title="${UTILS.escHtml(sampleVal)}">${UTILS.escHtml(sampleVal)}</span>`
+        : `<button class="field-alias-save js-field-sample" title="Ver valores de ejemplo">Muestra</button>`;
+
       row.innerHTML  = `
         <input type="checkbox" class="layer-check js-field-check" ${f.included ? 'checked' : ''} ${layerActive ? '' : 'disabled'}
                title="${f.included ? 'Activo' : 'Inactivo'}">
@@ -921,11 +959,31 @@
           <span class="field-name">${UTILS.escHtml(f.name_source)}</span>
           <span class="field-type">${f.type || '?'}</span>
         </div>
+        ${sampleHtml}
         <div class="field-alias-wrap">
           <input class="field-alias-input js-field-alias" value="${UTILS.escHtml(f.name_alias || '')}" placeholder="alias">
           <button class="field-alias-save js-field-save">Guardar</button>
         </div>
       `;
+
+      // Botón Muestra: llama al endpoint getFieldSample y muestra valores inline
+      row.querySelector('.js-field-sample')?.addEventListener('click', async e => {
+        const btn = e.currentTarget;
+        btn.disabled = true;
+        btn.textContent = '…';
+        const { data, ok } = await API.getFieldSample(f.id);
+        if (!ok || !data?.values?.length) {
+          btn.textContent = '(sin datos)';
+          return;
+        }
+        // Reemplazar el botón por un pill con el primer valor de muestra
+        const sample = String(data.values[0]);
+        const pill   = document.createElement('span');
+        pill.className   = 'field-sample';
+        pill.title       = data.values.slice(0, 5).join(', ');
+        pill.textContent = sample;
+        btn.replaceWith(pill);
+      });
 
       row.querySelector('.js-field-check').addEventListener('change', async e => {
         const { ok, error } = await API.updateField(f.id, { included: e.target.checked ? 1 : 0 });
