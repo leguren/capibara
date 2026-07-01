@@ -86,11 +86,24 @@ module.exports = async function handler(req, res) {
     for (const layer of layers) {
       const metadata = JSON.stringify({ ...(layer.metadata || {}), feature_count: null });
       const meta = layer.metadata || {};
+      const bbox = layer.bbox || {};
+      const minLat = bbox.min_lat ?? null;
+      const maxLat = bbox.max_lat ?? null;
+      const minLon = bbox.min_lon ?? null;
+      const maxLon = bbox.max_lon ?? null;
       if (existingMap.has(layer.name)) {
-        toUpdate.push({ sql: 'UPDATE layers SET metadata = ?, name_alias = COALESCE(name_alias, ?), discovered_at = ? WHERE id = ?', args: [metadata, layer.title || null, ts, existingMap.get(layer.name)] });
+        // abstract y bbox siempre se actualizan desde la fuente.
+        // name_alias usa COALESCE para no pisar lo que el admin editó manualmente.
+        toUpdate.push({
+          sql:  'UPDATE layers SET metadata = ?, name_alias = COALESCE(name_alias, ?), abstract = ?, min_lat = ?, max_lat = ?, min_lon = ?, max_lon = ?, discovered_at = ? WHERE id = ?',
+          args: [metadata, layer.title || null, layer.abstract || null, minLat, maxLat, minLon, maxLon, ts, existingMap.get(layer.name)],
+        });
         skipped++;
       } else {
-        toInsert.push({ sql: 'INSERT INTO layers (id, source_id, name_source, name_alias, geometry_type, srs, feature_count, included, metadata, discovered_at) VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?)', args: [id('lyr'), sid, layer.name, layer.title || null, (meta.geometry_type || 'UNKNOWN').toUpperCase(), meta.crs || 'EPSG:4326', null, metadata, ts] });
+        toInsert.push({
+          sql:  'INSERT INTO layers (id, source_id, name_source, name_alias, abstract, geometry_type, srs, feature_count, min_lat, max_lat, min_lon, max_lon, included, metadata, discovered_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)',
+          args: [id('lyr'), sid, layer.name, layer.title || null, layer.abstract || null, (meta.geometry_type || 'UNKNOWN').toUpperCase(), meta.crs || 'EPSG:4326', null, minLat, maxLat, minLon, maxLon, metadata, ts],
+        });
         added++;
       }
     }
@@ -115,7 +128,7 @@ module.exports = async function handler(req, res) {
     // Si falla o se acaba el tiempo, las capas quedan con geometry_type = UNKNOWN.
     if (typeof entry.connector.getGeomTypes === 'function') {
       try {
-        const geomTypes = await entry.connector.getGeomTypes(params, 3_000);
+        const geomTypes = await entry.connector.getGeomTypes(params, 3_000, layers.map(l => l.name));
         const keys = Object.keys(geomTypes);
         if (keys.length > 0) {
           console.log('[discover] geometrías post-detect:', keys.length);
