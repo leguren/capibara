@@ -46,6 +46,25 @@ window.CAPIBARA_API = (() => {
   }
 
   const get   = (path)       => request(path, { method: 'GET' });
+
+  // Cache en memoria para getSources — evita re-fetchear toda la lista
+  // cuando solo cambió una fuente. TTL de 30s. Se invalida explícitamente
+  // al pasar invalidate=true (tras crear, eliminar o hacer cambios globales).
+  let _sourcesCache     = null;
+  let _sourcesCacheTime = 0;
+  const SOURCES_TTL_MS  = 30_000;
+
+  function cachedGetSources(invalidate = false) {
+    if (!invalidate && _sourcesCache && (Date.now() - _sourcesCacheTime) < SOURCES_TTL_MS) {
+      return Promise.resolve({ data: _sourcesCache, ok: true, error: null });
+    }
+    return get(`${ADMIN_API}/sources`).then(result => {
+      if (result.ok) { _sourcesCache = result.data; _sourcesCacheTime = Date.now(); }
+      return result;
+    });
+  }
+
+  function invalidateSourcesCache() { _sourcesCache = null; }
   const post  = (path, body) => request(path, { method: 'POST', body });
   const patch = (path, body) => request(path, { method: 'PATCH', body });
   const del   = (path)       => request(path, { method: 'DELETE' });
@@ -56,7 +75,7 @@ window.CAPIBARA_API = (() => {
     logout:    () => get(`${AUTH_API}/logout`),
 
     // Admin — Sources
-    getSources:      ()           => get(`${ADMIN_API}/sources`),
+    getSources:      (invalidate)  => cachedGetSources(invalidate),
     getSource:       (id)         => get(`${ADMIN_API}/sources?id=${id}`),
     createSource:    (body)       => post(`${ADMIN_API}/sources`, body),
     updateSource:    (id, body)   => patch(`${ADMIN_API}/sources?id=${id}`, body),
@@ -80,6 +99,8 @@ window.CAPIBARA_API = (() => {
     getPublication:     (id)   => get(`${ADMIN_API}/publish?id=${id}`),
     publish:            (body) => post(`${ADMIN_API}/publish`, body),
     deletePublication:  (id)   => del(`${ADMIN_API}/publish?id=${id}`),
+
+    invalidateSourcesCache,
 
     // User
     getKeys:    ()         => get(`${USER_API}/keys`),
