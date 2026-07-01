@@ -109,6 +109,18 @@
       "destination": "/api/geo/catalog"
     },
     {
+      "source": "/api/user/usage",
+      "destination": "/api/user?sub=usage"
+    },
+    {
+      "source": "/api/user/status",
+      "destination": "/api/user?sub=status"
+    },
+    {
+      "source": "/api/user/changelog",
+      "destination": "/api/user?sub=changelog"
+    },
+    {
       "source": "/api/user/keys",
       "destination": "/api/user?sub=keys"
     },
