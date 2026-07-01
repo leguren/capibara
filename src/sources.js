@@ -104,7 +104,7 @@ window.CAPIBARA_SOURCES = (() => {
         </div>
         <div class="modal-field">
           <label class="modal-label">Alias</label>
-          <input class="input" id="src-alias" placeholder="Nombre legible">
+          <input class="input" id="src-alias" placeholder="Pasos internacionales">
         </div>
         <div class="modal-field">
           <label class="modal-label">Proveedor del servicio</label>
@@ -114,7 +114,7 @@ window.CAPIBARA_SOURCES = (() => {
         </div>
         <div class="modal-field">
           <label class="modal-label">Alias</label>
-          <input class="input" id="src-provider" placeholder="Nombre legible del proveedor">
+          <input class="input" id="src-provider" placeholder="Ministerio de Seguridad Nacional">
         </div>
         <div class="modal-field">
           <label class="modal-label">Países</label>
