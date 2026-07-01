@@ -158,8 +158,25 @@ window.CAPIBARA_SOURCES = (() => {
         overlay.querySelector('#src-format').value    = data.detected.format;
         overlay.querySelector('#src-format').disabled = true;
         TOAST.ok('Detectado', FMTS.get(data.detected.format).label);
-        if (data.preview?.name_source)     overlay.querySelector('#src-name-source').value     = data.preview.name_source;
-        if (data.preview?.provider_source) overlay.querySelector('#src-provider-source').value = data.preview.provider_source;
+        // BUG 5 FIX: si el servidor devuelve <ows:Title/> vacío (self-closing),
+        // preview.name_source llega null. Se muestra un placeholder para que el
+        // usuario entienda que el campo fue consultado pero el servicio no lo provee.
+        const nameInput     = overlay.querySelector('#src-name-source');
+        const providerInput = overlay.querySelector('#src-provider-source');
+        if (data.preview?.name_source) {
+          nameInput.value       = data.preview.name_source;
+          nameInput.placeholder = '';
+        } else {
+          nameInput.value       = '';
+          nameInput.placeholder = '(el servicio no informa nombre)';
+        }
+        if (data.preview?.provider_source) {
+          providerInput.value       = data.preview.provider_source;
+          providerInput.placeholder = '';
+        } else {
+          providerInput.value       = '';
+          providerInput.placeholder = '(el servicio no informa proveedor)';
+        }
       } else {
         overlay.querySelector('#src-format').disabled = false;
         TOAST.warn('Formato no detectado', 'Seleccionalo manualmente.');
