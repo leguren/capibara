@@ -49,6 +49,7 @@ Servicios externos de datos geoespaciales.
 | status            | TEXT | 'unverified', 'ok', 'degraded', 'error', 'deprecated' |
 | last_checked      | TEXT | ISO 8601 UTC del último connect()                  |
 | error_message     | TEXT | Mensaje del último error                           |
+| notes             | TEXT | Notas internas del admin                           |
 
 ### source_countries
 Cobertura geográfica por país.
@@ -72,7 +73,7 @@ Capas descubiertas dentro de cada fuente.
 | abstract        | TEXT | Descripción OGC del servicio                   |
 | domain          | TEXT | Uno de los 20 dominios de Capibara             |
 | update_frequency| TEXT | ISO 19115 MD_MaintenanceFrequencyCode          |
-| geometry_type   | TEXT | 'POINT', 'POLYGON', 'LINESTRING', 'UNKNOWN'    |
+| geometry_type   | TEXT | 'POINT', 'LINE', 'POLYGON', 'GEOMETRY', 'UNKNOWN' |
 | srs             | TEXT | Sistema de referencia. Default: 'EPSG:4326'    |
 | feature_count   | INT  | NULL si la fuente no soporta hits count        |
 | min_lat         | REAL | Bounding box — queryable por coordenada        |
@@ -81,6 +82,8 @@ Capas descubiertas dentro de cada fuente.
 | max_lon         | REAL |                                                |
 | included        | INT  | DEFAULT 0 — opt-in consciente del admin        |
 | metadata        | TEXT | JSON: { cache_ttl_seconds, group, ... }        |
+| notes           | TEXT | Notas internas del admin                       |
+| discovered_at   | TEXT | ISO 8601 UTC del último discover               |
 
 ### layer_dependencies
 Cadena de resolución entre capas. Una capa puede depender del resultado de otra.
@@ -107,6 +110,8 @@ Campos descubiertos dentro de cada capa.
 | type        | TEXT | 'string', 'integer', 'float', 'boolean', 'geometry', 'unknown' |
 | included    | INT  | DEFAULT 1                                          |
 | metadata    | TEXT | JSON: { data_type, sample_value, nullable, has_html, is_geometry } |
+| notes       | TEXT | Notas internas del admin                                           |
+| discovered_at| TEXT | ISO 8601 UTC del último discover                                  |
 
 data_type en metadata.metadata: 'discrete', 'census', 'normative', 'attribute',
 'geophysical', 'index', 'event', 'time_series', 'realtime', 'forecast', 'proximity'.
