@@ -389,3 +389,46 @@
 .dd-wrap:focus-within .dd-icon {
   transform: translateY(-50%) rotate(-180deg);
 }
+
+/* ── Barra de progreso global (top of page) ──────────────────────────────
+   Aparece en el borde superior durante cualquier operación asíncrona.
+   Usada por CAPIBARA_PROGRESS — ver src/progress.js.              ──── */
+#capibara-progress {
+  position:       fixed;
+  top:            0;
+  left:           0;
+  width:          100%;
+  height:         2px;
+  z-index:        9999;
+  pointer-events: none;
+  overflow:       hidden;
+}
+#capibara-progress .pb-fill {
+  height:     100%;
+  width:      100%;
+  background: var(--accent);
+  transform:  translateX(-100%);
+  opacity:    0;
+}
+#capibara-progress.pb-running .pb-fill {
+  opacity:   1;
+  animation: pb-slide 1.1s ease-in-out infinite;
+}
+#capibara-progress.pb-done .pb-fill {
+  transform:  translateX(0);
+  opacity:    0;
+  transition: opacity 0.35s ease;
+}
+#capibara-progress.pb-error .pb-fill {
+  background: var(--error);
+  transform:  translateX(0);
+  opacity:    0;
+  transition: opacity 0.4s ease 0.3s;
+}
+#capibara-progress.pb-hidden .pb-fill {
+  opacity: 0;
+}
+@keyframes pb-slide {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
