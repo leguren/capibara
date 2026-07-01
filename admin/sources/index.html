@@ -146,8 +146,7 @@
     const btn = document.getElementById('btn-refresh');
     btn.classList.add('is-refreshing');
     btn.disabled = true;
-    AUTH.renderNavUser(document.getElementById('nav-user'), user);
-  await SOURCES.load();
+    await SOURCES.load();
     btn.classList.remove('is-refreshing');
     btn.disabled = false;
   });
