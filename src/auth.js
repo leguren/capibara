@@ -20,7 +20,21 @@ window.CAPIBARA_AUTH = (() => {
 
   async function loadUser() {
     if (_loaded) return _user;
-    const { data, ok } = await window.CAPIBARA_API.getMe();
+    const t0 = performance.now();
+    const { data, ok, error } = await window.CAPIBARA_API.getMe();
+    const ms = Math.round(performance.now() - t0);
+
+    // Diagnóstico: dejamos constancia en consola de exactamente qué pasó
+    // en esta verificación de sesión, para poder distinguir:
+    //  - fetch falló de verdad (timeout/red/500)   → error != null, ok=false
+    //  - respondió 401 (sin cookie o cookie inválida) → error='No autenticado', ok=false
+    //  - respondió 200 con el usuario                 → ok=true
+    if (!ok) {
+      console.warn(`[CAPIBARA_AUTH] /api/auth/me falló (${ms}ms): ${error || 'sin detalle'}`);
+    } else {
+      console.info(`[CAPIBARA_AUTH] /api/auth/me OK (${ms}ms) — user=${data?.email} role=${data?.role}`);
+    }
+
     _user   = ok ? data : null;
     _loaded = true;
     return _user;
@@ -34,6 +48,7 @@ window.CAPIBARA_AUTH = (() => {
   async function requireAuth() {
     const user = await loadUser();
     if (!user) {
+      console.warn('[CAPIBARA_AUTH] requireAuth(): sin sesión válida → redirigiendo a /login');
       window.location.href = '/login';
       return null;
     }
@@ -49,6 +64,7 @@ window.CAPIBARA_AUTH = (() => {
     const user = await requireAuth();
     if (!user) return null;
     if (user.role !== 'admin') {
+      console.warn(`[CAPIBARA_AUTH] requireAdmin(): usuario ${user.email} tiene role="${user.role}" (no admin) → redirigiendo a /dashboard`);
       window.location.href = '/dashboard';
       return null;
     }
@@ -96,6 +112,7 @@ window.CAPIBARA_AUTH = (() => {
   if (typeof window !== 'undefined') {
     window.addEventListener('pageshow', (event) => {
       if (event.persisted) {
+        console.info('[CAPIBARA_AUTH] pageshow desde bfcache detectado → reseteando estado de sesión');
         // Página restaurada desde bfcache — resetear y re-verificar sesión
         _user   = null;
         _loaded = false;
