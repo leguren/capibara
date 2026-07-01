@@ -1,6 +1,11 @@
 # docs/deploy.md — Guía de deploy
 
-Stack: GitHub → Vercel (backend + frontend) + Turso (DB) + Cloudflare (DNS + caché CDN).
+Stack: GitHub → Vercel (backend + frontend) + Turso (DB).
+
+> **Estado actual:** el deploy real está en `https://capibara-ten.vercel.app`,
+> sin dominio propio todavía. El Paso 5 (Cloudflare) es para el día que se
+> configure un dominio propio (ej. `capibara.io`) — hasta entonces no aplica,
+> y las reglas de caché de ese paso no están activas.
 
 ---
 
@@ -20,7 +25,7 @@ El schema se crea automáticamente en el primer request. No hace falta correr na
 1. Ir a console.cloud.google.com → seleccionar o crear un proyecto.
 2. APIs & Services → Credentials → Create Credentials → OAuth 2.0 Client ID.
 3. Application type: Web application.
-4. Authorized redirect URIs: `https://capibara.io/api/auth/callback` (y también `https://capibara.vercel.app/api/auth/callback` como backup).
+4. Authorized redirect URIs: `https://capibara-ten.vercel.app/api/auth/callback` (agregar la de un dominio propio acá también el día que se configure uno).
 5. Copiar Client ID y Client Secret.
 
 ---
@@ -46,7 +51,7 @@ TURSO_URL              libsql://capibara-xxx.turso.io
 TURSO_AUTH_TOKEN       (el token de Turso)
 GOOGLE_CLIENT_ID       (el client ID de Google)
 GOOGLE_CLIENT_SECRET   (el client secret de Google)
-GOOGLE_REDIRECT_URI    https://capibara.io/api/auth/callback
+GOOGLE_REDIRECT_URI    https://capibara-ten.vercel.app/api/auth/callback
 SESSION_SECRET         (string aleatorio largo — ver abajo cómo generarlo)
 ```
 
@@ -56,7 +61,11 @@ Para generar SESSION_SECRET: ir a generate-secret.vercel.app o usar cualquier ge
 
 ---
 
-## Paso 5: Cloudflare
+## Paso 5: Cloudflare (opcional — solo si se configura un dominio propio)
+
+> Este paso no está activo hoy (el deploy usa el dominio de Vercel directo,
+> sin Cloudflare en el medio). Dejarlo documentado para cuando se compre y
+> configure un dominio propio.
 
 ### 5a. Dominio y DNS
 
@@ -119,18 +128,17 @@ UPDATE users SET role = 'admin' WHERE email = 'tu@email.com';
 
 ## Paso 7: Verificar que todo funciona
 
-1. Ir a `https://capibara.io/login` → ingresar con Google → redirigir a `/admin`.
+1. Ir a `https://capibara-ten.vercel.app/login` → ingresar con Google → redirigir a `/admin`.
 2. Crear primera fuente → Conectar → Descubrir capas → activar alguna capa → Publicar.
 3. Ir a `/dashboard` → crear una API key.
 4. Probar el endpoint desde el browser o desde un cliente HTTP:
 
 ```
-GET https://capibara.io/api/geo/1/query?lat=-34.603&lon=-58.382
+GET https://capibara-ten.vercel.app/api/geo/1/query?lat=-34.603&lon=-58.382
 Authorization: Bearer cpb_tutoken
 ```
 
-5. Revisar el header `CF-Cache-Status` en la respuesta para confirmar que Cloudflare está en el medio.
-6. Hacer la misma request de nuevo — el status debe cambiar a `HIT`.
+5. Si en el futuro se configura Cloudflare (Paso 5), ahí sí revisar el header `CF-Cache-Status` para confirmar que el caché funciona (`MISS` → `HIT` en la segunda request).
 
 ---
 
