@@ -85,6 +85,27 @@ module.exports = async function handler(req, res) {
     return ok(res, { ok: true, total: fields.length, added, skipped });
   }
 
+  // ── SAMPLE (preview de datos) ──────────────────────────────────────────────
+  if (sub === 'sample') {
+    if (req.method !== 'GET') return err(res, 405, 'Method not allowed');
+    const layerResult = await db.execute({
+      sql: 'SELECT l.id, l.name_source, s.data_format, s.connection_params FROM layers l JOIN sources s ON s.id = l.source_id WHERE l.id = ? LIMIT 1',
+      args: [layerId],
+    });
+    if (!layerResult.rows.length) return err(res, 404, 'Capa no encontrada');
+    const layer  = layerResult.rows[0];
+    const entry  = getConnector(layer.data_format);
+    if (!entry?.implemented) return err(res, 400, `Conector no disponible: ${layer.data_format}`);
+    const params = safeJson(layer.connection_params, {});
+    const count  = Math.min(parseInt(req.query.count) || 5, 10);
+    try {
+      const sample = await entry.connector.getSample(params, layer.name_source, count);
+      return ok(res, { layer_id: layerId, layer_name: layer.name_source, features: sample.features || [], total: sample.total || 0 });
+    } catch (e) {
+      return err(res, 502, `Error al obtener preview: ${e.message}`);
+    }
+  }
+
   // ── PATCH capa ───────────────────────────────────────────────────────────
   if (req.method === 'PATCH') {
     const body    = req.body || {};
