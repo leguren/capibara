@@ -88,6 +88,7 @@ window.CAPIBARA_API = (() => {
     getSourceLayers: (sourceId)    => get(`${ADMIN_API}/layers?source_id=${sourceId}`),
     updateLayer:     (id, body)   => patch(`${ADMIN_API}/layers?id=${id}`, body),
     getLayerFields:  (id)         => get(`${ADMIN_API}/layers/fields?id=${id}`),
+    getLayerSample:  (id, count)  => get(`${ADMIN_API}/layers/sample?id=${id}${count ? `&count=${count}` : ''}`),
     discoverFields:  (id)         => post(`${ADMIN_API}/layers/discover?id=${id}`, {}),
 
     // Admin — Fields
@@ -101,6 +102,13 @@ window.CAPIBARA_API = (() => {
     deletePublication:  (id)   => del(`${ADMIN_API}/publish?id=${id}`),
 
     invalidateSourcesCache,
+
+    // Admin — Stats, Analytics, Users, Keys
+    getStats:        ()     => get(`${ADMIN_API}/stats`),
+    getUsage:        (days) => get(`${ADMIN_API}/usage${days ? `?days=${days}` : ''}`),
+    getAdminUsers:   ()     => get(`${ADMIN_API}/users`),
+    getAdminKeys:    ()     => get(`${ADMIN_API}/admin-keys`),
+    revokeAdminKey:  (id)   => del(`${ADMIN_API}/admin-keys?id=${id}`),
 
     // User
     getKeys:    ()         => get(`${USER_API}/keys`),
