@@ -68,6 +68,7 @@
 <script src="/src/toast.js"></script>
 <script src="/src/utils.js"></script>
 <script src="/src/auth.js"></script>
+<script src="/src/progress.js"></script>
 <script src="/src/sources.js"></script>
 
 <script>
@@ -82,7 +83,8 @@
   const STATUS  = window.CAPIBARA_STATUS;
   const DOM     = window.CAPIBARA_DOMAINS;
   const FREQ    = window.CAPIBARA_FREQUENCIES;
-  const FMTS    = window.CAPIBARA_FORMATS;
+  const FMTS     = window.CAPIBARA_FORMATS;
+  const PROGRESS = window.CAPIBARA_PROGRESS;
   const COUNTRIES = window.CAPIBARA_COUNTRIES;
 
   const user = await AUTH.requireAdmin();
@@ -201,9 +203,11 @@
       const saveBtn = overlay.querySelector('.js-save');
       saveBtn.disabled = true;
 
+      PROGRESS.start();
       const { ok, error } = await API.updateLayer(layer.id, { name_alias: alias, domain, update_frequency: freq });
       saveBtn.disabled = false;
-      if (!ok) { TOAST.error('Error', error); return; }
+      if (!ok) { PROGRESS.done(true); TOAST.error('Error', error); return; }
+      PROGRESS.done();
 
       Object.assign(layer, { name_alias: alias, domain, update_frequency: freq });
       // Actualizar nombre en la fila
@@ -317,9 +321,11 @@
 
       const formatSelect = overlay.querySelector('#edit-format');
       const dataFormat = formatSelect.disabled ? src.data_format : (formatSelect.value || null);
+      PROGRESS.start();
       const { ok, error } = await API.updateSource(src.id, { name_alias: alias, provider_alias: providerAlias, notes, countries, data_format: dataFormat });
       saveBtn.disabled = false;
-      if (!ok) { TOAST.error('Error al guardar', error); return; }
+      if (!ok) { PROGRESS.done(true); TOAST.error('Error al guardar', error); return; }
+      PROGRESS.done();
 
       // Actualizar caché y UI
       const newFormat = dataFormat || src.data_format;
@@ -528,9 +534,11 @@
                 : `¿Eliminar ${version}? Esta acción no se puede deshacer.`;
               if (!confirm(msg)) return;
               deleteBtn.disabled = true;
+              PROGRESS.start();
               const { ok, error } = await API.deletePublication(pubId);
               deleteBtn.disabled = false;
-              if (!ok) { TOAST.error('Error al eliminar', error); return; }
+              if (!ok) { PROGRESS.done(true); TOAST.error('Error al eliminar', error); return; }
+              PROGRESS.done();
               TOAST.ok(`Eliminada ${version}`);
               loadHistory();
             });
@@ -567,9 +575,11 @@
         if (!confirm(`Hay ${withErrors.length} fuente(s) incluida(s) con errores que no se publicarán: ${names}.\n¿Publicar de todas formas?`)) return;
       }
       btn.disabled = true;
+      PROGRESS.start();
       const { data, ok, error } = await API.publish({ notes: notes || null, version_label: version || null });
       btn.disabled = false;
-      if (!ok) { TOAST.error('Error al publicar', error); return; }
+      if (!ok) { PROGRESS.done(true); TOAST.error('Error al publicar', error); return; }
+      PROGRESS.done();
       TOAST.ok(`Publicado ${data.version}`, `${data.layers_count} capas, ${data.fields_count} campos.`);
       overlay.querySelector('#pub-notes').value = '';
       const input = overlay.querySelector('#pub-version');
@@ -670,8 +680,10 @@
     srcCheck.addEventListener('click', e => e.stopPropagation());
     srcCheck.addEventListener('change', async e => {
       const included = e.target.checked ? 1 : 0;
+      PROGRESS.start();
       const { ok, error } = await API.updateSource(source.id, { included });
-      if (!ok) { TOAST.error('Error', error); e.target.checked = !e.target.checked; return; }
+      if (!ok) { PROGRESS.done(true); TOAST.error('Error', error); e.target.checked = !e.target.checked; return; }
+      PROGRESS.done();
       source.included = included;
       // habilitar/deshabilitar checkboxes de capas del bloque
       block.querySelectorAll('.layer-check:not(.source-check)').forEach(cb => { cb.disabled = !included; });
@@ -730,7 +742,6 @@
         <div class="source-top-actions">
           <button class="action-btn js-edit">Editar</button>
           <button class="action-btn js-refresh-source">Actualizar</button>
-          <button class="action-btn js-rediscover">Redescubrir</button>
           <button class="action-btn danger js-delete">Eliminar</button>
         </div>
       </div>
@@ -753,33 +764,18 @@
       const btn = e.currentTarget;
       btn.disabled = true;
       // Solo recarga metadatos y capas desde la BD — no llama al servidor WFS externo
+      PROGRESS.start();
       const { data, ok } = await API.getSource(src.id);
       if (ok && data) {
+        PROGRESS.done();
         loadedSources.set(src.id, data.source);
         loadedLayers.delete(src.id);
         renderSourceBody(block, data.source);
         loadLayers(block, src.id);
+      } else {
+        PROGRESS.done(true);
       }
       btn.disabled = false;
-    });
-
-    // Redescubrir: vuelve a correr getLayers + getGeomTypes sobre la fuente.
-    // Útil cuando el servicio WFS agregó nuevas capas o cuando geometry_type
-    // quedó UNKNOWN/GEOMETRY y se quiere reintentar la detección.
-    body.querySelector('.js-rediscover')?.addEventListener('click', async e => {
-      const btn = e.currentTarget;
-      btn.disabled = true;
-      btn.textContent = 'Redescubriendo…';
-      const { data, ok, error } = await API.discoverLayers(src.id);
-      btn.disabled = false;
-      btn.textContent = 'Redescubrir';
-      if (!ok) { TOAST.error('Error al redescubrir', error); return; }
-      TOAST.ok(
-        data.added > 0 ? 'Capas descubiertas' : 'Capas actualizadas',
-        `${data.added} nuevas, ${data.skipped} ya existían.`
-      );
-      loadedLayers.delete(src.id);
-      loadLayers(block, src.id);
     });
 
     body.querySelector('.js-delete')?.addEventListener('click', () => {
