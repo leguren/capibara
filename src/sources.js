@@ -131,20 +131,27 @@ window.CAPIBARA_SOURCES = (() => {
 
     // ── Campos específicos por formato ─────────────────────────────────────
 
-    // WFS: selector de versión auto-detectada y editable.
+    // WFS: formato (readonly) + versión (readonly si fue detectada, select si no).
     function wfsFieldsHTML(preview, detectedParams) {
-      const v = detectedParams.version || '1.1.0';
+      const v = detectedParams.version || '';
+      const versionField = v
+        ? `<input class="input" id="src-wfs-version" value="${v}" readonly>`
+        : `<div class="dd-wrap">
+             <select class="select" id="src-wfs-version">
+               <option value="1.0.0">1.0.0</option>
+               <option value="1.1.0" selected>1.1.0</option>
+               <option value="2.0.0">2.0.0</option>
+             </select>
+             <span class="dd-icon">expand_more</span>
+           </div>`;
       return `
         <div class="modal-field">
-          <label class="modal-label">Versión WFS</label>
-          <div class="dd-wrap">
-            <select class="select" id="src-wfs-version">
-              <option value="1.0.0" ${v === '1.0.0' ? 'selected' : ''}>1.0.0</option>
-              <option value="1.1.0" ${v === '1.1.0' ? 'selected' : ''}>1.1.0</option>
-              <option value="2.0.0" ${v === '2.0.0' ? 'selected' : ''}>2.0.0</option>
-            </select>
-            <span class="dd-icon">expand_more</span>
-          </div>
+          <label class="modal-label">Formato</label>
+          <input class="input" value="WFS" readonly>
+        </div>
+        <div class="modal-field">
+          <label class="modal-label">Versión</label>
+          ${versionField}
         </div>
         ${commonFieldsHTML(preview)}
         <!-- TODO: agregar bloque de autenticación (Basic user/password, Token, API key) -->
