@@ -69,6 +69,6 @@ GET  /api/geo/1/catalog/coverage?lat=&lon= Cobertura en un punto (público)
 ## Ejemplo de uso
 
 ```bash
-curl "https://capibara.vercel.app/api/geo/1/query?lat=-34.603&lon=-58.382" \
+curl "https://capibara-ten.vercel.app/api/geo/1/query?lat=-34.603&lon=-58.382" \
   -H "Authorization: Bearer cpb_tutoken"
 ```
