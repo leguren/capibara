@@ -40,7 +40,7 @@ Frontend (Vanilla JS):
 CSS:
 - Variables en base.css: única fuente de verdad. Nunca hardcodear colores ni tamaños.
 - Sin frameworks: no Tailwind, no Bootstrap.
-- BEM lite: .source-card, .source-card-header, .source-card-name.
+- BEM lite: .source-block, .source-block-header, .source-name.
 
 ## Límite de serverless functions (Vercel Hobby)
 
