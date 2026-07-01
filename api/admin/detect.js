@@ -107,15 +107,16 @@ module.exports = async function handler(req, res) {
   // (nombre del servicio y proveedor del GetCapabilities/service JSON)
   if (fromUrl?.confidence === 'high') {
     let preview = { name_source: null, provider_source: null };
+    let fetchedText = '';
     try {
       const ctrl = new AbortController();
       setTimeout(() => ctrl.abort(), 5_000);
       const r    = await fetch(url, { signal: ctrl.signal });
-      const text = await r.text();
-      if (fromUrl.format === 'wfs')         preview = extractWfsPreview(text);
-      else if (fromUrl.format === 'arcgis_rest') preview = extractArcgisPreview(text);
+      fetchedText = await r.text();
+      if (fromUrl.format === 'wfs')              preview = extractWfsPreview(fetchedText);
+      else if (fromUrl.format === 'arcgis_rest') preview = extractArcgisPreview(fetchedText);
     } catch { /* preview queda vacío */ }
-    const detectedParams = fromUrl.format === 'wfs' ? { version: extractWfsVersion(text) } : {};
+    const detectedParams = fromUrl.format === 'wfs' ? { version: extractWfsVersion(fetchedText) } : {};
     return res.status(200).json({ url, detected: withImplemented({ ...fromUrl, detected_params: detectedParams }), raw: null, fetch_error: null, preview });
   }
 
