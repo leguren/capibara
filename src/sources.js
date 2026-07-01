@@ -33,10 +33,18 @@ window.CAPIBARA_SOURCES = (() => {
   /**
    * openCreateModal() → void
    *
-   * Crea la fuente y luego auto-conecta. Si la conexión es exitosa,
-   * auto-descubre las capas. El usuario no necesita hacer nada manualmente.
+   * Modal de nueva fuente en dos estados:
+   *   Estado 1 — solo URL + botón Detectar.
+   *   Estado 2 — campos dinámicos según el formato detectado.
+   *
+   * El modal es dinámico: cada formato muestra sus propios campos específicos.
+   * Actualmente implementado para WFS. Los demás están pendientes (ver TODOs).
+   *
+   * Flujo: crear fuente → auto-conectar → auto-descubrir capas.
    */
   function openCreateModal() {
+    const COUNTRIES = window.CAPIBARA_COUNTRIES;
+
     const overlay = document.createElement('div');
     overlay.className = 'modal-overlay';
     overlay.innerHTML = `
@@ -50,93 +58,20 @@ window.CAPIBARA_SOURCES = (() => {
         <div class="modal-body">
           <div class="modal-field">
             <label class="modal-label">URL</label>
+            <!-- TODO: agregar opción de archivo adjunto (access_method: 'file') -->
             <div style="display:flex;gap:8px">
               <input class="input" id="src-url" placeholder="https://..." style="flex:1">
               <button class="action-btn" id="btn-detect">Detectar</button>
             </div>
           </div>
-          <div class="modal-field">
-            <label class="modal-label">Formato</label>
-            <div class="dd-wrap" id="fmt-wrap">
-              <select class="select" id="src-format">
-                <option value="">unknown</option>
-                <option value="arcgis_rest">arcgis rest</option>
-                <option value="csv">csv</option>
-                <option value="geojson">geojson</option>
-                <option value="json">json</option>
-                <option value="wfs">wfs</option>
-              </select>
-              <span class="dd-icon">expand_more</span>
-            </div>
-          </div>
-          <div class="modal-field">
-            <label class="modal-label">Nombre del servicio</label>
-            <input class="input" id="src-name-source" readonly>
-          </div>
-          <div class="modal-field">
-            <label class="modal-label">Alias</label>
-            <input class="input" id="src-alias" placeholder="Pasos internacionales">
-          </div>
-          <div class="modal-field">
-            <label class="modal-label">Proveedor del servicio</label>
-            <input class="input" id="src-provider-source" readonly>
-          </div>
-          <div class="modal-field">
-            <label class="modal-label">Alias</label>
-            <input class="input" id="src-provider" placeholder="Ministerio de Seguridad Nacional">
-          </div>
-          <div class="modal-field">
-            <label class="modal-label">Países</label>
-            <select class="select" id="src-countries" multiple style="height:60px">
-              <option value="AG">Antigua y Barbuda AG</option>
-              <option value="AR">Argentina AR</option>
-              <option value="BB">Barbados BB</option>
-              <option value="BZ">Belice BZ</option>
-              <option value="BO">Bolivia BO</option>
-              <option value="BR">Brasil BR</option>
-              <option value="CA">Canadá CA</option>
-              <option value="CL">Chile CL</option>
-              <option value="CO">Colombia CO</option>
-              <option value="CR">Costa Rica CR</option>
-              <option value="CU">Cuba CU</option>
-              <option value="DM">Dominica DM</option>
-              <option value="EC">Ecuador EC</option>
-              <option value="SV">El Salvador SV</option>
-              <option value="US">Estados Unidos US</option>
-              <option value="GD">Granada GD</option>
-              <option value="GT">Guatemala GT</option>
-              <option value="GY">Guyana GY</option>
-              <option value="HT">Haití HT</option>
-              <option value="HN">Honduras HN</option>
-              <option value="JM">Jamaica JM</option>
-              <option value="MX">México MX</option>
-              <option value="NI">Nicaragua NI</option>
-              <option value="PA">Panamá PA</option>
-              <option value="PY">Paraguay PY</option>
-              <option value="PE">Perú PE</option>
-              <option value="PR">Puerto Rico PR</option>
-              <option value="DO">República Dominicana DO</option>
-              <option value="KN">Saint Kitts y Nevis KN</option>
-              <option value="LC">Santa Lucía LC</option>
-              <option value="VC">San Vicente y las Granadinas VC</option>
-              <option value="SR">Surinam SR</option>
-              <option value="TT">Trinidad y Tobago TT</option>
-              <option value="UY">Uruguay UY</option>
-              <option value="VE">Venezuela VE</option>
-            </select>
-          </div>
-          <div class="modal-field">
-            <label class="modal-label">Notas internas</label>
-            <textarea class="textarea" id="src-notes" style="height:72px;padding:8px 12px"></textarea>
-          </div>
+          <div id="src-dynamic-fields"></div>
         </div>
         <div class="modal-footer">
           <button class="action-btn" id="modal-cancel">Cancelar</button>
-          <button class="action-btn primary" id="modal-save">Conectar</button>
+          <button class="action-btn primary" id="modal-save" style="display:none">Conectar</button>
         </div>
       </div>
     `;
-
 
     document.body.appendChild(overlay);
 
@@ -145,58 +80,185 @@ window.CAPIBARA_SOURCES = (() => {
     overlay.querySelector('#modal-cancel').addEventListener('click', close);
     overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
 
-    // Detección automática de formato
+    // ── Helpers de renderizado ─────────────────────────────────────────────
+
+    // Genera las <option> del selector de países desde el vocab global
+    function countriesHTML() {
+      return COUNTRIES.LIST
+        .map(c => `<option value="${c.code}">${c.name} ${c.code}</option>`)
+        .join('');
+    }
+
+    // Campos comunes a todos los formatos soportados:
+    // nombre (readonly, auto-detectado), alias, proveedor (readonly), alias proveedor, países, notas.
+    // preview: { name_source, provider_source } — puede ser null si el servicio no informa.
+    function commonFieldsHTML(preview = {}) {
+      const namePH     = preview.name_source     ? '' : '(el servicio no informa nombre)';
+      const providerPH = preview.provider_source ? '' : '(el servicio no informa proveedor)';
+      return `
+        <div class="modal-field">
+          <label class="modal-label">Nombre del servicio</label>
+          <input class="input" id="src-name-source" readonly
+            value="${UTILS.escHtml(preview.name_source || '')}"
+            placeholder="${namePH}">
+        </div>
+        <div class="modal-field">
+          <label class="modal-label">Alias</label>
+          <input class="input" id="src-alias" placeholder="Nombre legible">
+        </div>
+        <div class="modal-field">
+          <label class="modal-label">Proveedor del servicio</label>
+          <input class="input" id="src-provider-source" readonly
+            value="${UTILS.escHtml(preview.provider_source || '')}"
+            placeholder="${providerPH}">
+        </div>
+        <div class="modal-field">
+          <label class="modal-label">Alias</label>
+          <input class="input" id="src-provider" placeholder="Nombre legible del proveedor">
+        </div>
+        <div class="modal-field">
+          <label class="modal-label">Países</label>
+          <select class="select" id="src-countries" multiple style="height:60px">
+            ${countriesHTML()}
+          </select>
+        </div>
+        <div class="modal-field">
+          <label class="modal-label">Notas internas</label>
+          <textarea class="textarea" id="src-notes" style="height:72px;padding:8px 12px"></textarea>
+        </div>
+      `;
+    }
+
+    // ── Campos específicos por formato ─────────────────────────────────────
+
+    // WFS: selector de versión auto-detectada y editable.
+    function wfsFieldsHTML(preview, detectedParams) {
+      const v = detectedParams.version || '1.1.0';
+      return `
+        <div class="modal-field">
+          <label class="modal-label">Versión WFS</label>
+          <div class="dd-wrap">
+            <select class="select" id="src-wfs-version">
+              <option value="1.0.0" ${v === '1.0.0' ? 'selected' : ''}>1.0.0</option>
+              <option value="1.1.0" ${v === '1.1.0' ? 'selected' : ''}>1.1.0</option>
+              <option value="2.0.0" ${v === '2.0.0' ? 'selected' : ''}>2.0.0</option>
+            </select>
+            <span class="dd-icon">expand_more</span>
+          </div>
+        </div>
+        ${commonFieldsHTML(preview)}
+        <!-- TODO: agregar bloque de autenticación (Basic user/password, Token, API key) -->
+      `;
+    }
+
+    // TODO: implementar modal dinámico para ArcGIS REST
+    // Campos específicos: auth_value (token opcional, input texto)
+    // function arcgisFieldsHTML(preview, detectedParams) { ... }
+
+    // TODO: implementar modal dinámico para CSV
+    // Campos específicos: delimiter (select: coma/punto y coma/tab/pipe/auto), crs (input, default EPSG:4326)
+    // function csvFieldsHTML(preview, detectedParams) { ... }
+
+    // TODO: implementar modal dinámico para GeoJSON
+    // Sin campos específicos adicionales por ahora.
+    // function geojsonFieldsHTML(preview, detectedParams) { ... }
+
+    // TODO: implementar modal dinámico para JSON (Google Sheets, arrays, etc.)
+    // Sin campos específicos adicionales por ahora. A futuro: json_type, root_path.
+    // function jsonFieldsHTML(preview, detectedParams) { ... }
+
+    // Formatos con conector implementado pero sin modal dinámico todavía:
+    // muestran los campos comunes genéricos hasta que se implementen los específicos.
+    function genericFieldsHTML(preview) {
+      return commonFieldsHTML(preview);
+    }
+
+    // Mensaje para formatos no soportados (xlsx, rss, etc.)
+    function unsupportedHTML(format) {
+      return `
+        <div class="modal-field" style="padding:8px 0">
+          <p style="color:var(--text-secondary);font-size:13px;margin:0">
+            El formato <strong>${UTILS.escHtml(format)}</strong> aún no está soportado en Capibara.
+          </p>
+        </div>
+      `;
+    }
+
+    const IMPLEMENTED_FORMATS = new Set(['wfs', 'arcgis_rest', 'csv', 'geojson', 'json']);
+
+    // Renderiza los campos dinámicos y muestra/oculta el botón Conectar
+    function renderFields(format, preview, detectedParams) {
+      const container = overlay.querySelector('#src-dynamic-fields');
+      const saveBtn   = overlay.querySelector('#modal-save');
+
+      if (!IMPLEMENTED_FORMATS.has(format)) {
+        container.innerHTML     = unsupportedHTML(format);
+        saveBtn.style.display   = 'none';
+        return;
+      }
+
+      if (format === 'wfs') {
+        container.innerHTML = wfsFieldsHTML(preview, detectedParams);
+      } else {
+        // TODO: reemplazar por llamadas a los campos específicos de cada formato
+        // cuando se implementen: arcgisFieldsHTML, csvFieldsHTML, geojsonFieldsHTML, jsonFieldsHTML
+        container.innerHTML = genericFieldsHTML(preview);
+      }
+
+      saveBtn.style.display = '';
+    }
+
+    // ── Estado que persiste entre detect y save ────────────────────────────
+    let _detectedFormat = null;
+
+    // ── Handler: Detectar ──────────────────────────────────────────────────
     overlay.querySelector('#btn-detect').addEventListener('click', async () => {
       const url = overlay.querySelector('#src-url').value.trim();
       if (!url) { TOAST.warn('Ingresá una URL primero'); return; }
+
       const btn = overlay.querySelector('#btn-detect');
       btn.disabled = true;
       const { data, ok, error } = await API.detectFormat(url);
       btn.disabled = false;
+
       if (!ok) { TOAST.error('Error al detectar', error); return; }
+
       if (data.detected) {
-        overlay.querySelector('#src-format').value    = data.detected.format;
-        overlay.querySelector('#src-format').disabled = true;
-        TOAST.ok('Detectado', FMTS.get(data.detected.format).label);
-        // BUG 5 FIX: si el servidor devuelve <ows:Title/> vacío (self-closing),
-        // preview.name_source llega null. Se muestra un placeholder para que el
-        // usuario entienda que el campo fue consultado pero el servicio no lo provee.
-        const nameInput     = overlay.querySelector('#src-name-source');
-        const providerInput = overlay.querySelector('#src-provider-source');
-        if (data.preview?.name_source) {
-          nameInput.value       = data.preview.name_source;
-          nameInput.placeholder = '';
-        } else {
-          nameInput.value       = '';
-          nameInput.placeholder = '(el servicio no informa nombre)';
-        }
-        if (data.preview?.provider_source) {
-          providerInput.value       = data.preview.provider_source;
-          providerInput.placeholder = '';
-        } else {
-          providerInput.value       = '';
-          providerInput.placeholder = '(el servicio no informa proveedor)';
-        }
+        _detectedFormat = data.detected.format;
+        // Hacer la URL readonly para evitar ediciones post-detección
+        overlay.querySelector('#src-url').readOnly = true;
+        renderFields(
+          data.detected.format,
+          data.preview || {},
+          data.detected.detected_params || {}
+        );
+        TOAST.ok('Detectado', FMTS.get(data.detected.format)?.label || data.detected.format);
       } else {
-        overlay.querySelector('#src-format').disabled = false;
-        TOAST.warn('Formato no detectado', 'Seleccionalo manualmente.');
+        TOAST.warn('Formato no detectado', 'Revisá la URL e intentá de nuevo.');
       }
     });
 
-    // Guardar + cascade
+    // ── Handler: Conectar (guardar + cascade) ──────────────────────────────
     overlay.querySelector('#modal-save').addEventListener('click', async () => {
-      const url    = overlay.querySelector('#src-url').value.trim();
-      const format = overlay.querySelector('#src-format').value;
-      if (!url) { TOAST.warn('URL es requerida'); return; }
+      const url = overlay.querySelector('#src-url').value.trim();
+      if (!url || !_detectedFormat) { TOAST.warn('Detectá el formato primero'); return; }
+
+      // Armar connection_params según el formato
+      const connParams = { url };
+      if (_detectedFormat === 'wfs') {
+        connParams.version = overlay.querySelector('#src-wfs-version')?.value || '1.1.0';
+      }
+      // TODO: para arcgis_rest: connParams.auth_value = overlay.querySelector('#src-auth-value')?.value || null
+      // TODO: para csv: connParams.delimiter = ..., connParams.crs = ...
 
       const body = {
-        connection_params: { url },
-        data_format:       format,
-        name_alias:        overlay.querySelector('#src-alias').value.trim() || null,
-        provider_alias:    overlay.querySelector('#src-provider').value.trim() || null,
-        // name_source y provider_source se obtienen del connect step (GetCapabilities)
-        countries:         [...overlay.querySelector('#src-countries').selectedOptions].map(o => o.value),
-        notes:             overlay.querySelector('#src-notes').value.trim() || null,
+        connection_params: connParams,
+        data_format:       _detectedFormat,
+        name_alias:        overlay.querySelector('#src-alias')?.value.trim() || null,
+        provider_alias:    overlay.querySelector('#src-provider')?.value.trim() || null,
+        // name_source y provider_source se obtienen del connect step (GetCapabilities / service info)
+        countries:         [...(overlay.querySelector('#src-countries')?.selectedOptions || [])].map(o => o.value),
+        notes:             overlay.querySelector('#src-notes')?.value.trim() || null,
       };
 
       const saveBtn = overlay.querySelector('#modal-save');
