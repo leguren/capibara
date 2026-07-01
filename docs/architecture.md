@@ -27,17 +27,41 @@ Backend (Node.js CJS):
 - Error handling: nunca exponer stack traces. Siempre { error: string }.
 - IDs: id('src') → 'src_xK9mZ3YqWp2B'. Prefijos: usr, key, src, lyr, fld, pub.
 - Tiempo: siempre now() → ISO 8601 UTC.
+- Sub-routing: endpoints complejos usan ?sub= para consolidar múltiples rutas en un
+  handler (ej: layers?sub=fields, layers?sub=discover, panel?sub=stats).
 
 Frontend (Vanilla JS):
 - Pattern IIFE: window.MODULO = (() => { 'use strict'; ... })().
 - Namespace: window.CAPIBARA_*.
 - Espejo CSS/JS: si existe src/auth.js → style/auth.css.
-- Orden de carga en HTML: config/app.js → vocab/*.js → src/api.js → src/toast.js → src/utils.js → src/auth.js → resto.
+- Orden de carga en HTML: config/app.js → vocab/*.js → src/api.js → src/toast.js
+  → src/utils.js → src/auth.js → src/progress.js → módulos específicos de la página.
 
 CSS:
 - Variables en base.css: única fuente de verdad. Nunca hardcodear colores ni tamaños.
 - Sin frameworks: no Tailwind, no Bootstrap.
 - BEM lite: .source-card, .source-card-header, .source-card-name.
+
+## Límite de serverless functions (Vercel Hobby)
+
+El plan Hobby permite máximo 12 serverless functions (archivos en /api/ sin prefijo _).
+Estrategia para mantenerse dentro del límite:
+- Consolidar endpoints del mismo dominio en un handler con sub-routing via ?sub=
+- Endpoints de admin secundarios van en api/admin/panel.js
+- Helpers compartidos llevan prefijo _ y no cuentan como functions
+
+Funciones actuales (11/12):
+  admin/detect.js, admin/fields.js, admin/layers.js, admin/panel.js,
+  admin/publish.js, admin/sources.js, auth.js,
+  geo/catalog.js, geo/query.js, mcp.js, user.js
+
+## Panel admin — páginas
+
+/admin           → landing con estado del sistema
+/admin/sources   → gestión de fuentes, capas y campos
+/admin/analytics → analytics de uso de la API
+/admin/users     → lista de usuarios del sistema
+/admin/keys      → gestión global de API keys
 
 ## Flujo de publicación
 
