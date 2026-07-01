@@ -19,10 +19,10 @@
  */
 
 // Dominios exactos autorizados a llamar a las APIs del panel y la API pública.
-// Agregar el dominio propio cuando esté configurado.
 const ALLOWED_ORIGINS = new Set([
+  'https://capibara.io',
+  'https://www.capibara.io',
   'https://capibara.vercel.app',
-  // 'https://capibara.io',  ← agregar cuando el dominio esté configurado
 ]);
 
 // Patrones de preview deploys de Vercel (capibara-<hash>-<usuario>.vercel.app)
