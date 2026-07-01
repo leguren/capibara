@@ -326,6 +326,7 @@
       saveBtn.disabled = false;
       if (!ok) { PROGRESS.done(true); TOAST.error('Error al guardar', error); return; }
       PROGRESS.done();
+      API.invalidateSourcesCache();
 
       // Actualizar caché y UI
       const newFormat = dataFormat || src.data_format;
@@ -708,12 +709,24 @@
 
     body.innerHTML = `<div class="inline-loading">Cargando…</div>`;
 
-    const { data, ok, error } = await API.getSource(source.id);
-    if (!ok) { body.innerHTML = `<div class="inline-loading" style="color:var(--error)">${error}</div>`; return; }
+    // 2.2: getSource y getLayers en paralelo — reduce el tiempo de apertura
+    // de la suma de ambos requests al tiempo del más lento.
+    const [srcRes, lyrRes] = await Promise.all([
+      API.getSource(source.id),
+      API.getSourceLayers(source.id),
+    ]);
 
-    loadedSources.set(source.id, data.source);
-    renderSourceBody(block, data.source);
-    loadLayers(block, source.id); // sin await — carga en paralelo
+    if (!srcRes.ok) { body.innerHTML = `<div class="inline-loading" style="color:var(--error)">${srcRes.error}</div>`; return; }
+
+    loadedSources.set(source.id, srcRes.data.source);
+    renderSourceBody(block, srcRes.data.source);
+
+    if (lyrRes.ok && lyrRes.data?.layers) {
+      loadedLayers.set(source.id, lyrRes.data.layers);
+      renderLayers(block, source.id, lyrRes.data.layers);
+    } else {
+      loadLayers(block, source.id); // fallback si falló el paralelo
+    }
   }
 
   function renderSourceBody(block, src) {
