@@ -81,5 +81,57 @@ module.exports = async function handler(req, res) {
     return ok(res, { ok: true });
   }
 
+  // ── USAGE — uso de la API por las keys del usuario ─────────────────────
+  if (sub === 'usage') {
+    if (req.method !== 'GET') return err(res, 405, 'Method not allowed');
+    const days   = Math.min(parseInt(req.query.days) || 30, 90);
+    const cutoff = new Date(Date.now() - days * 24 * 3600 * 1000).toISOString();
+
+    // Keys del usuario
+    const keysResult = await db.execute({
+      sql:  'SELECT id FROM api_keys WHERE user_id = ? AND active = 1',
+      args: [userId],
+    });
+    const keyIds = keysResult.rows.map(r => r.id);
+
+    if (!keyIds.length) return ok(res, { total_requests: 0, by_day: [], by_key: [], avg_response_ms: 0 });
+
+    const placeholders = keyIds.map(() => '?').join(',');
+
+    const [totalRes, byDayRes, byKeyRes] = await Promise.all([
+      db.execute({ sql: `SELECT COUNT(*) AS total, AVG(response_ms) AS avg_ms FROM api_usage WHERE key_id IN (${placeholders}) AND requested_at >= ?`, args: [...keyIds, cutoff] }),
+      db.execute({ sql: `SELECT DATE(requested_at) AS day, COUNT(*) AS requests FROM api_usage WHERE key_id IN (${placeholders}) AND requested_at >= DATE('now','-7 days') GROUP BY DATE(requested_at) ORDER BY day ASC`, args: keyIds }),
+      db.execute({ sql: `SELECT key_id, COUNT(*) AS requests, MAX(requested_at) AS last_used FROM api_usage WHERE key_id IN (${placeholders}) AND requested_at >= ? GROUP BY key_id`, args: [...keyIds, cutoff] }),
+    ]);
+
+    return ok(res, {
+      period_days:     days,
+      total_requests:  totalRes.rows[0]?.total    || 0,
+      avg_response_ms: Math.round(totalRes.rows[0]?.avg_ms || 0),
+      by_day:  byDayRes.rows.map(r => ({ day: r.day, requests: r.requests })),
+      by_key:  byKeyRes.rows.map(r => ({ key_id: r.key_id, requests: r.requests, last_used: r.last_used })),
+    });
+  }
+
+  // ── STATUS — estado de la API (última publicación) ──────────────────────
+  if (sub === 'status') {
+    if (req.method !== 'GET') return err(res, 405, 'Method not allowed');
+    const pubRes = await db.execute('SELECT version_label, created_at FROM publications ORDER BY created_at DESC LIMIT 1');
+    if (!pubRes.rows.length) return ok(res, { status: 'no_publication', latest_pub: null });
+    const pub      = pubRes.rows[0];
+    const ageHours = (Date.now() - new Date(pub.created_at).getTime()) / 3_600_000;
+    return ok(res, {
+      status:     ageHours < 24 * 7 ? 'ok' : 'stale',
+      latest_pub: { version: pub.version_label, created_at: pub.created_at },
+    });
+  }
+
+  // ── CHANGELOG — últimas publicaciones del catálogo ──────────────────────
+  if (sub === 'changelog') {
+    if (req.method !== 'GET') return err(res, 405, 'Method not allowed');
+    const result = await db.execute('SELECT version_label, sources_count, layers_count, fields_count, notes, created_at FROM publications ORDER BY created_at DESC LIMIT 5');
+    return ok(res, { publications: result.rows });
+  }
+
   return err(res, 404, 'Ruta no encontrada');
 };
