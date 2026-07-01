@@ -5,9 +5,10 @@
 window.CAPIBARA_KEYS = (() => {
   'use strict';
 
-  const API   = window.CAPIBARA_API;
-  const TOAST = window.CAPIBARA_TOAST;
-  const UTILS = window.CAPIBARA_UTILS;
+  const API      = window.CAPIBARA_API;
+  const TOAST    = window.CAPIBARA_TOAST;
+  const UTILS    = window.CAPIBARA_UTILS;
+  const PROGRESS = window.CAPIBARA_PROGRESS;
 
   let _keys    = [];
   let _onUpdate = null;
@@ -70,10 +71,12 @@ window.CAPIBARA_KEYS = (() => {
 
       const btn = overlay.querySelector('#modal-save');
       btn.classList.add('btn-loading');
+      PROGRESS.start();
       const { data, ok, error } = await API.createKey({ label, type });
       btn.classList.remove('btn-loading');
 
-      if (!ok) { TOAST.error('Error al crear key', error); return; }
+      if (!ok) { PROGRESS.done(true); TOAST.error('Error al crear key', error); return; }
+      PROGRESS.done();
 
       // Mostrar el token UNA SOLA VEZ
       const tokenArea  = overlay.querySelector('#new-token-area');
@@ -94,8 +97,10 @@ window.CAPIBARA_KEYS = (() => {
 
   async function revokeKey(keyId) {
     if (!confirm('¿Eliminar esta API key? Los clientes que la usen dejarán de funcionar.')) return;
+    PROGRESS.start();
     const { ok, error } = await API.deleteKey(keyId);
-    if (!ok) { TOAST.error('Error al eliminar key', error); return; }
+    if (!ok) { PROGRESS.done(true); TOAST.error('Error al eliminar key', error); return; }
+    PROGRESS.done();
     TOAST.ok('Key eliminada');
     await load();
   }
@@ -141,9 +146,10 @@ window.CAPIBARA_KEYS = (() => {
 window.CAPIBARA_PUBLISH = (() => {
   'use strict';
 
-  const API   = window.CAPIBARA_API;
-  const TOAST = window.CAPIBARA_TOAST;
-  const UTILS = window.CAPIBARA_UTILS;
+  const API      = window.CAPIBARA_API;
+  const TOAST    = window.CAPIBARA_TOAST;
+  const UTILS    = window.CAPIBARA_UTILS;
+  const PROGRESS = window.CAPIBARA_PROGRESS;
 
   async function publish(notes = '') {
     const { data, ok, error } = await API.publish({ notes: notes || null });
