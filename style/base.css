@@ -111,7 +111,7 @@ code, pre, .mono {
 * { scrollbar-width: thin; scrollbar-color: var(--bg4) transparent; }
 
 /* ── Status dots ────────────────────────────────────────────────────────── */
-/* Usados en source-card para indicar el estado de conexión */
+/* Indicadores de estado de conexión */
 .dot {
   display:       inline-block;
   width:         8px;
