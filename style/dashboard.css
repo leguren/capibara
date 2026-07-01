@@ -47,3 +47,52 @@
   color:         var(--text3);
   font-size:     12px;
 }
+
+/* ── Status badge ─────────────────────────────────────────────────────── */
+.status-badge {
+  font-size:     12px;
+  padding:       4px 10px;
+  border-radius: 999px;
+  font-weight:   500;
+  white-space:   nowrap;
+  align-self:    center;
+}
+.status-badge-loading { background: var(--bg2); color: var(--text2); }
+.status-badge-ok      { background: #dcfce7; color: #15803d; }
+.status-badge-warn    { background: #fef9c3; color: #a16207; }
+.status-badge-error   { background: #fee2e2; color: #b91c1c; }
+
+/* ── Snippet tabs ─────────────────────────────────────────────────────── */
+.snippet-tabs {
+  display: flex;
+  gap: 2px;
+}
+.snippet-tab {
+  font-size:     12px;
+  padding:       5px 12px;
+  border:        1px solid var(--border);
+  border-bottom: none;
+  border-radius: var(--radius) var(--radius) 0 0;
+  background:    var(--bg2);
+  color:         var(--text2);
+  cursor:        pointer;
+  transition:    background var(--transition), color var(--transition);
+}
+.snippet-tab:hover     { background: var(--bg3); color: var(--text); }
+.snippet-tab.is-active { background: var(--bg);  color: var(--text); font-weight: 600; }
+
+/* ── Key usage chip ────────────────────────────────────────────────────── */
+.api-key-usage {
+  font-size:     11px;
+  font-family:   var(--font-mono);
+  color:         var(--accent);
+  white-space:   nowrap;
+  flex-shrink:   0;
+}
+
+/* ── Dash stat chip ────────────────────────────────────────────────────── */
+.dash-stat-chip {
+  font-size:   12px;
+  color:       var(--text2);
+  font-family: var(--font-mono);
+}
