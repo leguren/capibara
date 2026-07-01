@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Capibara — Analytics</title>
+  <link rel="stylesheet" href="/style/base.css">
+  <link rel="stylesheet" href="/style/buttons.css">
+  <link rel="stylesheet" href="/style/components.css">
+  <link rel="stylesheet" href="/style/toast.css">
+  <link rel="stylesheet" href="/style/admin.css">
+</head>
+<body>
+
+<nav class="navbar">
+  <a href="/admin" class="navbar-brand">Capibara</a>
+  <div class="navbar-nav">
+    <a href="/admin/sources"   class="navbar-link">Fuentes</a>
+    <a href="/admin/analytics" class="navbar-link is-active">Analytics</a>
+    <a href="/admin/users"     class="navbar-link">Usuarios</a>
+    <a href="/admin/keys"      class="navbar-link">Keys</a>
+  </div>
+  <div class="navbar-spacer"></div>
+  <div class="navbar-user" id="nav-user"></div>
+</nav>
+
+<main class="page-content" style="max-width:900px;margin:0 auto">
+
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:28px">
+    <h1 class="admin-title" style="margin:0">Analytics</h1>
+    <select class="select" id="period-select" style="width:auto;padding:0 28px 0 12px;height:32px;font-size:13px">
+      <option value="7">Últimos 7 días</option>
+      <option value="30" selected>Últimos 30 días</option>
+      <option value="90">Últimos 90 días</option>
+    </select>
+  </div>
+
+  <!-- Stat chips -->
+  <div class="stats-row" id="stats-row">
+    <div class="stat-chip"><span class="stat-n" id="st-total">—</span> requests</div>
+    <div class="stat-chip"><span class="stat-n" id="st-avg">—</span> ms promedio</div>
+    <div class="stat-chip"><span class="stat-n" id="st-errors">—</span> errores (<span id="st-error-rate">—</span>%)</div>
+  </div>
+
+  <!-- Requests por día -->
+  <div class="source-block" style="margin-bottom:16px;padding:16px 20px">
+    <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:14px">Requests por día (últimos 7 días)</div>
+    <div id="chart-by-day" style="display:flex;align-items:flex-end;gap:6px;height:80px">
+      <div class="inline-loading">Cargando…</div>
+    </div>
+  </div>
+
+  <!-- Top keys -->
+  <div class="source-block" style="padding:16px 20px">
+    <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:12px">Top keys</div>
+    <div id="top-keys"><div class="inline-loading">Cargando…</div></div>
+  </div>
+
+</main>
+
+<script src="/config/app.js"></script>
+<script src="/src/api.js"></script>
+<script src="/src/toast.js"></script>
+<script src="/src/utils.js"></script>
+<script src="/src/auth.js"></script>
+<script src="/src/progress.js"></script>
+<script>
+(async () => {
+  'use strict';
+  const AUTH     = window.CAPIBARA_AUTH;
+  const API      = window.CAPIBARA_API;
+  const UTILS    = window.CAPIBARA_UTILS;
+  const PROGRESS = window.CAPIBARA_PROGRESS;
+
+  const user = await AUTH.requireAdmin();
+  if (!user) return;
+  AUTH.renderNavUser(document.getElementById('nav-user'), user);
+
+  async function load(days) {
+    PROGRESS.start();
+    const { data, ok } = await API.getUsage(days);
+    PROGRESS.done(!ok);
+    if (!ok) return;
+
+    document.getElementById('st-total').textContent      = (data.total_requests || 0).toLocaleString('es');
+    document.getElementById('st-avg').textContent        = data.avg_response_ms;
+    document.getElementById('st-errors').textContent     = (data.error_count || 0).toLocaleString('es');
+    document.getElementById('st-error-rate').textContent = data.error_rate;
+
+    // Gráfico de barras simple por día
+    const chart = document.getElementById('chart-by-day');
+    if (!data.by_day?.length) { chart.innerHTML = '<span style="font-size:12px;color:var(--text2)">Sin datos</span>'; }
+    else {
+      const max = Math.max(...data.by_day.map(d => d.requests), 1);
+      chart.innerHTML = data.by_day.map(d => {
+        const pct = Math.round(d.requests / max * 100);
+        const day = d.day.slice(5); // MM-DD
+        return `<div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex:1">
+          <span style="font-size:10px;color:var(--text3)">${d.requests}</span>
+          <div style="width:100%;background:var(--accent);border-radius:3px 3px 0 0;height:${Math.max(pct * 0.72, 2)}px;opacity:0.85"></div>
+          <span style="font-size:10px;color:var(--text3)">${day}</span>
+        </div>`;
+      }).join('');
+    }
+
+    // Top keys
+    const topEl = document.getElementById('top-keys');
+    if (!data.top_keys?.length) { topEl.innerHTML = '<span style="font-size:12px;color:var(--text2)">Sin datos</span>'; }
+    else {
+      topEl.innerHTML = data.top_keys.map(k => `
+        <div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-top:1px solid var(--border);font-size:13px">
+          <span style="font-family:var(--font-mono);color:var(--text2);font-size:11px">${k.key_id.slice(0,12)}…</span>
+          <span style="flex:1;color:var(--text)">${UTILS.escHtml(k.label)}</span>
+          <span style="color:var(--text2)">${k.requests.toLocaleString('es')} req</span>
+          <span style="color:var(--text3);font-size:11px">${k.last_used ? UTILS.timeAgo(k.last_used) : '—'}</span>
+        </div>
+      `).join('');
+    }
+  }
+
+  const sel = document.getElementById('period-select');
+  sel.addEventListener('change', () => load(parseInt(sel.value)));
+  await load(30);
+})();
+</script>
+
+</body>
+</html>
