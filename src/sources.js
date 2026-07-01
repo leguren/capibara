@@ -253,7 +253,7 @@ window.CAPIBARA_SOURCES = (() => {
       // Armar connection_params según el formato
       const connParams = { url };
       if (_detectedFormat === 'wfs') {
-        connParams.version = overlay.querySelector('#src-wfs-version')?.value || '1.1.0';
+        connParams.version = overlay.querySelector('#src-wfs-version')?.value || null;
       }
       // TODO: para arcgis_rest: connParams.auth_value = overlay.querySelector('#src-auth-value')?.value || null
       // TODO: para csv: connParams.delimiter = ..., connParams.crs = ...
@@ -268,41 +268,89 @@ window.CAPIBARA_SOURCES = (() => {
         notes:             overlay.querySelector('#src-notes')?.value.trim() || null,
       };
 
-      const saveBtn = overlay.querySelector('#modal-save');
-      saveBtn.disabled = true;
+      // ── Mostrar progress bar en el modal (no cerrarlo durante el cascade) ──
+      const modalBody   = overlay.querySelector('.modal-body');
+      const modalFooter = overlay.querySelector('.modal-footer');
+      modalBody.innerHTML = `
+        <div class="cascade-progress-track">
+          <div class="cascade-progress-bar" id="cascade-bar" style="width:0%"></div>
+        </div>
+        <div class="cascade-steps">
+          <div class="cascade-step cascade-step-pending" id="cs-1">
+            <span class="cascade-step-icon material-symbols-outlined">radio_button_unchecked</span>
+            <span class="cascade-step-label">Crear fuente</span>
+            <span class="cascade-step-msg"></span>
+          </div>
+          <div class="cascade-step cascade-step-pending" id="cs-2">
+            <span class="cascade-step-icon material-symbols-outlined">radio_button_unchecked</span>
+            <span class="cascade-step-label">Conectar</span>
+            <span class="cascade-step-msg"></span>
+          </div>
+          <div class="cascade-step cascade-step-pending" id="cs-3">
+            <span class="cascade-step-icon material-symbols-outlined">radio_button_unchecked</span>
+            <span class="cascade-step-label">Descubrir capas</span>
+            <span class="cascade-step-msg"></span>
+          </div>
+        </div>
+      `;
+      modalFooter.style.display = 'none';
+
+      const setStep = (id, status, icon, msg) => {
+        const el = overlay.querySelector(`#cs-${id}`);
+        if (!el) return;
+        el.className = `cascade-step cascade-step-${status}`;
+        el.querySelector('.cascade-step-icon').textContent = icon;
+        el.querySelector('.cascade-step-msg').textContent  = msg || '';
+      };
+      const setBar = pct => {
+        const bar = overlay.querySelector('#cascade-bar');
+        if (bar) bar.style.width = `${pct}%`;
+      };
+      const showDoneBtn = () => {
+        modalFooter.style.display = '';
+        modalFooter.innerHTML = `<button class="action-btn primary js-cascade-done">Listo</button>`;
+        modalFooter.querySelector('.js-cascade-done').addEventListener('click', close);
+      };
 
       // 1. Crear fuente
+      setStep(1, 'loading', 'sync', '');
+      setBar(10);
       const { data: createData, ok: createOk, error: createErr } = await API.createSource(body);
       if (!createOk) {
-        saveBtn.disabled = false;
-        TOAST.error('Error al crear fuente', createErr);
+        setStep(1, 'error', 'error', createErr);
+        showDoneBtn();
         return;
       }
-
-      const sourceId = createData.source.id;
-      close();
-      await load();
-      TOAST.ok('Fuente creada', 'Conectando…');
+      setStep(1, 'done', 'check_circle', '');
+      setBar(33);
 
       // 2. Auto-conectar
+      const sourceId = createData.source.id;
+      await load();
+      setStep(2, 'loading', 'sync', '');
       const { data: connData, ok: connOk } = await API.connectSource(sourceId);
       if (!connOk || !connData?.ok) {
-        TOAST.warn('Fuente creada', 'No se pudo conectar automáticamente. Usá el botón Conectar en el panel.');
+        setStep(2, 'error', 'error', connData?.error || 'Error de conexión');
+        setStep(3, 'pending', 'radio_button_unchecked', '');
         await load();
+        showDoneBtn();
         return;
       }
-
-      await load();
-      TOAST.ok('Conectada', 'Descubriendo capas…');
+      setStep(2, 'done', 'check_circle', '');
+      setBar(66);
 
       // 3. Auto-descubrir capas
+      await load();
+      setStep(3, 'loading', 'sync', '');
       const { data: discData, ok: discOk } = await API.discoverLayers(sourceId);
       await load();
       if (discOk) {
-        TOAST.ok('Listo', `${discData.added} capas descubiertas. Abrí la fuente para configurarlas.`);
+        setStep(3, 'done', 'check_circle', `${discData.added} capas descubiertas`);
+        setBar(100);
       } else {
-        TOAST.warn('Conectada', 'No se pudieron descubrir las capas automáticamente.');
+        setStep(3, 'error', 'error', 'No se pudieron descubrir las capas');
       }
+      showDoneBtn();
     });
   }
 
