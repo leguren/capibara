@@ -88,5 +88,20 @@ window.CAPIBARA_AUTH = (() => {
     `;
   }
 
+  // ── Fix bfcache (Firefox y Safari) ──────────────────────────────────────
+  // Cuando el browser restaura una página desde el back/forward cache, el
+  // contexto JS queda con el estado anterior (_loaded, _user). Si ese estado
+  // quedó corrupto, auth falla sin llamar a /api/auth/me.
+  // La solución: al restaurar desde bfcache, resetear el estado y re-verificar.
+  if (typeof window !== 'undefined') {
+    window.addEventListener('pageshow', (event) => {
+      if (event.persisted) {
+        // Página restaurada desde bfcache — resetear y re-verificar sesión
+        _user   = null;
+        _loaded = false;
+      }
+    });
+  }
+
   return { requireAuth, requireAdmin, getUser, renderNavUser };
 })();
