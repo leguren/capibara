@@ -20,11 +20,30 @@ window.CAPIBARA_SOURCES = (() => {
   // ── Listado ──────────────────────────────────────────────────────────────
 
   async function load() {
-    const { data, ok, error } = await API.getSources();
+    // Carga completa — invalida el cache. Usar solo al iniciar o tras eliminar.
+    const { data, ok, error } = await API.getSources(true);
     if (!ok) { TOAST.error('Error al cargar fuentes', error); return; }
     _sources = data.sources || [];
     if (_onUpdate) _onUpdate(_sources);
     return _sources;
+  }
+
+  // 2.1: actualiza una sola fuente en memoria sin recargar toda la lista.
+  // Úsalo después de acciones que afectan solo un source (connect, discover, edit).
+  async function patchSource(sourceId) {
+    const { data, ok } = await API.getSource(sourceId);
+    if (!ok || !data?.source) return;
+    const idx = _sources.findIndex(s => s.id === sourceId);
+    if (idx !== -1) _sources[idx] = data.source;
+    else _sources.push(data.source);
+    if (_onUpdate) _onUpdate(_sources);
+  }
+
+  // Elimina una fuente del estado local sin round-trip al servidor.
+  function removeSourceFromMemory(sourceId) {
+    _sources = _sources.filter(s => s.id !== sourceId);
+    API.invalidateSourcesCache();
+    if (_onUpdate) _onUpdate(_sources);
   }
 
   function onUpdate(fn) { _onUpdate = fn; }
@@ -280,21 +299,21 @@ window.CAPIBARA_SOURCES = (() => {
       }
       const sourceId = createData.source.id;
       close();
-      await load();
+      await load(); // carga completa para mostrar la nueva fuente en la lista
 
       // 2. Auto-conectar
       const { data: connData, ok: connOk } = await API.connectSource(sourceId);
       if (!connOk || !connData?.ok) {
         PROGRESS.done(true);
         TOAST.warn('Fuente creada', 'No se pudo conectar. Usá el botón Actualizar.');
-        await load();
+        await patchSource(sourceId);
         return;
       }
-      await load();
+      await patchSource(sourceId); // solo actualiza esta fuente
 
       // 3. Auto-descubrir capas
       const { data: discData, ok: discOk } = await API.discoverLayers(sourceId);
-      await load();
+      await patchSource(sourceId); // solo actualiza esta fuente
       if (discOk) {
         PROGRESS.done();
         TOAST.ok('Listo', `${discData.added} capas descubiertas.`);
@@ -323,7 +342,7 @@ window.CAPIBARA_SOURCES = (() => {
       PROGRESS.done(true);
       TOAST.error('Conexión fallida', data.error);
     }
-    await load();
+    await patchSource(sourceId);
     return data.ok;
   }
 
@@ -339,7 +358,7 @@ window.CAPIBARA_SOURCES = (() => {
       data.added > 0 ? 'Capas descubiertas' : 'Capas actualizadas',
       `${data.added} nuevas, ${data.skipped} ya existían.`
     );
-    await load();
+    await patchSource(sourceId);
     return true;
   }
 
@@ -350,7 +369,7 @@ window.CAPIBARA_SOURCES = (() => {
     if (!ok) { PROGRESS.done(true); TOAST.error('Error al eliminar', error); return; }
     PROGRESS.done();
     TOAST.ok('Fuente eliminada');
-    await load();
+    removeSourceFromMemory(sourceId);
   }
 
   return { load, onUpdate, openCreateModal, connect, discoverLayers, deleteSource };
