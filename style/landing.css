@@ -1,0 +1,94 @@
+/* style/landing.css — Landing pública /landing
+ *
+ * Básica a propósito — primera versión para tener el punto de entrada
+ * del producto resuelto. Se itera después.
+ */
+
+.landing-hero {
+  max-width:  720px;
+  margin:     0 auto;
+  padding:    80px 24px 56px;
+  text-align: center;
+}
+
+.landing-title {
+  font-size:      36px;
+  font-weight:    700;
+  color:          var(--text);
+  line-height:    1.25;
+  letter-spacing: -0.02em;
+  margin:         0 0 16px;
+}
+.landing-title strong { color: var(--accent); }
+
+.landing-subtitle {
+  font-size:  16px;
+  color:      var(--text2);
+  max-width:  520px;
+  margin:     0 auto 32px;
+  line-height: 1.6;
+}
+
+.landing-cta-row {
+  display:         flex;
+  gap:             10px;
+  justify-content: center;
+  flex-wrap:       wrap;
+}
+
+/* ── Ejemplo de request ────────────────────────────────────────────────── */
+.landing-example {
+  max-width: 640px;
+  margin:    56px auto 0;
+  padding:   0 24px;
+}
+.landing-example-label {
+  font-size:     12px;
+  font-weight:   600;
+  color:         var(--text2);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 10px;
+  text-align:    center;
+}
+.landing-example-code {
+  white-space: pre-wrap;
+  word-break:  break-all;
+  margin:      0;
+}
+
+/* ── Features ─────────────────────────────────────────────────────────── */
+.landing-features {
+  max-width:             880px;
+  margin:                64px auto 0;
+  padding:               0 24px 80px;
+  display:               grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap:                   16px;
+}
+.landing-feature {
+  background:    var(--bg2);
+  border:        1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding:       20px;
+}
+.landing-feature-title {
+  font-size:     14px;
+  font-weight:   700;
+  color:         var(--text);
+  margin-bottom: 6px;
+}
+.landing-feature-desc {
+  font-size:   13px;
+  color:       var(--text2);
+  line-height: 1.5;
+}
+
+/* ── Footer ───────────────────────────────────────────────────────────── */
+.landing-footer {
+  text-align:  center;
+  padding:     24px;
+  font-size:   12px;
+  color:       var(--text3);
+}
+.landing-footer a { color: var(--text2); }
