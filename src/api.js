@@ -107,6 +107,7 @@ window.CAPIBARA_API = (() => {
     getStats:        ()     => get(`${ADMIN_API}/stats`),
     getUsage:        (days) => get(`${ADMIN_API}/usage${days ? `?days=${days}` : ''}`),
     getAdminUsers:   ()     => get(`${ADMIN_API}/users`),
+    updateAdminUser: (id, body) => patch(`${ADMIN_API}/users?id=${id}`, body),
     getAdminKeys:    ()     => get(`${ADMIN_API}/admin-keys`),
     revokeAdminKey:  (id)   => del(`${ADMIN_API}/admin-keys?id=${id}`),
 
