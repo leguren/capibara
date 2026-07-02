@@ -2,8 +2,7 @@
  * api/user.js — Dashboard de usuario consolidado
  *
  * Rutas (via vercel.json rewrites):
- *   GET/POST/PATCH/DELETE /api/user/keys    → ?sub=keys
- *   PATCH                 /api/user/profile → ?sub=profile
+ *   GET/POST/PATCH/DELETE /api/user/keys → ?sub=keys
  */
 
 const { getDb }       = require('./_turso');
@@ -70,15 +69,6 @@ module.exports = async function handler(req, res) {
     }
 
     return err(res, 405, 'Method not allowed');
-  }
-
-  // ── PROFILE ──────────────────────────────────────────────────────────────
-  if (sub === 'profile') {
-    if (req.method !== 'PATCH') return err(res, 405, 'Method not allowed');
-    const name = req.body?.name?.trim();
-    if (!name) return err(res, 400, 'Se requiere name');
-    await db.execute({ sql: 'UPDATE users SET name = ? WHERE id = ?', args: [name, userId] });
-    return ok(res, { ok: true });
   }
 
   // ── USAGE — uso de la API por las keys del usuario ─────────────────────
