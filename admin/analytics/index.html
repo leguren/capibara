@@ -24,11 +24,11 @@
   <div class="navbar-user" id="nav-user"></div>
 </nav>
 
-<main class="page-content" style="max-width:900px;margin:0 auto">
+<main class="page-content admin-content">
 
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:28px">
-    <h1 class="admin-title" style="margin:0">Analytics</h1>
-    <select class="select" id="period-select" style="width:auto;padding:0 28px 0 12px;height:32px;font-size:13px">
+  <div class="admin-page-header">
+    <h1 class="admin-title">Analytics</h1>
+    <select class="select period-select" id="period-select">
       <option value="7">Últimos 7 días</option>
       <option value="30" selected>Últimos 30 días</option>
       <option value="90">Últimos 90 días</option>
@@ -43,16 +43,16 @@
   </div>
 
   <!-- Requests por día -->
-  <div class="source-block" style="margin-bottom:16px;padding:16px 20px">
-    <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:14px">Requests por día (últimos 7 días)</div>
-    <div id="chart-by-day" style="display:flex;align-items:flex-end;gap:6px;height:80px">
+  <div class="source-block chart-card">
+    <div class="card-block-title mb-14">Requests por día (últimos 7 días)</div>
+    <div id="chart-by-day" class="chart-bars">
       <div class="inline-loading">Cargando…</div>
     </div>
   </div>
 
   <!-- Top keys -->
-  <div class="source-block" style="padding:16px 20px">
-    <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:12px">Top keys</div>
+  <div class="source-block chart-card">
+    <div class="card-block-title mb-12">Top keys</div>
     <div id="top-keys"><div class="inline-loading">Cargando…</div></div>
   </div>
 
@@ -89,30 +89,30 @@
 
     // Gráfico de barras simple por día
     const chart = document.getElementById('chart-by-day');
-    if (!data.by_day?.length) { chart.innerHTML = '<span style="font-size:12px;color:var(--text2)">Sin datos</span>'; }
+    if (!data.by_day?.length) { chart.innerHTML = '<span class="muted-note muted-note--sm">Sin datos</span>'; }
     else {
       const max = Math.max(...data.by_day.map(d => d.requests), 1);
       chart.innerHTML = data.by_day.map(d => {
         const pct = Math.round(d.requests / max * 100);
         const day = d.day.slice(5); // MM-DD
-        return `<div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex:1">
-          <span style="font-size:10px;color:var(--text3)">${d.requests}</span>
-          <div style="width:100%;background:var(--accent);border-radius:3px 3px 0 0;height:${Math.max(pct * 0.72, 2)}px;opacity:0.85"></div>
-          <span style="font-size:10px;color:var(--text3)">${day}</span>
+        return `<div class="chart-bar-col">
+          <span class="chart-bar-label">${d.requests}</span>
+          <div class="chart-bar-fill" style="height:${Math.max(pct * 0.72, 2)}px"></div>
+          <span class="chart-bar-label">${day}</span>
         </div>`;
       }).join('');
     }
 
     // Top keys
     const topEl = document.getElementById('top-keys');
-    if (!data.top_keys?.length) { topEl.innerHTML = '<span style="font-size:12px;color:var(--text2)">Sin datos</span>'; }
+    if (!data.top_keys?.length) { topEl.innerHTML = '<span class="muted-note muted-note--sm">Sin datos</span>'; }
     else {
       topEl.innerHTML = data.top_keys.map(k => `
-        <div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-top:1px solid var(--border);font-size:13px">
-          <span style="font-family:var(--font-mono);color:var(--text2);font-size:11px">${k.key_id.slice(0,12)}…</span>
-          <span style="flex:1;color:var(--text)">${UTILS.escHtml(k.label)}</span>
-          <span style="color:var(--text2)">${k.requests.toLocaleString('es')} req</span>
-          <span style="color:var(--text3);font-size:11px">${k.last_used ? UTILS.timeAgo(k.last_used) : '—'}</span>
+        <div class="top-key-row">
+          <span class="top-key-id">${k.key_id.slice(0,12)}…</span>
+          <span class="top-key-label">${UTILS.escHtml(k.label)}</span>
+          <span class="top-key-count">${k.requests.toLocaleString('es')} req</span>
+          <span class="top-key-used">${k.last_used ? UTILS.timeAgo(k.last_used) : '—'}</span>
         </div>
       `).join('');
     }
