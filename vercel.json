@@ -85,6 +85,14 @@
       "destination": "/api/admin/fields?sub=sample"
     },
     {
+      "source": "/landing",
+      "destination": "/landing/index.html"
+    },
+    {
+      "source": "/docs",
+      "destination": "/apidocs/index.html"
+    },
+    {
       "source": "/explore",
       "destination": "/explore/index.html"
     },
@@ -131,10 +139,6 @@
     {
       "source": "/api/user/keys",
       "destination": "/api/user?sub=keys"
-    },
-    {
-      "source": "/api/user/profile",
-      "destination": "/api/user?sub=profile"
     }
   ],
   "headers": [
