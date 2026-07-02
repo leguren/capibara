@@ -168,6 +168,92 @@
 }
 .filter-pill.primary:hover { background: var(--accent-dark); border-color: var(--accent-dark); }
 
+/* ── Contenido centrado de páginas admin secundarias
+   (analytics, users, keys — admin/index usa el mismo patrón) ────────── */
+.admin-content { max-width: 900px; margin: 0 auto; }
+
+/* ── Header de página con acción a la derecha (ej: selector de período) ── */
+.admin-page-header {
+  display:         flex;
+  align-items:     center;
+  justify-content: space-between;
+  margin-bottom:   28px;
+}
+.admin-page-header .admin-title { margin: 0; }
+
+.period-select {
+  width:     auto;
+  padding:   0 28px 0 12px;
+  height:    32px;
+  font-size: 13px;
+}
+
+/* ── Notas de estado inline (error / vacío) ──────────────────────────── */
+.error-note { color: var(--error); font-size: 13px; }
+.muted-note { color: var(--text2); font-size: 13px; }
+.muted-note--sm { font-size: 12px; }
+
+/* ── Fila de lista simple (usuarios, keys) — reutiliza .source-block ──── */
+.admin-list-item { margin-bottom: 8px; }
+.source-header--static { cursor: default; }
+.row-meta {
+  display:     flex;
+  align-items: center;
+  gap:         16px;
+  font-size:   12px;
+  color:       var(--text2);
+}
+
+/* ── Pills pequeñas de tipo/estado (keys) ────────────────────────────── */
+.pill-sm       { font-size: 10px; }
+.pill-inactive { background: var(--error); color: #fff; }
+.source-name.is-inactive { text-decoration: line-through; opacity: 0.5; }
+
+/* ── Analytics: cards de gráfico ──────────────────────────────────────── */
+.chart-card { padding: 16px 20px; }
+.chart-card + .chart-card { margin-top: 16px; }
+
+.card-block-title {
+  font-size:   13px;
+  font-weight: 600;
+  color:       var(--text);
+  /* margin-bottom: usar utilidad .mb-12 / .mb-14 según el bloque */
+}
+
+.chart-bars {
+  display:     flex;
+  align-items: flex-end;
+  gap:         6px;
+  height:      80px;
+}
+.chart-bar-col {
+  display:        flex;
+  flex-direction: column;
+  align-items:    center;
+  gap:            4px;
+  flex:           1;
+}
+.chart-bar-label { font-size: 10px; color: var(--text3); }
+.chart-bar-fill {
+  width:         100%;
+  background:    var(--accent);
+  border-radius: 3px 3px 0 0;
+  opacity:       0.85;
+}
+
+.top-key-row {
+  display:       flex;
+  align-items:   center;
+  gap:           8px;
+  padding:       8px 0;
+  border-top:    1px solid var(--border);
+  font-size:     13px;
+}
+.top-key-id    { font-family: var(--font-mono); color: var(--text2); font-size: 11px; }
+.top-key-label { flex: 1; color: var(--text); }
+.top-key-count { color: var(--text2); }
+.top-key-used  { color: var(--text3); font-size: 11px; }
+
 /* ── Sources list ─────────────────────────────────────────────────── */
 .sources-list {
   margin-top:     20px;
