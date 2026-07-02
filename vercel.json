@@ -85,12 +85,8 @@
       "destination": "/api/admin/fields?sub=sample"
     },
     {
-      "source": "/landing",
-      "destination": "/landing/index.html"
-    },
-    {
       "source": "/docs",
-      "destination": "/apidocs/index.html"
+      "destination": "/docs/index.html"
     },
     {
       "source": "/explore",
