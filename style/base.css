@@ -190,6 +190,18 @@ code, pre, .mono {
   margin:     16px 0;
 }
 
+/* ── Utilidades de espaciado ────────────────────────────────────────────
+   Para casos puntuales de margin donde crear una clase semántica no
+   aporta claridad. Evitar preferir esto sobre clases de componente
+   cuando el bloque se repite con sentido propio (ver .chart-card, etc). */
+.mt-8  { margin-top: 8px; }
+.mt-10 { margin-top: 10px; }
+.mt-12 { margin-top: 12px; }
+.mt-16 { margin-top: 16px; }
+.mb-10 { margin-bottom: 10px; }
+.mb-12 { margin-bottom: 12px; }
+.mb-14 { margin-bottom: 14px; }
+
 /* ── Empty state ────────────────────────────────────────────────────────── */
 .empty-state {
   display:         flex;
