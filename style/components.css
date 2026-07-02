@@ -78,6 +78,9 @@
 }
 .navbar-avatar img { width: 100%; height: 100%; object-fit: cover; }
 
+/* ── Acciones a la derecha del navbar (ej: landing sin sesión) ─────────── */
+.navbar-actions { display: flex; gap: 8px; }
+
 /* ── Page header ─────────────────────────────────────────────────────────── */
 .page-header {
   display:         flex;
