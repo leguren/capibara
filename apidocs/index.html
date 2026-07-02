@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Capibara — Documentación</title>
+  <link rel="stylesheet" href="/style/base.css">
+  <link rel="stylesheet" href="/style/buttons.css">
+  <link rel="stylesheet" href="/style/components.css">
+  <link rel="stylesheet" href="/style/docs.css">
+</head>
+<body>
+
+<nav class="navbar">
+  <a href="/landing" class="navbar-brand">Capibara</a>
+  <div class="navbar-spacer"></div>
+  <div class="navbar-actions" id="nav-actions">
+    <a href="/explore" class="btn btn-ghost btn-sm">Explorador</a>
+    <a href="/login" class="btn btn-ghost btn-sm">Ingresar</a>
+  </div>
+</nav>
+
+<main class="docs-main">
+
+  <div class="docs-hero">
+    <h1 class="docs-title">Documentación</h1>
+    <p class="docs-subtitle">Referencia de la API pública de Capibara.</p>
+    <div class="docs-version" id="docs-version">Cargando catálogo…</div>
+  </div>
+
+  <section class="docs-section">
+    <div class="docs-section-title">Autenticación</div>
+    <p class="docs-p">
+      Todos los endpoints bajo <code>/api/geo/1/</code> excepto <code>/catalog*</code> requieren un token de API.
+      Enviá el header <code>Authorization: Bearer cpb_tutoken</code> en cada request.
+    </p>
+    <p class="docs-p">
+      Generá un token desde tu <a href="/dashboard">dashboard</a> — se muestra una sola vez al crearlo.
+    </p>
+  </section>
+
+  <section class="docs-section">
+    <div class="docs-section-title">Endpoints</div>
+
+    <div class="docs-endpoint">
+      <div class="docs-endpoint-head">
+        <span class="docs-endpoint-method">GET</span>
+        <span class="docs-endpoint-path">/api/geo/1/query?lat=&amp;lon=</span>
+        <span class="docs-endpoint-auth">requiere API key</span>
+      </div>
+      <div class="docs-endpoint-desc">
+        Consulta el punto (lat, lon) contra todas las fuentes activas. Parámetros opcionales:
+        <code>precision</code> (decimales de redondeo, default 3) y <code>domain</code> (filtrar por dominio/s separados por coma).
+      </div>
+    </div>
+
+    <div class="docs-endpoint">
+      <div class="docs-endpoint-head">
+        <span class="docs-endpoint-method">GET</span>
+        <span class="docs-endpoint-path">/api/geo/1/catalog</span>
+        <span class="docs-endpoint-auth">público</span>
+      </div>
+      <div class="docs-endpoint-desc">Catálogo de metadatos: versión activa, dominios disponibles y conteos.</div>
+    </div>
+
+    <div class="docs-endpoint">
+      <div class="docs-endpoint-head">
+        <span class="docs-endpoint-method">GET</span>
+        <span class="docs-endpoint-path">/api/geo/1/catalog/domains</span>
+        <span class="docs-endpoint-auth">público</span>
+      </div>
+      <div class="docs-endpoint-desc">Lista de dominios temáticos con cantidad de capas y fuentes por dominio.</div>
+    </div>
+
+    <div class="docs-endpoint">
+      <div class="docs-endpoint-head">
+        <span class="docs-endpoint-method">GET</span>
+        <span class="docs-endpoint-path">/api/geo/1/catalog/layers?domain=</span>
+        <span class="docs-endpoint-auth">público</span>
+      </div>
+      <div class="docs-endpoint-desc">Lista de capas publicadas, opcionalmente filtradas por dominio/s.</div>
+    </div>
+
+    <div class="docs-endpoint">
+      <div class="docs-endpoint-head">
+        <span class="docs-endpoint-method">GET</span>
+        <span class="docs-endpoint-path">/api/geo/1/catalog/coverage?lat=&amp;lon=</span>
+        <span class="docs-endpoint-auth">público</span>
+      </div>
+      <div class="docs-endpoint-desc">Qué capas y dominios cubren un punto, sin ejecutar las consultas — útil antes de gastar tu cuota.</div>
+    </div>
+  </section>
+
+  <section class="docs-section">
+    <div class="docs-section-title">Ejemplo</div>
+    <pre class="code-block docs-code-block">curl "https://capibara-ten.vercel.app/api/geo/1/query?lat=-34.603&amp;lon=-58.382" \
+  -H "Authorization: Bearer cpb_tutoken"</pre>
+  </section>
+
+  <section class="docs-section">
+    <div class="docs-section-title">Dominios disponibles</div>
+    <div id="docs-domains" class="docs-domains">
+      <div class="inline-loading">Cargando…</div>
+    </div>
+  </section>
+
+</main>
+
+<script src="/config/app.js"></script>
+<script src="/src/api.js"></script>
+<script src="/src/toast.js"></script>
+<script src="/src/utils.js"></script>
+
+<script>
+(async () => {
+  'use strict';
+  const API   = window.CAPIBARA_API;
+  const UTILS = window.CAPIBARA_UTILS;
+  const BASE  = window.CAPIBARA_CONFIG.API_BASE;
+
+  // Sesión silenciosa — solo para decidir si mostrar "Dashboard" en vez de "Ingresar"
+  const { data: meData, ok: loggedIn } = await API.getMe();
+  if (loggedIn && meData) {
+    document.getElementById('nav-actions').innerHTML = `
+      <a href="/explore" class="btn btn-ghost btn-sm">Explorador</a>
+      <a href="/dashboard" class="btn btn-ghost btn-sm">Dashboard</a>
+    `;
+  }
+
+  // Catálogo real — la sección de dominios se genera desde la publicación activa
+  try {
+    const res  = await fetch(`${BASE}/geo/1/catalog`, { cache: 'no-store' });
+    const data = await res.json();
+
+    const versionEl = document.getElementById('docs-version');
+    const domainsEl = document.getElementById('docs-domains');
+
+    if (!res.ok) {
+      versionEl.textContent = 'Sin publicación activa todavía';
+      domainsEl.innerHTML   = '<span class="docs-p">Todavía no hay una configuración publicada.</span>';
+      return;
+    }
+
+    versionEl.textContent = `${data.version} · ${data.sources_count} fuentes · ${data.layers_count} capas`;
+
+    if (!data.domains?.length) {
+      domainsEl.innerHTML = '<span class="docs-p">Sin dominios publicados todavía.</span>';
+      return;
+    }
+
+    domainsEl.innerHTML = data.domains.map(d => `
+      <div class="docs-domain-chip">
+        <span class="docs-domain-name">${UTILS.escHtml(d.domain)}</span>
+        <span class="docs-domain-count">${d.layers_count} capas</span>
+      </div>
+    `).join('');
+  } catch (e) {
+    document.getElementById('docs-version').textContent = 'No se pudo cargar el catálogo';
+  }
+})();
+</script>
+
+</body>
+</html>
