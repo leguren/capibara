@@ -24,7 +24,7 @@
   <div class="navbar-user" id="nav-user"></div>
 </nav>
 
-<main class="page-content" style="max-width:900px;margin:0 auto">
+<main class="page-content admin-content">
   <h1 class="admin-title">API Keys</h1>
   <div id="keys-list"><div class="inline-loading">Cargando…</div></div>
 </main>
@@ -54,25 +54,24 @@
     PROGRESS.done(!ok);
 
     const el = document.getElementById('keys-list');
-    if (!ok) { el.innerHTML = '<div style="color:var(--error);font-size:13px">Error al cargar keys.</div>'; return; }
-    if (!data.keys?.length) { el.innerHTML = '<div style="font-size:13px;color:var(--text2)">Sin API keys registradas.</div>'; return; }
+    if (!ok) { el.innerHTML = '<div class="error-note">Error al cargar keys.</div>'; return; }
+    if (!data.keys?.length) { el.innerHTML = '<div class="muted-note">Sin API keys registradas.</div>'; return; }
 
     el.innerHTML = '';
     for (const k of data.keys) {
       const row = document.createElement('div');
-      row.className = 'source-block';
-      row.style.marginBottom = '8px';
+      row.className = 'source-block admin-list-item';
       row.innerHTML = `
-        <div class="source-header" style="cursor:default">
+        <div class="source-header source-header--static">
           <div class="source-info">
-            <span class="source-name" style="${!k.active ? 'text-decoration:line-through;opacity:0.5' : ''}">${UTILS.escHtml(k.label)}</span>
+            <span class="source-name${!k.active ? ' is-inactive' : ''}">${UTILS.escHtml(k.label)}</span>
             <span class="source-sub">
               ${UTILS.escHtml(k.user_name || k.user_email || '—')} ·
-              <span class="pill" style="font-size:10px">${k.type}</span>
-              ${!k.active ? '<span class="pill" style="font-size:10px;background:var(--error);color:#fff">inactiva</span>' : ''}
+              <span class="pill pill-sm">${k.type}</span>
+              ${!k.active ? '<span class="pill pill-sm pill-inactive">inactiva</span>' : ''}
             </span>
           </div>
-          <div style="display:flex;align-items:center;gap:16px;font-size:12px;color:var(--text2)">
+          <div class="row-meta">
             <span>Creada: ${UTILS.timeAgo(k.created_at)}</span>
             <span>Usado: ${k.last_used_at ? UTILS.timeAgo(k.last_used_at) : 'nunca'}</span>
             ${k.active ? `<button class="action-btn danger js-revoke" data-id="${k.id}" data-label="${UTILS.escHtml(k.label)}">Revocar</button>` : ''}
