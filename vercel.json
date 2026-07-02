@@ -41,10 +41,6 @@
       "destination": "/admin/sources/index.html"
     },
     {
-      "source": "/admin/sources/publish",
-      "destination": "/admin/sources/publish/index.html"
-    },
-    {
       "source": "/login",
       "destination": "/login/index.html"
     },
