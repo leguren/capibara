@@ -2,10 +2,11 @@
  * api/admin/panel.js — Endpoints consolidados del panel admin
  *
  * Rutas (via vercel.json rewrites):
- *   GET /api/admin/stats       → ?sub=stats
- *   GET /api/admin/usage       → ?sub=usage
- *   GET /api/admin/users       → ?sub=users
- *   GET /api/admin/admin-keys  → ?sub=admin-keys
+ *   GET   /api/admin/stats       → ?sub=stats
+ *   GET   /api/admin/usage       → ?sub=usage
+ *   GET   /api/admin/users       → ?sub=users
+ *   PATCH /api/admin/users?id=   → ?sub=users (role, tier)
+ *   GET   /api/admin/admin-keys  → ?sub=admin-keys
  *   DELETE /api/admin/admin-keys?id= → ?sub=admin-keys
  *
  * Consolidado en un único handler para respetar el límite de 12
@@ -80,17 +81,46 @@ module.exports = async function handler(req, res) {
 
   // ── USERS ─────────────────────────────────────────────────────────────────
   if (sub === 'users') {
-    if (req.method !== 'GET') return err(res, 405, 'Method not allowed');
+    if (req.method === 'GET') {
+      const result = await db.execute(`
+        SELECT u.id, u.email, u.name, u.role, u.tier, u.created_at, u.last_login,
+          COUNT(CASE WHEN k.active=1 THEN 1 END) AS keys_active,
+          COUNT(k.id) AS keys_total,
+          MAX(k.last_used_at) AS last_api_use
+        FROM users u LEFT JOIN api_keys k ON k.user_id=u.id
+        GROUP BY u.id ORDER BY u.created_at DESC
+      `);
+      return ok(res, { users: result.rows });
+    }
 
-    const result = await db.execute(`
-      SELECT u.id, u.email, u.name, u.role, u.created_at, u.last_login,
-        COUNT(CASE WHEN k.active=1 THEN 1 END) AS keys_active,
-        COUNT(k.id) AS keys_total,
-        MAX(k.last_used_at) AS last_api_use
-      FROM users u LEFT JOIN api_keys k ON k.user_id=u.id
-      GROUP BY u.id ORDER BY u.created_at DESC
-    `);
-    return ok(res, { users: result.rows });
+    if (req.method === 'PATCH') {
+      const userId = req.query.id;
+      if (!userId) return err(res, 400, 'Se requiere ?id=');
+
+      const check = await db.execute({ sql: 'SELECT id FROM users WHERE id = ? LIMIT 1', args: [userId] });
+      if (!check.rows.length) return err(res, 404, 'Usuario no encontrado');
+
+      const updates = {};
+
+      if (req.body?.role !== undefined) {
+        const role = req.body.role;
+        if (role !== 'admin' && role !== 'user') return err(res, 400, "role debe ser 'admin' o 'user'");
+        if (userId === session.userId && role !== 'admin') return err(res, 400, 'No podés quitarte tu propio rol de admin');
+        updates.role = role;
+      }
+
+      if (req.body?.tier !== undefined) {
+        updates.tier = req.body.tier ? String(req.body.tier).trim() : null;
+      }
+
+      if (!Object.keys(updates).length) return err(res, 400, 'Nada que actualizar');
+
+      const setClauses = Object.keys(updates).map(k => `${k} = ?`).join(', ');
+      await db.execute({ sql: `UPDATE users SET ${setClauses} WHERE id = ?`, args: [...Object.values(updates), userId] });
+      return ok(res, { ok: true });
+    }
+
+    return err(res, 405, 'Method not allowed');
   }
 
   // ── ADMIN KEYS ────────────────────────────────────────────────────────────
