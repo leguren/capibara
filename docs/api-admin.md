@@ -100,8 +100,14 @@ Response: {
 
 GET /api/admin/users → todos los usuarios
 Response: {
-  users: [{ id, email, name, role, created_at, last_login, keys_active, keys_total, last_api_use }]
+  users: [{ id, email, name, role, tier, created_at, last_login, keys_active, keys_total, last_api_use }]
 }
+
+PATCH /api/admin/users?id= → actualiza role y/o tier de un usuario
+Body: { role?: 'admin'|'user', tier?: string|null }
+Reglas:
+  - Un admin no puede quitarse su propio rol de admin (evita quedar el sistema sin admins).
+  - tier es texto libre (ej: 'starter', 'pro') — no hay enum todavía.
 
 GET    /api/admin/admin-keys     → todas las API keys del sistema
 DELETE /api/admin/admin-keys?id= → revoca (desactiva) cualquier key
