@@ -1,0 +1,119 @@
+/* style/docs.css — Documentación pública /docs
+ *
+ * Básica a propósito. La sección de dominios se completa en runtime
+ * desde /api/geo/1/catalog (el catálogo realmente publicado) — no es
+ * texto fijo, así que se mantiene sola cuando cambia la configuración.
+ */
+
+.docs-main {
+  max-width: 760px;
+  margin:    0 auto;
+  padding:   48px 24px 80px;
+}
+
+.docs-hero { margin-bottom: 40px; }
+.docs-title {
+  font-size:      28px;
+  font-weight:    700;
+  color:          var(--text);
+  margin:         0 0 8px;
+  letter-spacing: -0.01em;
+}
+.docs-subtitle { font-size: 14px; color: var(--text2); }
+.docs-version {
+  display:       inline-flex;
+  align-items:   center;
+  gap:           6px;
+  margin-top:    12px;
+  font-size:     12px;
+  font-family:   var(--font-mono);
+  color:         var(--text2);
+  background:    var(--bg2);
+  border:        1px solid var(--border);
+  border-radius: 999px;
+  padding:       3px 12px;
+}
+
+.docs-section { margin-bottom: 36px; }
+.docs-section-title {
+  font-size:      13px;
+  font-weight:    700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color:          var(--text2);
+  margin-bottom:  14px;
+}
+
+.docs-p { font-size: 13px; color: var(--text2); line-height: 1.6; margin-bottom: 10px; }
+.docs-p:last-child { margin-bottom: 0; }
+.docs-p code {
+  font-family:   var(--font-mono);
+  font-size:     0.92em;
+  background:    var(--bg2);
+  border:        1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding:       1px 5px;
+}
+
+/* ── Endpoints ────────────────────────────────────────────────────────── */
+.docs-endpoint {
+  border:        1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding:       14px 16px;
+  margin-bottom: 10px;
+}
+.docs-endpoint-head {
+  display:     flex;
+  align-items: center;
+  gap:         10px;
+  margin-bottom: 6px;
+  flex-wrap:   wrap;
+}
+.docs-endpoint-method {
+  font-family:   var(--font-mono);
+  font-size:     11px;
+  font-weight:   700;
+  color:         var(--ok);
+  background:    rgba(82,183,136,0.12);
+  border-radius: var(--radius-sm);
+  padding:       2px 6px;
+}
+.docs-endpoint-path {
+  font-family: var(--font-mono);
+  font-size:   13px;
+  color:       var(--text);
+}
+.docs-endpoint-auth {
+  font-size:     10px;
+  color:         var(--text3);
+  border:        1px solid var(--border);
+  border-radius: 999px;
+  padding:       1px 8px;
+}
+.docs-endpoint-desc { font-size: 12px; color: var(--text2); }
+
+.docs-code-block {
+  white-space: pre-wrap;
+  word-break:  break-all;
+  margin:      0;
+}
+
+/* ── Dominios (generados desde el catálogo publicado) ────────────────── */
+.docs-domains {
+  display:               grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap:                   8px;
+}
+.docs-domain-chip {
+  display:         flex;
+  justify-content: space-between;
+  align-items:     center;
+  gap:             8px;
+  padding:         8px 12px;
+  background:      var(--bg2);
+  border:          1px solid var(--border);
+  border-radius:   var(--radius);
+  font-size:       12px;
+}
+.docs-domain-name  { color: var(--text); font-weight: 600; }
+.docs-domain-count { color: var(--text3); font-family: var(--font-mono); font-size: 11px; }
