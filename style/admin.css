@@ -172,14 +172,12 @@
    (analytics, users, keys — admin/index usa el mismo patrón) ────────── */
 .admin-content { max-width: 900px; margin: 0 auto; }
 
-/* ── Header de página con acción a la derecha (ej: selector de período) ── */
-.admin-page-header {
+/* ── Analytics: fila de controles bajo el título (selector de período) ── */
+.analytics-toolbar {
   display:         flex;
-  align-items:     center;
-  justify-content: space-between;
-  margin-bottom:   28px;
+  justify-content: flex-end;
+  margin-bottom:   20px;
 }
-.admin-page-header .admin-title { margin: 0; }
 
 .period-select {
   width:     auto;
