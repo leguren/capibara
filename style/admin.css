@@ -168,10 +168,6 @@
 }
 .filter-pill.primary:hover { background: var(--accent-dark); border-color: var(--accent-dark); }
 
-/* ── Contenido centrado de páginas admin secundarias
-   (analytics, users, keys — admin/index usa el mismo patrón) ────────── */
-.admin-content { max-width: 900px; margin: 0 auto; }
-
 /* ── Analytics: fila de controles bajo el título (selector de período) ── */
 .analytics-toolbar {
   display:         flex;
