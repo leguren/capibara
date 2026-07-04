@@ -1,0 +1,20 @@
+/* style/home.css — /home (resumen tras login)
+ *
+ * v1 simple — se termina de definir el contenido más adelante.
+ */
+
+.home-cta-row {
+  display:               grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap:                   16px;
+  margin-top:            20px;
+}
+
+.home-cta-card {
+  display:         block;
+  text-decoration: none;
+  transition:      border-color 0.15s;
+}
+.home-cta-card:hover { border-color: var(--accent); }
+.home-cta-card .card-title { margin-bottom: 6px; }
+.home-cta-desc { font-size: 13px; color: var(--text2); line-height: 1.5; }
