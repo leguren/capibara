@@ -85,6 +85,26 @@
       "destination": "/api/admin/fields?sub=sample"
     },
     {
+      "source": "/home",
+      "destination": "/home/index.html"
+    },
+    {
+      "source": "/keys",
+      "destination": "/keys/index.html"
+    },
+    {
+      "source": "/playground",
+      "destination": "/playground/index.html"
+    },
+    {
+      "source": "/cobertura",
+      "destination": "/cobertura/index.html"
+    },
+    {
+      "source": "/settings",
+      "destination": "/settings/index.html"
+    },
+    {
       "source": "/docs",
       "destination": "/docs/index.html"
     },
