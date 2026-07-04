@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Capibara — Home</title>
+  <link rel="stylesheet" href="/style/base.css">
+  <link rel="stylesheet" href="/style/buttons.css">
+  <link rel="stylesheet" href="/style/components.css">
+  <link rel="stylesheet" href="/style/toast.css">
+  <link rel="stylesheet" href="/style/home.css">
+</head>
+<body>
+
+<nav class="navbar">
+  <a href="/home" class="navbar-brand">Capibara</a>
+  <div class="navbar-nav">
+    <a href="/playground" class="navbar-link">Playground</a>
+    <a href="/cobertura"  class="navbar-link">Cobertura</a>
+    <a href="/keys"       class="navbar-link">Keys</a>
+    <a href="/dashboard"  class="navbar-link">Dashboard</a>
+    <a href="/docs"       class="navbar-link">Docs</a>
+  </div>
+  <div class="navbar-spacer"></div>
+  <a href="/settings" class="navbar-icon-btn" title="Ajustes" aria-label="Ajustes">⚙</a>
+  <div class="navbar-user" id="nav-user"></div>
+</nav>
+
+<main class="page-content">
+
+  <div class="page-header">
+    <div>
+      <div class="page-title" id="home-title">Hola</div>
+      <div class="page-subtitle">Resumen de tu cuenta.</div>
+    </div>
+    <div id="api-status-badge" class="status-badge status-badge-loading">Verificando API…</div>
+  </div>
+
+  <div class="stats-row" id="stats-row">
+    <div class="stat-chip" id="chip-tier">Plan: <strong id="st-tier">—</strong></div>
+    <div class="stat-chip"><span class="stat-n" id="st-keys">—</span> keys activas</div>
+    <div class="stat-chip"><span class="stat-n" id="st-requests">—</span> requests (7 días)</div>
+  </div>
+
+  <div class="home-cta-row">
+    <a href="/playground" class="card home-cta-card">
+      <div class="card-title">Playground</div>
+      <div class="home-cta-desc">Probá una consulta real contra la API con tu propia key.</div>
+    </a>
+    <a href="/cobertura" class="card home-cta-card">
+      <div class="card-title">Cobertura</div>
+      <div class="home-cta-desc">Mirá qué datos hay disponibles para una coordenada, sin gastar cuota.</div>
+    </a>
+    <a href="/keys" class="card home-cta-card">
+      <div class="card-title">API Keys</div>
+      <div class="home-cta-desc">Creá y administrá las keys de tu cuenta.</div>
+    </a>
+  </div>
+
+</main>
+
+<script src="/config/app.js"></script>
+<script src="/src/api.js"></script>
+<script src="/src/toast.js"></script>
+<script src="/src/utils.js"></script>
+<script src="/src/auth.js"></script>
+<script src="/src/progress.js"></script>
+<script src="/src/keys.js"></script>
+
+<script>
+(async () => {
+  'use strict';
+  const AUTH  = window.CAPIBARA_AUTH;
+  const API   = window.CAPIBARA_API;
+  const UTILS = window.CAPIBARA_UTILS;
+  const KEYS  = window.CAPIBARA_KEYS;
+
+  const user = await AUTH.requireAuth();
+  if (!user) return;
+  AUTH.renderNavUserMenu(document.getElementById('nav-user'), user);
+
+  document.getElementById('home-title').textContent =
+    `Hola, ${user.name?.split(' ')[0] || user.email}`;
+
+  document.getElementById('st-tier').textContent = user.tier || 'Plan libre';
+
+  // Estado de la API
+  const badge = document.getElementById('api-status-badge');
+  API.getApiStatus().then(({ data, ok }) => {
+    badge.classList.remove('status-badge-loading');
+    if (!ok || !data?.latest_pub) {
+      badge.className = 'status-badge status-badge-warn';
+      badge.textContent = 'Sin publicación activa';
+      return;
+    }
+    const age = UTILS.timeAgo(data.latest_pub.created_at);
+    if (data.status === 'ok') {
+      badge.className = 'status-badge status-badge-ok';
+      badge.textContent = `API operativa · ${data.latest_pub.version} · ${age}`;
+    } else {
+      badge.className = 'status-badge status-badge-warn';
+      badge.textContent = `Catálogo desactualizado · ${data.latest_pub.version} · ${age}`;
+    }
+  });
+
+  // Keys activas
+  KEYS.onUpdate(keys => {
+    document.getElementById('st-keys').textContent = keys.filter(k => k.active).length;
+  });
+  await KEYS.load();
+
+  // Requests de los últimos 7 días
+  API.getUserUsage(7).then(({ data, ok }) => {
+    if (!ok) return;
+    document.getElementById('st-requests').textContent = (data.total_requests || 0).toLocaleString('es');
+  });
+})();
+</script>
+
+</body>
+</html>
