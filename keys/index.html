@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Capibara — API Keys</title>
+  <link rel="stylesheet" href="/style/base.css">
+  <link rel="stylesheet" href="/style/buttons.css">
+  <link rel="stylesheet" href="/style/components.css">
+  <link rel="stylesheet" href="/style/toast.css">
+  <link rel="stylesheet" href="/style/keys.css">
+</head>
+<body>
+
+<nav class="navbar">
+  <a href="/home" class="navbar-brand">Capibara</a>
+  <div class="navbar-nav">
+    <a href="/playground" class="navbar-link">Playground</a>
+    <a href="/cobertura"  class="navbar-link">Cobertura</a>
+    <a href="/keys"       class="navbar-link is-active">Keys</a>
+    <a href="/dashboard"  class="navbar-link">Dashboard</a>
+    <a href="/docs"       class="navbar-link">Docs</a>
+  </div>
+  <div class="navbar-spacer"></div>
+  <a href="/settings" class="navbar-icon-btn" title="Ajustes" aria-label="Ajustes">⚙</a>
+  <div class="navbar-user" id="nav-user"></div>
+</nav>
+
+<main class="page-content">
+
+  <div class="page-header">
+    <div>
+      <div class="page-title">API Keys</div>
+      <div class="page-subtitle">Creá y administrá las keys de tu cuenta.</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">Tus keys</div>
+      <button class="btn btn-primary btn-sm" id="btn-new-key">+ Nueva key</button>
+    </div>
+    <div id="keys-list">
+      <div class="skeleton skeleton-key-row"></div>
+      <div class="skeleton skeleton-key-row"></div>
+    </div>
+  </div>
+
+</main>
+
+<script src="/config/app.js"></script>
+<script src="/src/api.js"></script>
+<script src="/src/toast.js"></script>
+<script src="/src/utils.js"></script>
+<script src="/src/auth.js"></script>
+<script src="/src/progress.js"></script>
+<script src="/src/keys.js"></script>
+
+<script>
+(async () => {
+  'use strict';
+  const AUTH = window.CAPIBARA_AUTH;
+  const KEYS = window.CAPIBARA_KEYS;
+
+  const user = await AUTH.requireAuth();
+  if (!user) return;
+  AUTH.renderNavUserMenu(document.getElementById('nav-user'), user);
+
+  let _usageByKey = {};
+  KEYS.onUpdate(keys => KEYS.renderList(document.getElementById('keys-list'), _usageByKey));
+  await KEYS.load();
+  document.getElementById('btn-new-key').addEventListener('click', () => KEYS.openCreateModal());
+})();
+</script>
+
+</body>
+</html>
