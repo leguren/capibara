@@ -6,19 +6,23 @@
   <title>Capibara — Documentación</title>
   <link rel="stylesheet" href="/style/base.css">
   <link rel="stylesheet" href="/style/buttons.css">
+  <link rel="stylesheet" href="/style/navbar.css">
   <link rel="stylesheet" href="/style/components.css">
   <link rel="stylesheet" href="/style/docs.css">
 </head>
 <body>
 
-<nav class="navbar">
-  <a href="/" class="navbar-brand">Capibara</a>
-  <div class="navbar-spacer"></div>
-  <div class="navbar-actions" id="nav-actions">
-    <a href="/explore" class="btn btn-ghost btn-sm">Explorador</a>
-    <a href="/login" class="btn btn-ghost btn-sm">Ingresar</a>
-  </div>
-</nav>
+<div id="navbar-root">
+  <nav class="navbar">
+    <a href="/" class="navbar-brand">Capibara</a>
+    <div class="navbar-spacer"></div>
+    <div class="navbar-actions" id="nav-actions">
+      <a href="/explore" class="btn btn-ghost btn-sm">Explorador</a>
+      <a href="/login" class="btn btn-ghost btn-sm">Ingresar</a>
+    </div>
+  </nav>
+</div>
+<script src="/src/navbar.js"></script>
 
 <main class="docs-main">
 
@@ -118,21 +122,22 @@
 <script src="/src/api.js"></script>
 <script src="/src/toast.js"></script>
 <script src="/src/utils.js"></script>
+<script src="/src/auth.js"></script>
 
 <script>
 (async () => {
   'use strict';
+  const AUTH  = window.CAPIBARA_AUTH;
   const API   = window.CAPIBARA_API;
   const UTILS = window.CAPIBARA_UTILS;
   const BASE  = window.CAPIBARA_CONFIG.API_BASE;
 
-  // Sesión silenciosa — solo para decidir si mostrar "Dashboard" en vez de "Ingresar"
+  // Sesión silenciosa — si hay sesión, mostramos el navbar completo del
+  // área de cliente en vez del nav público mínimo.
   const { data: meData, ok: loggedIn } = await API.getMe();
   if (loggedIn && meData) {
-    document.getElementById('nav-actions').innerHTML = `
-      <a href="/explore" class="btn btn-ghost btn-sm">Explorador</a>
-      <a href="/home" class="btn btn-ghost btn-sm">Ir a mi cuenta</a>
-    `;
+    CAPIBARA_NAVBAR.renderClient('docs');
+    AUTH.renderNavUserMenu(document.getElementById('nav-user'), meData);
   }
 
   // Catálogo real — la sección de dominios se genera desde la publicación activa
