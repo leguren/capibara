@@ -16,10 +16,6 @@
   <nav class="navbar">
     <a href="/" class="navbar-brand">Capibara</a>
     <div class="navbar-spacer"></div>
-    <div class="navbar-actions" id="nav-actions">
-      <a href="/explore" class="btn btn-ghost btn-sm">Explorador</a>
-      <a href="/login" class="btn btn-ghost btn-sm">Ingresar</a>
-    </div>
   </nav>
 </div>
 <script src="/src/navbar.js"></script>
@@ -132,12 +128,15 @@
   const UTILS = window.CAPIBARA_UTILS;
   const BASE  = window.CAPIBARA_CONFIG.API_BASE;
 
-  // Sesión silenciosa — si hay sesión, mostramos el navbar completo del
-  // área de cliente en vez del nav público mínimo.
+  // Sesión silenciosa — se decide UNA sola vez qué navbar mostrar,
+  // para no pintar el público y después reemplazarlo (eso es lo que
+  // causaba el parpadeo).
   const { data: meData, ok: loggedIn } = await API.getMe();
   if (loggedIn && meData) {
     CAPIBARA_NAVBAR.renderClient('docs');
     AUTH.renderNavUserMenu(document.getElementById('nav-user'), meData);
+  } else {
+    CAPIBARA_NAVBAR.renderPublic();
   }
 
   // Catálogo real — la sección de dominios se genera desde la publicación activa
