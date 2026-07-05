@@ -112,7 +112,7 @@ module.exports = async function handler(req, res) {
       console.log('[callback] step 5: create session, role:', user.role);
       const token = createSession(user);
       setSessionCookie(res, token);
-      return res.redirect(302, user.role === 'admin' ? '/admin' : '/dashboard');
+      return res.redirect(302, user.role === 'admin' ? '/admin' : '/home');
 
     } catch (e) {
       console.error('[callback] ERROR:', e.message, e.stack);
