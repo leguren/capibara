@@ -35,7 +35,7 @@
       Enviá el header <code>Authorization: Bearer cpb_tutoken</code> en cada request.
     </p>
     <p class="docs-p">
-      Generá un token desde tu <a href="/dashboard">dashboard</a> — se muestra una sola vez al crearlo.
+      Generá un token desde <a href="/keys">tus keys</a> — se muestra una sola vez al crearlo.
     </p>
   </section>
 
@@ -93,8 +93,16 @@
 
   <section class="docs-section">
     <div class="docs-section-title">Ejemplo</div>
-    <pre class="code-block docs-code-block">curl "https://capibara-ten.vercel.app/api/geo/1/query?lat=-34.603&amp;lon=-58.382" \
-  -H "Authorization: Bearer cpb_tutoken"</pre>
+    <div class="snippet-tabs" id="snippet-tabs">
+      <button class="snippet-tab is-active" data-lang="curl">curl</button>
+      <button class="snippet-tab" data-lang="python">Python</button>
+      <button class="snippet-tab" data-lang="js">JavaScript</button>
+      <button class="snippet-tab" data-lang="php">PHP</button>
+    </div>
+    <div class="code-block snippet-code-block">
+      <button class="code-block-copy" id="btn-copy-snippet">Copiar</button>
+      <pre id="snippet-code" class="snippet-code"></pre>
+    </div>
   </section>
 
   <section class="docs-section">
@@ -123,7 +131,7 @@
   if (loggedIn && meData) {
     document.getElementById('nav-actions').innerHTML = `
       <a href="/explore" class="btn btn-ghost btn-sm">Explorador</a>
-      <a href="/dashboard" class="btn btn-ghost btn-sm">Dashboard</a>
+      <a href="/home" class="btn btn-ghost btn-sm">Ir a mi cuenta</a>
     `;
   }
 
@@ -157,6 +165,55 @@
   } catch (e) {
     document.getElementById('docs-version').textContent = 'No se pudo cargar el catálogo';
   }
+
+  // ── Snippets de código ─────────────────────────────────────────────────
+  const BASE_URL   = 'https://capibara-ten.vercel.app';
+  const EXAMPLE    = { lat: '-34.603', lon: '-58.382' };
+  const TOKEN_HINT = 'cpb_tutoken';
+
+  const SNIPPETS = {
+    curl: `curl "${BASE_URL}/api/geo/1/query?lat=${EXAMPLE.lat}&lon=${EXAMPLE.lon}" \\
+  -H "Authorization: Bearer ${TOKEN_HINT}"`,
+
+    python: `import requests
+
+response = requests.get(
+    "${BASE_URL}/api/geo/1/query",
+    params={"lat": ${EXAMPLE.lat}, "lon": ${EXAMPLE.lon}},
+    headers={"Authorization": "Bearer ${TOKEN_HINT}"}
+)
+data = response.json()
+print(data)`,
+
+    js: `const response = await fetch(
+  "${BASE_URL}/api/geo/1/query?lat=${EXAMPLE.lat}&lon=${EXAMPLE.lon}",
+  { headers: { "Authorization": "Bearer ${TOKEN_HINT}" } }
+);
+const data = await response.json();
+console.log(data);`,
+
+    php: `$ch = curl_init("${BASE_URL}/api/geo/1/query?lat=${EXAMPLE.lat}&lon=${EXAMPLE.lon}");
+curl_setopt($ch, CURLOPT_HTTPHEADER, ["Authorization: Bearer ${TOKEN_HINT}"]);
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+$data = json_decode(curl_exec($ch), true);
+curl_close($ch);`,
+  };
+
+  let activeLang = 'curl';
+  const codeEl   = document.getElementById('snippet-code');
+  codeEl.textContent = SNIPPETS.curl;
+
+  document.getElementById('snippet-tabs').addEventListener('click', e => {
+    const btn = e.target.closest('.snippet-tab');
+    if (!btn) return;
+    activeLang = btn.dataset.lang;
+    document.querySelectorAll('.snippet-tab').forEach(t => t.classList.toggle('is-active', t === btn));
+    codeEl.textContent = SNIPPETS[activeLang];
+  });
+
+  document.getElementById('btn-copy-snippet').addEventListener('click', async () => {
+    await UTILS.copyToClipboard(SNIPPETS[activeLang], document.getElementById('btn-copy-snippet'));
+  });
 })();
 </script>
 
