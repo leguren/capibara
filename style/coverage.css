@@ -1,0 +1,41 @@
+/* style/coverage.css — /coverage (qué datos cubren un punto) */
+
+.coverage-form-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.coverage-input    { flex: 1; min-width: 140px; }
+.coverage-result   { margin-top: 16px; }
+
+.coverage-summary {
+  font-size:     13px;
+  color:         var(--text2);
+  margin-bottom: 16px;
+}
+.coverage-summary strong { color: var(--text); }
+
+.coverage-domain {
+  border:        1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding:       14px 16px;
+  margin-bottom: 10px;
+}
+.coverage-domain-title {
+  font-size:     13px;
+  font-weight:   700;
+  color:         var(--text);
+  margin-bottom: 10px;
+}
+.coverage-layer-row {
+  display:       flex;
+  justify-content: space-between;
+  align-items:   center;
+  gap:           10px;
+  padding:       6px 0;
+  border-top:    1px solid var(--border);
+  font-size:     12px;
+}
+.coverage-layer-row:first-of-type { border-top: none; padding-top: 0; }
+.coverage-layer-name   { color: var(--text); }
+.coverage-layer-source { color: var(--text3); font-size: 11px; }
+.coverage-layer-meta   { color: var(--text3); font-size: 11px; white-space: nowrap; }
+
+.coverage-empty { color: var(--text2); font-size: 13px; text-align: center; padding: 20px; }
+.coverage-error { color: var(--error); font-size: 13px; text-align: center; padding: 20px; }
