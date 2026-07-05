@@ -97,8 +97,8 @@
       "destination": "/playground/index.html"
     },
     {
-      "source": "/cobertura",
-      "destination": "/cobertura/index.html"
+      "source": "/coverage",
+      "destination": "/coverage/index.html"
     },
     {
       "source": "/settings",
