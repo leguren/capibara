@@ -1,94 +1,4 @@
-/* style/dashboard.css — Panel de usuario */
-
-.dashboard-layout {
-  display:               grid;
-  grid-template-columns: 1fr 320px;
-  gap:                   24px;
-  align-items:           start;
-}
-
-.api-key-row {
-  display:       flex;
-  align-items:   center;
-  gap:           12px;
-  padding:       12px 16px;
-  background:    var(--bg2);
-  border:        1px solid var(--border);
-  border-radius: var(--radius-md);
-  margin-bottom: 8px;
-}
-.api-key-label     { font-weight: 600; font-size: 13px; flex: 1; }
-.api-key-type      { font-size: 11px; font-family: var(--font-mono); color: var(--text2); }
-.api-key-used      { font-size: 11px; color: var(--text3); white-space: nowrap; }
-.api-key-token-box {
-  background:    var(--text);
-  color:         #E5DDD2;
-  font-family:   var(--font-mono);
-  font-size:     12px;
-  padding:       10px 14px;
-  border-radius: var(--radius);
-  word-break:    break-all;
-  margin:        12px 0;
-  position:      relative;
-}
-.api-key-warning {
-  font-size:     12px;
-  color:         var(--warning);
-  margin-bottom: 12px;
-}
-
-.usage-chart-placeholder {
-  background:    var(--bg3);
-  border-radius: var(--radius-md);
-  height:        120px;
-  display:       flex;
-  align-items:   center;
-  justify-content: center;
-  color:         var(--text3);
-  font-size:     12px;
-}
-
-/* ── Status badge ─────────────────────────────────────────────────────── */
-.status-badge {
-  font-size:     12px;
-  padding:       4px 10px;
-  border-radius: 999px;
-  font-weight:   500;
-  white-space:   nowrap;
-  align-self:    center;
-}
-.status-badge-loading { background: var(--bg2); color: var(--text2); }
-.status-badge-ok      { background: #dcfce7; color: #15803d; }
-.status-badge-warn    { background: #fef9c3; color: #a16207; }
-.status-badge-error   { background: #fee2e2; color: #b91c1c; }
-
-/* ── Snippet tabs ─────────────────────────────────────────────────────── */
-.snippet-tabs {
-  display: flex;
-  gap: 2px;
-}
-.snippet-tab {
-  font-size:     12px;
-  padding:       5px 12px;
-  border:        1px solid var(--border);
-  border-bottom: none;
-  border-radius: var(--radius) var(--radius) 0 0;
-  background:    var(--bg2);
-  color:         var(--text2);
-  cursor:        pointer;
-  transition:    background var(--transition), color var(--transition);
-}
-.snippet-tab:hover     { background: var(--bg3); color: var(--text); }
-.snippet-tab.is-active { background: var(--bg);  color: var(--text); font-weight: 600; }
-
-/* ── Key usage chip ────────────────────────────────────────────────────── */
-.api-key-usage {
-  font-size:     11px;
-  font-family:   var(--font-mono);
-  color:         var(--accent);
-  white-space:   nowrap;
-  flex-shrink:   0;
-}
+/* style/dashboard.css — /dashboard (métricas de uso y logs) */
 
 /* ── Dash stat chip ────────────────────────────────────────────────────── */
 .dash-stat-chip {
@@ -96,10 +6,6 @@
   color:       var(--text2);
   font-family: var(--font-mono);
 }
-
-/* ── Skeleton de keys (loading placeholder) ──────────────────────────── */
-.skeleton-key-row { height: 52px; border-radius: 8px; }
-.skeleton-key-row + .skeleton-key-row { margin-top: 8px; }
 
 /* ── Uso: gráfico de barras (7 días) ──────────────────────────────────── */
 .usage-chart {
@@ -131,55 +37,6 @@
   opacity:       0.8;
 }
 .usage-chart-empty { font-size: 12px; color: var(--text3); }
-
-/* ── Explorador de cobertura ──────────────────────────────────────────── */
-.explorer-form-row      { display: flex; gap: 8px; flex-wrap: wrap; }
-.explorer-input         { flex: 1; min-width: 120px; }
-.explorer-token-input   { flex: 2; min-width: 180px; font-family: var(--font-mono); font-size: 12px; }
-.explorer-result        { margin-top: 12px; }
-.explorer-result-item {
-  border:        1px solid var(--border);
-  border-radius: var(--radius-md);
-  padding:       10px 14px;
-  margin-bottom: 8px;
-}
-.explorer-result-title  { font-size: 12px; font-weight: 600; color: var(--text); margin-bottom: 6px; }
-.explorer-result-source { font-size: 11px; color: var(--text2); margin-bottom: 4px; }
-.explorer-result-json {
-  font-size:   11px;
-  font-family: var(--font-mono);
-  color:       var(--text2);
-  white-space: pre-wrap;
-  word-break:  break-all;
-  margin:      0;
-}
-.explorer-error { color: var(--error); font-size: 13px; text-align: center; padding: 20px; }
-.explorer-empty { font-size: 13px; color: var(--text2); }
-
-/* ── Snippet de código ─────────────────────────────────────────────────── */
-.snippet-code-block {
-  margin-top:    0;
-  border-radius: 0 var(--radius-md) var(--radius-md) var(--radius-md);
-}
-.snippet-code { white-space: pre-wrap; word-break: break-all; }
-.snippet-footer-note {
-  font-size:  12px;
-  color:      var(--text2);
-  margin-top: 10px;
-}
-.snippet-footer-note a { color: var(--accent); }
-
-/* ── Tier / plan ──────────────────────────────────────────────────────── */
-.tier-value          { font-size: 13px; color: var(--text2); }
-.tier-value strong   { font-weight: 600; color: var(--text); }
-.tier-value--empty   { color: var(--text3); }
-
-/* ── Listas de endpoints / parámetros ─────────────────────────────────── */
-.info-list           { display: flex; flex-direction: column; gap: 10px; font-size: 12px; }
-.info-list--compact  { gap: 8px; }
-.info-list-item-title { color: var(--accent); }
-.info-list-item-desc  { color: var(--text2); margin-top: 2px; }
-.info-divider          { margin: 0; }
 
 /* ── Changelog ────────────────────────────────────────────────────────── */
 .changelog-item {
