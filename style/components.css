@@ -81,6 +81,79 @@
 /* ── Acciones a la derecha del navbar (ej: landing sin sesión) ─────────── */
 .navbar-actions { display: flex; gap: 8px; }
 
+/* ── Status badge ─────────────────────────────────────────────────────── */
+.status-badge {
+  font-size:     12px;
+  padding:       4px 10px;
+  border-radius: 999px;
+  font-weight:   500;
+  white-space:   nowrap;
+  align-self:    center;
+}
+.status-badge-loading { background: var(--bg2); color: var(--text2); }
+.status-badge-ok      { background: #dcfce7; color: #15803d; }
+.status-badge-warn    { background: #fef9c3; color: #a16207; }
+.status-badge-error   { background: #fee2e2; color: #b91c1c; }
+
+/* ── Ícono de ajustes en el navbar ────────────────────────────────────── */
+.navbar-icon-btn {
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  width:           32px;
+  height:          32px;
+  border-radius:   var(--radius);
+  color:           rgba(255,255,255,0.7);
+  text-decoration: none;
+  font-size:       16px;
+}
+.navbar-icon-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
+
+/* ── Menú desplegable del avatar (soporte, cerrar sesión) ────────────── */
+.user-menu { position: relative; }
+.user-menu-trigger {
+  display:     flex;
+  align-items: center;
+  gap:         8px;
+  cursor:      pointer;
+  background:  none;
+  border:      none;
+  padding:     0;
+}
+.user-menu-popover {
+  position:      absolute;
+  top:           calc(100% + 8px);
+  right:         0;
+  min-width:     200px;
+  background:    var(--bg2);
+  border:        1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow:    0 8px 24px rgba(0,0,0,0.35);
+  padding:       6px;
+  z-index:       50;
+}
+.user-menu-info {
+  padding:       8px 10px 10px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 6px;
+}
+.user-menu-name  { font-size: 13px; font-weight: 600; color: var(--text); }
+.user-menu-email { font-size: 11px; color: var(--text3); margin-top: 2px; }
+.user-menu-item {
+  display:       block;
+  width:         100%;
+  text-align:    left;
+  padding:       8px 10px;
+  border-radius: var(--radius-sm);
+  font-size:     13px;
+  color:         var(--text2);
+  background:    none;
+  border:        none;
+  cursor:        pointer;
+  text-decoration: none;
+}
+.user-menu-item:hover { background: rgba(255,255,255,0.06); color: var(--text); }
+
 /* ── Page header ─────────────────────────────────────────────────────────── */
 .page-header {
   display:         flex;
