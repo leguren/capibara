@@ -7,19 +7,15 @@
   <meta name="description" content="Una sola API query → múltiples fuentes → respuesta unificada. Datos geoespaciales sobre cualquier coordenada.">
   <link rel="stylesheet" href="/style/base.css">
   <link rel="stylesheet" href="/style/buttons.css">
+  <link rel="stylesheet" href="/style/navbar.css">
   <link rel="stylesheet" href="/style/components.css">
   <link rel="stylesheet" href="/style/landing.css">
 </head>
 <body>
 
-<nav class="navbar">
-  <span class="navbar-brand">Capibara</span>
-  <div class="navbar-spacer"></div>
-  <div class="navbar-actions">
-    <a href="/docs" class="btn btn-ghost btn-sm">Documentación</a>
-    <a href="/login" class="btn btn-ghost btn-sm">Ingresar</a>
-  </div>
-</nav>
+<div id="navbar-root"></div>
+<script src="/src/navbar.js"></script>
+<script>CAPIBARA_NAVBAR.renderPublic();</script>
 
 <main>
 
