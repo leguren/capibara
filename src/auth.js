@@ -64,8 +64,8 @@ window.CAPIBARA_AUTH = (() => {
     const user = await requireAuth();
     if (!user) return null;
     if (user.role !== 'admin') {
-      console.warn(`[CAPIBARA_AUTH] requireAdmin(): usuario ${user.email} tiene role="${user.role}" (no admin) → redirigiendo a /dashboard`);
-      window.location.href = '/dashboard';
+      console.warn(`[CAPIBARA_AUTH] requireAdmin(): usuario ${user.email} tiene role="${user.role}" (no admin) → redirigiendo a /home`);
+      window.location.href = '/home';
       return null;
     }
     return user;
@@ -104,6 +104,49 @@ window.CAPIBARA_AUTH = (() => {
     `;
   }
 
+  /**
+   * renderNavUserMenu(containerEl, user) → void
+   *
+   * Variante para el área de cliente: el avatar abre un menú desplegable
+   * con Soporte y Cerrar sesión, en vez de mostrarlos siempre visibles
+   * (eso queda para el navbar de admin, ver renderNavUser).
+   */
+  function renderNavUserMenu(containerEl, user) {
+    if (!containerEl || !user) return;
+
+    const initials = user.name
+      ? user.name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase()
+      : user.email[0].toUpperCase();
+
+    containerEl.innerHTML = `
+      <div class="user-menu">
+        <button class="user-menu-trigger" id="user-menu-trigger">
+          <div class="navbar-avatar">
+            ${user.picture
+              ? `<img src="${user.picture}" alt="${user.name}" referrerpolicy="no-referrer">`
+              : initials}
+          </div>
+        </button>
+        <div class="user-menu-popover" id="user-menu-popover" style="display:none">
+          <div class="user-menu-info">
+            <div class="user-menu-name">${user.name || user.email}</div>
+            ${user.name ? `<div class="user-menu-email">${user.email}</div>` : ''}
+          </div>
+          <a class="user-menu-item" href="mailto:soporte@capibara.dev">Soporte</a>
+          <a class="user-menu-item" href="/api/auth/logout">Cerrar sesión</a>
+        </div>
+      </div>
+    `;
+
+    const trigger  = containerEl.querySelector('#user-menu-trigger');
+    const popover  = containerEl.querySelector('#user-menu-popover');
+    trigger.addEventListener('click', (e) => {
+      e.stopPropagation();
+      popover.style.display = popover.style.display === 'none' ? 'block' : 'none';
+    });
+    document.addEventListener('click', () => { popover.style.display = 'none'; });
+  }
+
   // ── Fix bfcache (Firefox y Safari) ──────────────────────────────────────
   // Cuando el browser restaura una página desde el back/forward cache, el
   // contexto JS queda con el estado anterior (_loaded, _user). Si ese estado
@@ -120,5 +163,5 @@ window.CAPIBARA_AUTH = (() => {
     });
   }
 
-  return { requireAuth, requireAdmin, getUser, renderNavUser };
+  return { requireAuth, requireAdmin, getUser, renderNavUser, renderNavUserMenu };
 })();
