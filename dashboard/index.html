@@ -13,8 +13,16 @@
 <body>
 
 <nav class="navbar">
-  <a href="/dashboard" class="navbar-brand">Capibara</a>
+  <a href="/home" class="navbar-brand">Capibara</a>
+  <div class="navbar-nav">
+    <a href="/playground" class="navbar-link">Playground</a>
+    <a href="/cobertura"  class="navbar-link">Cobertura</a>
+    <a href="/keys"       class="navbar-link">Keys</a>
+    <a href="/dashboard"  class="navbar-link is-active">Dashboard</a>
+    <a href="/docs"       class="navbar-link">Docs</a>
+  </div>
   <div class="navbar-spacer"></div>
+  <a href="/settings" class="navbar-icon-btn" title="Ajustes" aria-label="Ajustes">⚙</a>
   <div class="navbar-user" id="nav-user"></div>
 </nav>
 
@@ -23,125 +31,32 @@
   <div class="page-header">
     <div>
       <div class="page-title">Dashboard</div>
-      <div class="page-subtitle" id="subtitle">Tus API keys y uso de la plataforma.</div>
+      <div class="page-subtitle">Métricas de uso de tu cuenta.</div>
     </div>
     <div id="api-status-badge" class="status-badge status-badge-loading">Verificando API…</div>
   </div>
 
-  <div class="dashboard-layout">
-
-    <!-- ── Columna principal ─────────────────────────────────── -->
-    <div>
-
-      <!-- API Keys -->
-      <div class="card">
-        <div class="card-header">
-          <div class="card-title">API Keys</div>
-          <button class="btn btn-primary btn-sm" id="btn-new-key">+ Nueva key</button>
-        </div>
-        <div id="keys-list">
-          <div class="skeleton skeleton-key-row"></div>
-          <div class="skeleton skeleton-key-row"></div>
-        </div>
-      </div>
-
-      <!-- Uso -->
-      <div class="card mt-16">
-        <div class="card-header">
-          <div class="card-title">Uso (últimos 7 días)</div>
-          <span class="dash-stat-chip" id="stat-total">— requests</span>
-        </div>
-        <div id="usage-chart" class="usage-chart">
-          <div class="inline-loading">Cargando…</div>
-        </div>
-        <div class="usage-stats-row">
-          <span>Promedio: <strong id="stat-avg">—</strong> ms</span>
-          <span id="stat-errors-wrap" style="display:none">Errores: <strong id="stat-errors">—</strong></span>
-        </div>
-      </div>
-
-      <!-- Explorador de cobertura -->
-      <div class="card mt-16">
-        <div class="card-title mb-12">Explorador de cobertura</div>
-        <div class="explorer-form-row">
-          <input class="input explorer-input" id="exp-lat"   placeholder="lat (ej: -34.603)">
-          <input class="input explorer-input" id="exp-lon"   placeholder="lon (ej: -58.382)">
-          <input class="input explorer-token-input" id="exp-token" placeholder="cpb_tutoken">
-          <button class="btn btn-primary" id="btn-explore">Consultar</button>
-        </div>
-        <div id="explorer-result" class="explorer-result" style="display:none"></div>
-      </div>
-
-      <!-- Snippets de código -->
-      <div class="card mt-16">
-        <div class="card-title mb-12">Ejemplo de uso</div>
-        <div class="snippet-tabs" id="snippet-tabs">
-          <button class="snippet-tab is-active" data-lang="curl">curl</button>
-          <button class="snippet-tab" data-lang="python">Python</button>
-          <button class="snippet-tab" data-lang="js">JavaScript</button>
-          <button class="snippet-tab" data-lang="php">PHP</button>
-        </div>
-        <div class="code-block snippet-code-block">
-          <button class="code-block-copy" id="btn-copy-snippet">Copiar</button>
-          <pre id="snippet-code" class="snippet-code"></pre>
-        </div>
-        <div class="snippet-footer-note">
-          Ver el <a href="/api/geo/1/catalog" target="_blank">catálogo completo</a>
-          para explorar los datos disponibles.
-        </div>
-      </div>
-
+  <!-- Uso -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">Uso (últimos 7 días)</div>
+      <span class="dash-stat-chip" id="stat-total">— requests</span>
     </div>
-
-    <!-- ── Columna lateral ───────────────────────────────────── -->
-    <div>
-
-      <!-- Plan / tier -->
-      <div class="card">
-        <div class="card-title mb-10">Tu plan</div>
-        <div id="tier-info" class="tier-value">Cargando…</div>
-      </div>
-
-      <!-- Endpoints -->
-      <div class="card mt-12">
-        <div class="card-title mb-14">Endpoints</div>
-        <div class="info-list">
-          <div>
-            <div class="mono info-list-item-title">/api/geo/1/query</div>
-            <div class="info-list-item-desc">Consulta por coordenada</div>
-          </div>
-          <div class="divider info-divider"></div>
-          <div>
-            <div class="mono info-list-item-title">/api/geo/1/catalog</div>
-            <div class="info-list-item-desc">Catálogo de datos disponibles</div>
-          </div>
-          <div class="divider info-divider"></div>
-          <div>
-            <div class="mono info-list-item-title">/api/mcp</div>
-            <div class="info-list-item-desc">Endpoint MCP para agentes IA</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Parámetros -->
-      <div class="card mt-12">
-        <div class="card-title mb-10">Parámetros del query</div>
-        <div class="info-list info-list--compact">
-          <div><span class="mono info-list-item-title">lat</span> — latitud WGS84 (requerido)</div>
-          <div><span class="mono info-list-item-title">lon</span> — longitud WGS84 (requerido)</div>
-          <div><span class="mono info-list-item-title">domain</span> — filtrar por dominio/s</div>
-          <div><span class="mono info-list-item-title">precision</span> — decimales (default: 3)</div>
-        </div>
-      </div>
-
-      <!-- Changelog -->
-      <div class="card mt-12">
-        <div class="card-title mb-10">Últimas publicaciones</div>
-        <div id="changelog-list"><div class="inline-loading">Cargando…</div></div>
-      </div>
-
+    <div id="usage-chart" class="usage-chart">
+      <div class="inline-loading">Cargando…</div>
+    </div>
+    <div class="usage-stats-row">
+      <span>Promedio: <strong id="stat-avg">—</strong> ms</span>
+      <span id="stat-errors-wrap" style="display:none">Errores: <strong id="stat-errors">—</strong></span>
     </div>
   </div>
+
+  <!-- Logs / changelog de publicaciones -->
+  <div class="card mt-16">
+    <div class="card-title mb-10">Últimas publicaciones</div>
+    <div id="changelog-list"><div class="inline-loading">Cargando…</div></div>
+  </div>
+
 </main>
 
 <script src="/config/app.js"></script>
@@ -150,44 +65,17 @@
 <script src="/src/utils.js"></script>
 <script src="/src/auth.js"></script>
 <script src="/src/progress.js"></script>
-<script src="/src/keys.js"></script>
 
 <script>
 (async () => {
   'use strict';
-
-  const AUTH     = window.CAPIBARA_AUTH;
-  const KEYS     = window.CAPIBARA_KEYS;
-  const API      = window.CAPIBARA_API;
-  const UTILS    = window.CAPIBARA_UTILS;
-  const TOAST    = window.CAPIBARA_TOAST;
-  const PROGRESS = window.CAPIBARA_PROGRESS;
+  const AUTH  = window.CAPIBARA_AUTH;
+  const API   = window.CAPIBARA_API;
+  const UTILS = window.CAPIBARA_UTILS;
 
   const user = await AUTH.requireAuth();
   if (!user) return;
-  AUTH.renderNavUser(document.getElementById('nav-user'), user);
-
-  // ── Plan / tier ────────────────────────────────────────────────────────
-  const tierEl = document.getElementById('tier-info');
-  tierEl.innerHTML = user.tier
-    ? `<strong>${UTILS.escHtml(user.tier)}</strong>`
-    : `<span class="tier-value--empty">Plan libre</span>`;
-
-  // ── Keys ───────────────────────────────────────────────────────────────
-  let _usageByKey = {};
-
-  KEYS.onUpdate(keys => {
-    // Actualizar snippet con el label de la primera key activa
-    const firstActive = keys.find(k => k.active);
-    if (firstActive) {
-      document.getElementById('subtitle').textContent =
-        `Hola, ${UTILS.escHtml(user.name?.split(' ')[0] || user.email)}. Usá tu token para autenticar las consultas.`;
-    }
-    KEYS.renderList(document.getElementById('keys-list'), _usageByKey);
-  });
-
-  await KEYS.load();
-  document.getElementById('btn-new-key').addEventListener('click', () => KEYS.openCreateModal());
+  AUTH.renderNavUserMenu(document.getElementById('nav-user'), user);
 
   // ── Estado de la API ───────────────────────────────────────────────────
   const badge = document.getElementById('api-status-badge');
@@ -216,10 +104,6 @@
     if (data.total_requests > 0) {
       document.getElementById('stat-errors-wrap').style.display = '';
     }
-
-    // Guardar uso por key para mostrar junto a cada key
-    _usageByKey = Object.fromEntries((data.by_key || []).map(k => [k.key_id, k.requests]));
-    KEYS.renderList(document.getElementById('keys-list'), _usageByKey);
 
     // Gráfico de barras
     const chart = document.getElementById('usage-chart');
@@ -257,102 +141,6 @@
       </div>
     `).join('');
   });
-
-  // ── Snippets de código ─────────────────────────────────────────────────
-  const BASE_URL = 'https://capibara-ten.vercel.app';
-  const EXAMPLE  = { lat: '-34.603', lon: '-58.382' };
-  const TOKEN_HINT = 'cpb_tutoken';
-
-  const SNIPPETS = {
-    curl: `curl "${BASE_URL}/api/geo/1/query?lat=${EXAMPLE.lat}&lon=${EXAMPLE.lon}" \\
-  -H "Authorization: Bearer ${TOKEN_HINT}"`,
-
-    python: `import requests
-
-response = requests.get(
-    "${BASE_URL}/api/geo/1/query",
-    params={"lat": ${EXAMPLE.lat}, "lon": ${EXAMPLE.lon}},
-    headers={"Authorization": "Bearer ${TOKEN_HINT}"}
-)
-data = response.json()
-print(data)`,
-
-    js: `const response = await fetch(
-  "${BASE_URL}/api/geo/1/query?lat=${EXAMPLE.lat}&lon=${EXAMPLE.lon}",
-  { headers: { "Authorization": "Bearer ${TOKEN_HINT}" } }
-);
-const data = await response.json();
-console.log(data);`,
-
-    php: `$ch = curl_init("${BASE_URL}/api/geo/1/query?lat=${EXAMPLE.lat}&lon=${EXAMPLE.lon}");
-curl_setopt($ch, CURLOPT_HTTPHEADER, ["Authorization: Bearer ${TOKEN_HINT}"]);
-curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-$data = json_decode(curl_exec($ch), true);
-curl_close($ch);`,
-  };
-
-  let activeLang = 'curl';
-  const codeEl   = document.getElementById('snippet-code');
-  codeEl.textContent = SNIPPETS.curl;
-
-  document.getElementById('snippet-tabs').addEventListener('click', e => {
-    const btn = e.target.closest('.snippet-tab');
-    if (!btn) return;
-    activeLang = btn.dataset.lang;
-    document.querySelectorAll('.snippet-tab').forEach(t => t.classList.toggle('is-active', t === btn));
-    codeEl.textContent = SNIPPETS[activeLang];
-  });
-
-  document.getElementById('btn-copy-snippet').addEventListener('click', async () => {
-    await UTILS.copyToClipboard(SNIPPETS[activeLang], document.getElementById('btn-copy-snippet'));
-  });
-
-  // ── Explorador de cobertura ────────────────────────────────────────────
-  document.getElementById('btn-explore').addEventListener('click', async () => {
-    const lat    = document.getElementById('exp-lat').value.trim();
-    const lon    = document.getElementById('exp-lon').value.trim();
-    const token  = document.getElementById('exp-token').value.trim();
-    const result = document.getElementById('explorer-result');
-
-    if (!lat || !lon)    { TOAST.warn('Ingresá lat y lon'); return; }
-    if (!token)          { TOAST.warn('Ingresá tu token'); return; }
-    if (!token.startsWith('cpb_')) { TOAST.warn('El token debe empezar con cpb_'); return; }
-
-    result.style.display = 'block';
-    result.innerHTML = '<div class="inline-loading">Consultando…</div>';
-    PROGRESS.start();
-
-    try {
-      const res  = await fetch(`${BASE_URL}/api/geo/1/query?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}`, {
-        headers: { 'Authorization': `Bearer ${token}` },
-        cache:   'no-store',
-      });
-      const data = await res.json();
-      PROGRESS.done(!res.ok);
-
-      if (!res.ok) {
-        result.innerHTML = `<div class="error-note">Error ${res.status}: ${UTILS.escHtml(data.error || 'sin detalle')}</div>`;
-        return;
-      }
-
-      if (!data.data?.length) {
-        result.innerHTML = '<div class="muted-note">Sin datos para esa coordenada en el catálogo publicado.</div>';
-        return;
-      }
-
-      result.innerHTML = data.data.map(item => `
-        <div class="explorer-result-item">
-          <div class="explorer-result-title">${UTILS.escHtml(item.layer_name || item.layer_id)}</div>
-          <div class="explorer-result-source">${UTILS.escHtml(item.source_name || '')}${item.domain ? ` · ${UTILS.escHtml(item.domain)}` : ''}</div>
-          <pre class="explorer-result-json">${UTILS.escHtml(JSON.stringify(item.feature, null, 2))}</pre>
-        </div>
-      `).join('');
-    } catch (e) {
-      PROGRESS.done(true);
-      result.innerHTML = `<div class="error-note">Error de red: ${UTILS.escHtml(e.message)}</div>`;
-    }
-  });
-
 })();
 </script>
 
