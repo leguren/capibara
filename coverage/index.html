@@ -3,42 +3,56 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Capibara — Coverage</title>
+  <title>Capibara — Explorador</title>
   <link rel="stylesheet" href="/style/base.css">
   <link rel="stylesheet" href="/style/buttons.css">
   <link rel="stylesheet" href="/style/navbar.css">
   <link rel="stylesheet" href="/style/components.css">
   <link rel="stylesheet" href="/style/toast.css">
-  <link rel="stylesheet" href="/style/coverage.css">
+  <link rel="stylesheet" href="/style/explore.css">
 </head>
 <body>
 
 <div id="navbar-root"></div>
 <script src="/src/navbar.js"></script>
-<script>CAPIBARA_NAVBAR.renderClient('coverage');</script>
+<script>CAPIBARA_NAVBAR.renderPublic();</script>
 
-<main class="page-content">
+<main class="explore-main">
 
-  <div class="page-header">
-    <div>
-      <div class="page-title">Coverage</div>
-      <div class="page-subtitle">Mirá qué datos hay disponibles para una coordenada, sin gastar cuota ni necesitar tu key.</div>
-    </div>
+  <div class="explore-hero">
+    <h1 class="explore-title">Datos geoespaciales para cualquier coordenada</h1>
+    <p class="explore-subtitle">Ingresá una coordenada y descubrí qué datos tenemos para ese punto.</p>
   </div>
 
-  <div class="card">
-    <div class="coverage-form-row">
-      <input class="input coverage-input" id="cov-lat" placeholder="lat (ej: -34.603)">
-      <input class="input coverage-input" id="cov-lon" placeholder="lon (ej: -58.382)">
-      <button class="btn btn-primary" id="btn-coverage">Consultar</button>
-    </div>
-    <div id="coverage-result" class="coverage-result" style="display:none"></div>
+  <div class="explore-form">
+    <input class="input explore-input" id="exp-lat" placeholder="Latitud — ej: -34.6083" type="number" step="any">
+    <input class="input explore-input" id="exp-lon" placeholder="Longitud — ej: -58.3712" type="number" step="any">
+    <button class="btn btn-primary explore-btn" id="btn-explore">Consultar</button>
+  </div>
+
+  <div id="explore-mode" class="explore-mode-badge" style="display:none"></div>
+
+  <div id="explore-result" style="display:none;margin-top:24px;max-width:700px;margin-left:auto;margin-right:auto"></div>
+
+  <div class="explore-examples">
+    <span style="font-size:13px;color:var(--text2)">Ejemplos:</span>
+    <button class="explore-example-btn" data-lat="-34.6083" data-lon="-58.3712">Buenos Aires</button>
+    <button class="explore-example-btn" data-lat="-31.4167" data-lon="-64.1833">Córdoba</button>
+    <button class="explore-example-btn" data-lat="-32.8908" data-lon="-68.8272">Mendoza</button>
+    <button class="explore-example-btn" data-lat="-24.7821" data-lon="-65.4232">Salta</button>
+  </div>
+
+  <div id="explore-cta" style="display:none;margin-top:32px;text-align:center">
+    <p style="font-size:14px;color:var(--text2);margin-bottom:12px">
+      Estás viendo una muestra limitada. Registrate para acceder a todos los datos.
+    </p>
+    <a href="/login" class="btn btn-primary">Crear cuenta</a>
+    <a href="/api/geo/1/catalog" target="_blank" class="btn btn-secondary" style="margin-left:8px">Ver catálogo completo</a>
   </div>
 
 </main>
 
 <script src="/config/app.js"></script>
-<script src="/vocab/domains.js"></script>
 <script src="/src/api.js"></script>
 <script src="/src/toast.js"></script>
 <script src="/src/utils.js"></script>
@@ -49,68 +63,124 @@
 (async () => {
   'use strict';
   const AUTH     = window.CAPIBARA_AUTH;
+  const API      = window.CAPIBARA_API;
   const UTILS    = window.CAPIBARA_UTILS;
   const TOAST    = window.CAPIBARA_TOAST;
   const PROGRESS = window.CAPIBARA_PROGRESS;
-  const DOMAINS  = window.CAPIBARA_DOMAINS;
   const BASE     = window.CAPIBARA_CONFIG.API_BASE;
 
-  const user = await AUTH.requireAuth();
-  if (!user) return;
-  AUTH.renderNavUserMenu(document.getElementById('nav-user'), user);
+  // Verificar sesión silenciosamente — sin redirigir si no hay sesión
+  const { data: meData, ok: loggedIn } = await API.getMe();
+  const user = loggedIn ? meData : null;
 
-  document.getElementById('btn-coverage').addEventListener('click', async () => {
-    const lat    = document.getElementById('cov-lat').value.trim();
-    const lon    = document.getElementById('cov-lon').value.trim();
-    const result = document.getElementById('coverage-result');
+  // Con sesión, mostramos el navbar completo del área de cliente
+  if (user) {
+    CAPIBARA_NAVBAR.renderClient(null);
+    AUTH.renderNavUserMenu(document.getElementById('nav-user'), user);
+  }
 
-    if (!lat || !lon) { TOAST.warn('Ingresá lat y lon'); return; }
+  // Badge de modo
+  const modeBadge = document.getElementById('explore-mode');
+  const ctaEl     = document.getElementById('explore-cta');
+  if (user) {
+    modeBadge.style.display  = '';
+    modeBadge.className      = 'explore-mode-badge explore-mode-full';
+    modeBadge.textContent    = `✓ Sesión activa — acceso completo como ${user.email}`;
+  } else {
+    modeBadge.style.display  = '';
+    modeBadge.className      = 'explore-mode-badge explore-mode-demo';
+    modeBadge.textContent    = 'Modo demo — mostrando datos limitados. Iniciá sesión para acceso completo.';
+    ctaEl.style.display      = '';
+  }
 
-    result.style.display = 'block';
-    result.innerHTML = '<div class="inline-loading">Consultando…</div>';
+  // ── Query ───────────────────────────────────────────────────────────────
+  async function doQuery(lat, lon) {
+    const resultEl = document.getElementById('explore-result');
+    resultEl.style.display = 'block';
+    resultEl.innerHTML = '<div class="inline-loading">Consultando…</div>';
     PROGRESS.start();
 
+    const endpoint = user
+      ? `${BASE}/geo/1/query/preview?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}`
+      : `${BASE}/geo/1/query/demo?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}`;
+
     try {
-      const res  = await fetch(`${BASE}/geo/1/catalog/coverage?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}`, { cache: 'no-store' });
+      const res  = await fetch(endpoint, { cache: 'no-store' });
       const data = await res.json();
       PROGRESS.done(!res.ok);
 
       if (!res.ok) {
-        result.innerHTML = `<div class="coverage-error">Error ${res.status}: ${UTILS.escHtml(data.error || 'sin detalle')}</div>`;
+        resultEl.innerHTML = `<div style="color:var(--error);font-size:14px;text-align:center;padding:20px">
+          ${UTILS.escHtml(data.error || `Error ${res.status}`)}
+        </div>`;
         return;
       }
 
-      if (!data.total_layers) {
-        result.innerHTML = '<div class="coverage-empty">Sin datos publicados para esa coordenada.</div>';
+      if (!data.data?.length) {
+        resultEl.innerHTML = `<div style="font-size:14px;color:var(--text2);text-align:center;padding:20px">
+          Sin datos disponibles para esa coordenada en el catálogo publicado.
+        </div>`;
         return;
       }
 
-      const domainsHtml = Object.entries(data.coverage).map(([domain, layers]) => `
-        <div class="coverage-domain">
-          <div class="coverage-domain-title">${UTILS.escHtml(DOMAINS.label(domain))} (${layers.length})</div>
-          ${layers.map(l => `
-            <div class="coverage-layer-row">
-              <div>
-                <div class="coverage-layer-name">${UTILS.escHtml(l.layer_name)}</div>
-                <div class="coverage-layer-source">${UTILS.escHtml(l.source_name)}</div>
-              </div>
-              <div class="coverage-layer-meta">${l.fields_count} campos · ${UTILS.escHtml(l.update_frequency || '—')}</div>
+      resultEl.innerHTML = `
+        <div style="font-size:12px;color:var(--text2);margin-bottom:12px;text-align:center">
+          ${data.data.length} resultado${data.data.length !== 1 ? 's' : ''} para
+          <strong style="font-family:var(--font-mono)">${lat}, ${lon}</strong>
+          ${data.demo ? '· <span style="color:var(--warning)">modo demo</span>' : ''}
+        </div>
+        ${data.data.map(item => `
+          <div class="explore-result-item">
+            <div class="explore-result-header">
+              <span class="explore-result-name">${UTILS.escHtml(item.layer_name || item.layer_id)}</span>
+              ${item.domain ? `<span class="explore-result-domain">${UTILS.escHtml(item.domain)}</span>` : ''}
             </div>
-          `).join('')}
-        </div>
-      `).join('');
-
-      result.innerHTML = `
-        <div class="coverage-summary">
-          <strong>${data.total_layers}</strong> capas en <strong>${data.domains_covered}</strong> dominios · catálogo ${UTILS.escHtml(data.version)}
-        </div>
-        ${domainsHtml}
+            <div class="explore-result-source">${UTILS.escHtml(item.source_name || '')}</div>
+            ${item.feature
+              ? `<div class="explore-result-fields">
+                  ${Object.entries(item.feature).filter(([k]) => k !== 'geometry').map(([k, v]) => `
+                    <div class="explore-field-row">
+                      <span class="explore-field-key">${UTILS.escHtml(k)}</span>
+                      <span class="explore-field-val">${UTILS.escHtml(String(v ?? ''))}</span>
+                    </div>
+                  `).join('')}
+                </div>`
+              : `<div style="font-size:12px;color:var(--text3);margin-top:6px">Sin datos para este punto</div>`
+            }
+          </div>
+        `).join('')}
       `;
     } catch (e) {
       PROGRESS.done(true);
-      result.innerHTML = `<div class="coverage-error">Error de red: ${UTILS.escHtml(e.message)}</div>`;
+      resultEl.innerHTML = `<div style="color:var(--error);font-size:14px;text-align:center;padding:20px">
+        Error de red: ${UTILS.escHtml(e.message)}
+      </div>`;
     }
+  }
+
+  // ── Eventos ─────────────────────────────────────────────────────────────
+  document.getElementById('btn-explore').addEventListener('click', () => {
+    const lat = document.getElementById('exp-lat').value.trim();
+    const lon = document.getElementById('exp-lon').value.trim();
+    if (!lat || !lon) { TOAST.warn('Ingresá latitud y longitud'); return; }
+    doQuery(parseFloat(lat), parseFloat(lon));
   });
+
+  document.querySelectorAll('.explore-example-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.getElementById('exp-lat').value = btn.dataset.lat;
+      document.getElementById('exp-lon').value = btn.dataset.lon;
+      doQuery(parseFloat(btn.dataset.lat), parseFloat(btn.dataset.lon));
+    });
+  });
+
+  // Enter en inputs
+  ['exp-lat','exp-lon'].forEach(id => {
+    document.getElementById(id).addEventListener('keydown', e => {
+      if (e.key === 'Enter') document.getElementById('btn-explore').click();
+    });
+  });
+
 })();
 </script>
 
