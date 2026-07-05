@@ -6,25 +6,16 @@
   <title>Capibara — Dashboard</title>
   <link rel="stylesheet" href="/style/base.css">
   <link rel="stylesheet" href="/style/buttons.css">
+  <link rel="stylesheet" href="/style/navbar.css">
   <link rel="stylesheet" href="/style/components.css">
   <link rel="stylesheet" href="/style/toast.css">
   <link rel="stylesheet" href="/style/dashboard.css">
 </head>
 <body>
 
-<nav class="navbar">
-  <a href="/home" class="navbar-brand">Capibara</a>
-  <div class="navbar-nav">
-    <a href="/playground" class="navbar-link">Playground</a>
-    <a href="/coverage"   class="navbar-link">Coverage</a>
-    <a href="/keys"       class="navbar-link">Keys</a>
-    <a href="/dashboard"  class="navbar-link is-active">Dashboard</a>
-    <a href="/docs"       class="navbar-link">Docs</a>
-  </div>
-  <div class="navbar-spacer"></div>
-  <a href="/settings" class="navbar-icon-btn" title="Ajustes" aria-label="Ajustes">⚙</a>
-  <div class="navbar-user" id="nav-user"></div>
-</nav>
+<div id="navbar-root"></div>
+<script src="/src/navbar.js"></script>
+<script>CAPIBARA_NAVBAR.renderClient('dashboard');</script>
 
 <main class="page-content">
 
