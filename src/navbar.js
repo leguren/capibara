@@ -6,6 +6,11 @@
  * lo rellena después src/auth.js (renderNavUser / renderNavUserMenu),
  * igual que antes cuando el navbar estaba hardcodeado en cada página.
  *
+ * Tres variantes, una por tipo de página:
+ *   renderPublic() → sin sesión (landing, explore, login)
+ *   renderClient() → usuario logueado (home, keys, dashboard, playground, coverage, settings, docs)
+ *   renderAdmin()  → admin logueado (admin, sources, analytics, users, keys)
+ *
  * Uso, al principio del <body>:
  *   <div id="navbar-root"></div>
  *   <script src="/src/navbar.js"></script>
@@ -77,5 +82,27 @@ window.CAPIBARA_NAVBAR = (() => {
     `);
   }
 
-  return { renderClient, renderAdmin };
+  /**
+   * renderPublic(opts?) → navbar sin sesión (landing, explore, login)
+   * opts.showLogin: false oculta el botón "Ingresar" (ej: en la propia
+   * página de login, donde mostrarlo sería redundante). Default: true.
+   *
+   * v1 a propósito — todavía no tiene links propios (Docs, Explorador).
+   * Se completa más adelante.
+   */
+  function renderPublic(opts) {
+    const showLogin = !opts || opts.showLogin !== false;
+    mount(`
+      <nav class="navbar">
+        <a href="/" class="navbar-brand">Capibara</a>
+        <div class="navbar-spacer"></div>
+        ${showLogin ? `
+        <div class="navbar-actions" id="nav-actions">
+          <a href="/login" class="btn btn-ghost btn-sm">Ingresar</a>
+        </div>` : ''}
+      </nav>
+    `);
+  }
+
+  return { renderClient, renderAdmin, renderPublic };
 })();
