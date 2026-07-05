@@ -92,11 +92,27 @@
 }
 .docs-endpoint-desc { font-size: 12px; color: var(--text2); }
 
-.docs-code-block {
-  white-space: pre-wrap;
-  word-break:  break-all;
-  margin:      0;
+/* ── Snippets de código con tabs (curl/Python/JS/PHP) ────────────────── */
+.snippet-tabs { display: flex; gap: 2px; }
+.snippet-tab {
+  font-size:     12px;
+  padding:       5px 12px;
+  border:        1px solid var(--border);
+  border-bottom: none;
+  border-radius: var(--radius) var(--radius) 0 0;
+  background:    var(--bg2);
+  color:         var(--text2);
+  cursor:        pointer;
+  transition:    background var(--transition), color var(--transition);
 }
+.snippet-tab:hover     { background: var(--bg3); color: var(--text); }
+.snippet-tab.is-active { background: var(--bg);  color: var(--text); font-weight: 600; }
+
+.snippet-code-block {
+  margin-top:    0;
+  border-radius: 0 var(--radius-md) var(--radius-md) var(--radius-md);
+}
+.snippet-code { white-space: pre-wrap; word-break: break-all; margin: 0; }
 
 /* ── Dominios (generados desde el catálogo publicado) ────────────────── */
 .docs-domains {
