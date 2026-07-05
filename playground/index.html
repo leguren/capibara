@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Capibara — Playground</title>
+  <link rel="stylesheet" href="/style/base.css">
+  <link rel="stylesheet" href="/style/buttons.css">
+  <link rel="stylesheet" href="/style/components.css">
+  <link rel="stylesheet" href="/style/toast.css">
+  <link rel="stylesheet" href="/style/playground.css">
+</head>
+<body>
+
+<nav class="navbar">
+  <a href="/home" class="navbar-brand">Capibara</a>
+  <div class="navbar-nav">
+    <a href="/playground" class="navbar-link is-active">Playground</a>
+    <a href="/cobertura"  class="navbar-link">Cobertura</a>
+    <a href="/keys"       class="navbar-link">Keys</a>
+    <a href="/dashboard"  class="navbar-link">Dashboard</a>
+    <a href="/docs"       class="navbar-link">Docs</a>
+  </div>
+  <div class="navbar-spacer"></div>
+  <a href="/settings" class="navbar-icon-btn" title="Ajustes" aria-label="Ajustes">⚙</a>
+  <div class="navbar-user" id="nav-user"></div>
+</nav>
+
+<main class="page-content">
+
+  <div class="page-header">
+    <div>
+      <div class="page-title">Playground</div>
+      <div class="page-subtitle">Probá una consulta real contra producción con tu propia key.</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="explorer-form-row">
+      <input class="input explorer-input" id="exp-lat"   placeholder="lat (ej: -34.603)">
+      <input class="input explorer-input" id="exp-lon"   placeholder="lon (ej: -58.382)">
+      <input class="input explorer-token-input" id="exp-token" placeholder="cpb_tutoken">
+      <button class="btn btn-primary" id="btn-explore">Consultar</button>
+    </div>
+    <div id="explorer-result" class="explorer-result" style="display:none"></div>
+  </div>
+
+</main>
+
+<script src="/config/app.js"></script>
+<script src="/src/api.js"></script>
+<script src="/src/toast.js"></script>
+<script src="/src/utils.js"></script>
+<script src="/src/auth.js"></script>
+<script src="/src/progress.js"></script>
+
+<script>
+(async () => {
+  'use strict';
+  const AUTH     = window.CAPIBARA_AUTH;
+  const UTILS    = window.CAPIBARA_UTILS;
+  const TOAST    = window.CAPIBARA_TOAST;
+  const PROGRESS = window.CAPIBARA_PROGRESS;
+
+  const user = await AUTH.requireAuth();
+  if (!user) return;
+  AUTH.renderNavUserMenu(document.getElementById('nav-user'), user);
+
+  const BASE_URL = 'https://capibara-ten.vercel.app';
+
+  document.getElementById('btn-explore').addEventListener('click', async () => {
+    const lat    = document.getElementById('exp-lat').value.trim();
+    const lon    = document.getElementById('exp-lon').value.trim();
+    const token  = document.getElementById('exp-token').value.trim();
+    const result = document.getElementById('explorer-result');
+
+    if (!lat || !lon)    { TOAST.warn('Ingresá lat y lon'); return; }
+    if (!token)          { TOAST.warn('Ingresá tu token'); return; }
+    if (!token.startsWith('cpb_')) { TOAST.warn('El token debe empezar con cpb_'); return; }
+
+    result.style.display = 'block';
+    result.innerHTML = '<div class="inline-loading">Consultando…</div>';
+    PROGRESS.start();
+
+    try {
+      const res  = await fetch(`${BASE_URL}/api/geo/1/query?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+        cache:   'no-store',
+      });
+      const data = await res.json();
+      PROGRESS.done(!res.ok);
+
+      if (!res.ok) {
+        result.innerHTML = `<div class="explorer-error">Error ${res.status}: ${UTILS.escHtml(data.error || 'sin detalle')}</div>`;
+        return;
+      }
+
+      if (!data.data?.length) {
+        result.innerHTML = '<div class="explorer-empty">Sin datos para esa coordenada en el catálogo publicado.</div>';
+        return;
+      }
+
+      result.innerHTML = data.data.map(item => `
+        <div class="explorer-result-item">
+          <div class="explorer-result-title">${UTILS.escHtml(item.layer_name || item.layer_id)}</div>
+          <div class="explorer-result-source">${UTILS.escHtml(item.source_name || '')}${item.domain ? ` · ${UTILS.escHtml(item.domain)}` : ''}</div>
+          <pre class="explorer-result-json">${UTILS.escHtml(JSON.stringify(item.feature, null, 2))}</pre>
+        </div>
+      `).join('');
+    } catch (e) {
+      PROGRESS.done(true);
+      result.innerHTML = `<div class="explorer-error">Error de red: ${UTILS.escHtml(e.message)}</div>`;
+    }
+  });
+})();
+</script>
+
+</body>
+</html>
