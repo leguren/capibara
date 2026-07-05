@@ -6,23 +6,16 @@
   <title>Capibara — API Keys</title>
   <link rel="stylesheet" href="/style/base.css">
   <link rel="stylesheet" href="/style/buttons.css">
+  <link rel="stylesheet" href="/style/navbar.css">
   <link rel="stylesheet" href="/style/components.css">
   <link rel="stylesheet" href="/style/toast.css">
   <link rel="stylesheet" href="/style/admin.css">
 </head>
 <body>
 
-<nav class="navbar">
-  <a href="/admin" class="navbar-brand">Capibara</a>
-  <div class="navbar-nav">
-    <a href="/admin/sources"   class="navbar-link">Fuentes</a>
-    <a href="/admin/analytics" class="navbar-link">Analytics</a>
-    <a href="/admin/users"     class="navbar-link">Usuarios</a>
-    <a href="/admin/keys"      class="navbar-link is-active">Keys</a>
-  </div>
-  <div class="navbar-spacer"></div>
-  <div class="navbar-user" id="nav-user"></div>
-</nav>
+<div id="navbar-root"></div>
+<script src="/src/navbar.js"></script>
+<script>CAPIBARA_NAVBAR.renderAdmin('keys');</script>
 
 <main class="page-content">
   <nav class="breadcrumb">
