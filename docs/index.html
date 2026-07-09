@@ -171,7 +171,9 @@
   }
 
   // ── Snippets de código ─────────────────────────────────────────────────
-  const BASE_URL   = 'https://capibara-ten.vercel.app';
+  // BASE_URL se toma del dominio real donde está corriendo la página
+  // (funciona igual en producción, preview deploys o un dominio propio).
+  const BASE_URL   = window.location.origin;
   const EXAMPLE    = { lat: '-34.603', lon: '-58.382' };
   const TOKEN_HINT = 'cpb_tutoken';
 
