@@ -59,14 +59,14 @@ Notas:
 Versión pública sin autenticación — misma forma de respuesta que `/query`,
 pero limitada a las primeras 3 capas disponibles en el bbox consultado
 (pensada para que un prospecto pruebe sin crear cuenta, desde `/explore`).
-Limitada a 20 requests/min por IP.
+Limitada a 20 requests/min por IP (`RATE_LIMIT_DEMO_PER_MIN`).
 
 ### GET /api/geo/1/query/preview
 
 Requiere sesión (cookie), no API key — pensada para el dashboard propio,
 no para integraciones externas. Acceso completo, sin el recorte de `/demo`.
 No queda registrada en `api_usage` (no es tráfico de producción). Limitada
-a 120 requests/min por usuario.
+a 120 requests/min por usuario (`RATE_LIMIT_PREVIEW_PER_MIN`).
 
 ### GET /api/geo/1/catalog
 
@@ -98,9 +98,10 @@ No requiere API key.
 
 ## Rate limiting
 
-Cada API key tiene un límite de requests por minuto (60/min por default en
-el piloto, configurable por key vía la columna `rate_limit` — sin UI en el
-panel todavía). Al excederlo, la respuesta es:
+Cada API key tiene un límite de requests por minuto. Si la key no tiene un
+`rate_limit` propio seteado en la DB (sin UI en el panel todavía), se usa
+el default global — 60/min, configurable vía la variable de entorno
+`RATE_LIMIT_KEY_PER_MIN` (ver `docs/deploy.md`). Al excederlo, la respuesta es:
 
 Respuesta 429:
 { "error": "Límite de 60 requests/min excedido para esta key." }
