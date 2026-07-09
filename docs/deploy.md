@@ -34,7 +34,7 @@ El schema se crea automáticamente en el primer request. No hace falta correr na
 
 1. Crear repositorio en github.com → nombre: `capibara` → privado.
 2. Subir el contenido del ZIP: arrastrar todos los archivos al repositorio desde la interfaz web de GitHub, o usar Upload files.
-3. Verificar que la estructura quede así en la raíz: `api/`, `admin/`, `dashboard/`, `login/`, `publish/`, `src/`, `style/`, `vocab/`, `config/`, `docs/`, `migrations/`, `vercel.json`, `package.json`.
+3. Verificar que la estructura quede así en la raíz: `api/`, `admin/`, `dashboard/`, `login/`, `publish/`, `src/`, `style/`, `vocab/`, `config/`, `docs/`, `vercel.json`, `package.json`.
 
 ---
 
@@ -110,6 +110,34 @@ Sin esta regla, Cloudflare podría cachear páginas del panel y servir la sesió
 ### 5e. SSL
 
 Cloudflare maneja SSL automáticamente en el plan free. Verificar que SSL/TLS → Overview esté en modo "Full" (no "Flexible").
+
+---
+
+## Paso 5f: Tabla nueva en una DB ya inicializada (rate limiting)
+
+`initSchema()` (en `api/_db.js`) solo crea el schema completo la primera vez
+que corre contra una DB vacía — si ya hiciste el deploy inicial y tu DB en
+Turso ya tiene la tabla `users`, las tablas nuevas que se agreguen después
+**no se crean solas**. La tabla `rate_limit_hits` (usada por el rate limiting
+de `/api/geo/1/query` y `/demo`) se agregó después del primer deploy, así que
+si tu DB ya estaba inicializada, correla a mano una sola vez:
+
+1. dash.turso.tech → seleccionar la DB `capibara` → Shell.
+2. Correr:
+```sql
+CREATE TABLE IF NOT EXISTS rate_limit_hits (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  bucket TEXT NOT NULL, requested_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_rate_limit_hits_bucket ON rate_limit_hits(bucket, requested_at);
+```
+3. (Opcional, limpieza) Si ya habías llegado a usar `layer_dependencies` en algún momento, se puede borrar — ya no se usa:
+```sql
+DROP TABLE IF EXISTS layer_dependencies;
+```
+
+En un deploy nuevo contra una DB vacía esto no hace falta — `initSchema()`
+va a crear todo, incluida `rate_limit_hits`, en el primer cold start.
 
 ---
 
