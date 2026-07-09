@@ -54,6 +54,20 @@ Notas:
 - cache_ttl: segundos. Basado en el update_frequency de la capa más dinámica del resultado.
 - El header Cache-Control se setea automáticamente con s-maxage=cache_ttl.
 
+### GET /api/geo/1/query/demo
+
+Versión pública sin autenticación — misma forma de respuesta que `/query`,
+pero limitada a las primeras 3 capas disponibles en el bbox consultado
+(pensada para que un prospecto pruebe sin crear cuenta, desde `/explore`).
+Limitada a 20 requests/min por IP.
+
+### GET /api/geo/1/query/preview
+
+Requiere sesión (cookie), no API key — pensada para el dashboard propio,
+no para integraciones externas. Acceso completo, sin el recorte de `/demo`.
+No queda registrada en `api_usage` (no es tráfico de producción). Limitada
+a 120 requests/min por usuario.
+
 ### GET /api/geo/1/catalog
 
 Catálogo público de metadatos. No requiere API key.
@@ -82,16 +96,23 @@ No requiere API key.
 | unknown          | 6 horas         |
 | continual        | sin caché       |
 
-## Cadena de resolución (layer_dependencies)
+## Rate limiting
 
-Algunas capas dependen del resultado de otras.
-Ejemplo: Demographics necesita el municipality_id que devuelve la capa Municipality.
+Cada API key tiene un límite de requests por minuto (60/min por default en
+el piloto, configurable por key vía la columna `rate_limit` — sin UI en el
+panel todavía). Al excederlo, la respuesta es:
 
-El algoritmo:
-1. Ordena las capas topológicamente (resolveLoadOrder)
-2. Detecta ciclos y los ignora con warning
-3. Ejecuta en orden: las capas padre primero
-4. Pasa los campos del resultado de la capa padre como parámetros a la capa hija
+Respuesta 429:
+{ "error": "Límite de 60 requests/min excedido para esta key." }
+
+Incluye el header `Retry-After` (segundos hasta que se libera cupo).
+
+## Cadena de resolución entre capas
+
+No implementado todavía. Cada capa se resuelve de forma independiente — no
+hay forma hoy de que una capa use el resultado de otra como input (ej. una
+capa de demografía que necesite el `municipality_id` que devuelve una capa
+de municipios). Ver `docs/ROADMAP.md` → "Dependencias entre capas".
 
 ## Normalización de coordenadas
 
