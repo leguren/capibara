@@ -83,12 +83,15 @@ window.CAPIBARA_NAVBAR = (() => {
   }
 
   /**
-   * renderPublic(opts?) → navbar sin sesión (landing, explore, login)
+   * renderPublic(opts?) → navbar sin sesión obligatoria (landing, explore, login)
    * opts.showLogin: false oculta el botón "Ingresar" (ej: en la propia
    * página de login, donde mostrarlo sería redundante). Default: true.
    *
-   * v1 a propósito — todavía no tiene links propios (Docs, Explorador).
-   * Se completa más adelante.
+   * Deja montado #nav-actions (botón "Ingresar") y #nav-user (vacío,
+   * class="navbar-user") — si la página verifica sesión y hay usuario
+   * logueado, llamar a AUTH.renderNavUserMenu(document.getElementById('nav-user'), user)
+   * y ocultar #nav-actions con .is-hidden. Landing y login hoy no
+   * verifican sesión (siempre muestran "Ingresar"); explore sí.
    */
   function renderPublic(opts) {
     const showLogin = !opts || opts.showLogin !== false;
@@ -96,10 +99,10 @@ window.CAPIBARA_NAVBAR = (() => {
       <nav class="navbar">
         <a href="/" class="navbar-brand">Capibara</a>
         <div class="navbar-spacer"></div>
-        ${showLogin ? `
         <div class="navbar-actions" id="nav-actions">
-          <a href="/login" class="btn btn-ghost btn-sm">Ingresar</a>
-        </div>` : ''}
+          ${showLogin ? `<a href="/login" class="btn btn-ghost btn-sm">Ingresar</a>` : ''}
+        </div>
+        <div class="navbar-user" id="nav-user"></div>
       </nav>
     `);
   }
