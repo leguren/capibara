@@ -53,12 +53,6 @@ const TABLES = [
     included INTEGER NOT NULL DEFAULT 0,
     metadata TEXT NOT NULL DEFAULT '{}', notes TEXT, discovered_at TEXT NOT NULL)`,
 
-  `CREATE TABLE IF NOT EXISTS layer_dependencies (
-    layer_id TEXT NOT NULL REFERENCES layers(id) ON DELETE CASCADE,
-    depends_on_id TEXT NOT NULL REFERENCES layers(id) ON DELETE CASCADE,
-    input_field TEXT NOT NULL, output_param TEXT NOT NULL,
-    PRIMARY KEY (layer_id, depends_on_id))`,
-
   `CREATE TABLE IF NOT EXISTS fields (
     id TEXT PRIMARY KEY,
     layer_id TEXT NOT NULL REFERENCES layers(id) ON DELETE CASCADE,
@@ -88,6 +82,13 @@ const TABLES = [
     key_id TEXT NOT NULL REFERENCES api_keys(id),
     endpoint TEXT NOT NULL, lat REAL, lon REAL,
     status_code INTEGER NOT NULL, response_ms INTEGER, requested_at TEXT NOT NULL)`,
+
+  // rate_limit_hits — usada por api/_ratelimit.js. bucket identifica a
+  // quién se limita (ej. 'key:key_123' o 'demo_ip:1.2.3.4'); no tiene FK
+  // a propósito, para poder limitar también por IP (sin key asociada).
+  `CREATE TABLE IF NOT EXISTS rate_limit_hits (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    bucket TEXT NOT NULL, requested_at TEXT NOT NULL)`,
 ];
 
 const INDEXES = [
@@ -109,6 +110,7 @@ const INDEXES = [
   `CREATE INDEX IF NOT EXISTS idx_publications_created_at ON publications(created_at DESC)`,
   `CREATE INDEX IF NOT EXISTS idx_api_usage_key_id ON api_usage(key_id)`,
   `CREATE INDEX IF NOT EXISTS idx_api_usage_requested_at ON api_usage(requested_at DESC)`,
+  `CREATE INDEX IF NOT EXISTS idx_rate_limit_hits_bucket ON rate_limit_hits(bucket, requested_at)`,
 ];
 
 /**
