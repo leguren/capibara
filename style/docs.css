@@ -114,6 +114,12 @@
 }
 .snippet-code { white-space: pre-wrap; word-break: break-all; margin: 0; }
 
+.docs-response-label {
+  margin-top:    16px;
+  font-weight:   600;
+  color:         var(--text);
+}
+
 /* ── Dominios (generados desde el catálogo publicado) ────────────────── */
 .docs-domains {
   display:               grid;
