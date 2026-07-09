@@ -40,6 +40,15 @@
   </section>
 
   <section class="docs-section">
+    <div class="docs-section-title">Rate limiting</div>
+    <p class="docs-p">
+      Cada key tiene un límite de 60 requests/minuto por default. Si lo superás, la
+      respuesta es <code>429</code> con un header <code>Retry-After</code> (segundos hasta
+      que se libera cupo). Si tu caso de uso necesita un límite más alto, escribinos.
+    </p>
+  </section>
+
+  <section class="docs-section">
     <div class="docs-section-title">Endpoints</div>
 
     <div class="docs-endpoint">
@@ -103,6 +112,29 @@
       <button class="code-block-copy" id="btn-copy-snippet">Copiar</button>
       <pre id="snippet-code" class="snippet-code"></pre>
     </div>
+
+    <p class="docs-p docs-response-label">Respuesta</p>
+    <div class="code-block">
+      <pre class="snippet-code">{
+  "lat": -34.603,
+  "lon": -58.382,
+  "cache_ttl": 86400,
+  "data": [
+    {
+      "source_name": "IGN",
+      "layer_name": "Provincias",
+      "domain": "geo",
+      "feature": { "Provincia": "Buenos Aires", "Código": "06" }
+    }
+  ],
+  "errors": []
+}</pre>
+    </div>
+    <p class="docs-p">
+      <code>errors</code> solo aparece si alguna fuente falló — la respuesta es parcial,
+      no falla completa. <code>cache_ttl</code> son segundos, según qué tan seguido se
+      actualiza la fuente más dinámica del resultado.
+    </p>
   </section>
 
   <section class="docs-section">
