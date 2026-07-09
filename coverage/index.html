@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Capibara — Explorador</title>
+  <title>Capibara — Coverage</title>
   <link rel="stylesheet" href="/style/base.css">
   <link rel="stylesheet" href="/style/buttons.css">
   <link rel="stylesheet" href="/style/navbar.css">
@@ -15,7 +15,6 @@
 
 <div id="navbar-root"></div>
 <script src="/src/navbar.js"></script>
-<script>CAPIBARA_NAVBAR.renderPublic();</script>
 
 <main class="explore-main">
 
@@ -30,24 +29,24 @@
     <button class="btn btn-primary explore-btn" id="btn-explore">Consultar</button>
   </div>
 
-  <div id="explore-mode" class="explore-mode-badge" style="display:none"></div>
+  <div id="explore-mode" class="explore-mode-badge is-hidden"></div>
 
-  <div id="explore-result" style="display:none;margin-top:24px;max-width:700px;margin-left:auto;margin-right:auto"></div>
+  <div id="explore-result" class="explore-result is-hidden"></div>
 
   <div class="explore-examples">
-    <span style="font-size:13px;color:var(--text2)">Ejemplos:</span>
+    <span class="explore-examples-label">Ejemplos:</span>
     <button class="explore-example-btn" data-lat="-34.6083" data-lon="-58.3712">Buenos Aires</button>
     <button class="explore-example-btn" data-lat="-31.4167" data-lon="-64.1833">Córdoba</button>
     <button class="explore-example-btn" data-lat="-32.8908" data-lon="-68.8272">Mendoza</button>
     <button class="explore-example-btn" data-lat="-24.7821" data-lon="-65.4232">Salta</button>
   </div>
 
-  <div id="explore-cta" style="display:none;margin-top:32px;text-align:center">
-    <p style="font-size:14px;color:var(--text2);margin-bottom:12px">
+  <div id="explore-cta" class="explore-cta is-hidden">
+    <p class="explore-cta-text">
       Estás viendo una muestra limitada. Registrate para acceder a todos los datos.
     </p>
     <a href="/login" class="btn btn-primary">Crear cuenta</a>
-    <a href="/api/geo/1/catalog" target="_blank" class="btn btn-secondary" style="margin-left:8px">Ver catálogo completo</a>
+    <a href="/api/geo/1/catalog" target="_blank" class="btn btn-secondary ml-8">Ver catálogo completo</a>
   </div>
 
 </main>
@@ -69,34 +68,33 @@
   const PROGRESS = window.CAPIBARA_PROGRESS;
   const BASE     = window.CAPIBARA_CONFIG.API_BASE;
 
-  // Verificar sesión silenciosamente — sin redirigir si no hay sesión
+  // Sesión silenciosa — se decide UNA sola vez qué navbar mostrar
+  // (mismo patrón que /docs, evita el bug de doble-render de /coverage).
   const { data: meData, ok: loggedIn } = await API.getMe();
   const user = loggedIn ? meData : null;
-
-  // Con sesión, mostramos el navbar completo del área de cliente
   if (user) {
     CAPIBARA_NAVBAR.renderClient(null);
     AUTH.renderNavUserMenu(document.getElementById('nav-user'), user);
+  } else {
+    CAPIBARA_NAVBAR.renderPublic();
   }
 
   // Badge de modo
   const modeBadge = document.getElementById('explore-mode');
   const ctaEl     = document.getElementById('explore-cta');
   if (user) {
-    modeBadge.style.display  = '';
     modeBadge.className      = 'explore-mode-badge explore-mode-full';
     modeBadge.textContent    = `✓ Sesión activa — acceso completo como ${user.email}`;
   } else {
-    modeBadge.style.display  = '';
     modeBadge.className      = 'explore-mode-badge explore-mode-demo';
     modeBadge.textContent    = 'Modo demo — mostrando datos limitados. Iniciá sesión para acceso completo.';
-    ctaEl.style.display      = '';
+    ctaEl.classList.remove('is-hidden');
   }
 
   // ── Query ───────────────────────────────────────────────────────────────
   async function doQuery(lat, lon) {
     const resultEl = document.getElementById('explore-result');
-    resultEl.style.display = 'block';
+    resultEl.classList.remove('is-hidden');
     resultEl.innerHTML = '<div class="inline-loading">Consultando…</div>';
     PROGRESS.start();
 
@@ -110,24 +108,24 @@
       PROGRESS.done(!res.ok);
 
       if (!res.ok) {
-        resultEl.innerHTML = `<div style="color:var(--error);font-size:14px;text-align:center;padding:20px">
+        resultEl.innerHTML = `<div class="explore-message explore-message-error">
           ${UTILS.escHtml(data.error || `Error ${res.status}`)}
         </div>`;
         return;
       }
 
       if (!data.data?.length) {
-        resultEl.innerHTML = `<div style="font-size:14px;color:var(--text2);text-align:center;padding:20px">
+        resultEl.innerHTML = `<div class="explore-message explore-message-muted">
           Sin datos disponibles para esa coordenada en el catálogo publicado.
         </div>`;
         return;
       }
 
       resultEl.innerHTML = `
-        <div style="font-size:12px;color:var(--text2);margin-bottom:12px;text-align:center">
+        <div class="explore-result-summary">
           ${data.data.length} resultado${data.data.length !== 1 ? 's' : ''} para
-          <strong style="font-family:var(--font-mono)">${lat}, ${lon}</strong>
-          ${data.demo ? '· <span style="color:var(--warning)">modo demo</span>' : ''}
+          <strong class="explore-result-coords">${lat}, ${lon}</strong>
+          ${data.demo ? '· <span class="explore-demo-tag">modo demo</span>' : ''}
         </div>
         ${data.data.map(item => `
           <div class="explore-result-item">
@@ -145,14 +143,14 @@
                     </div>
                   `).join('')}
                 </div>`
-              : `<div style="font-size:12px;color:var(--text3);margin-top:6px">Sin datos para este punto</div>`
+              : `<div class="explore-field-empty">Sin datos para este punto</div>`
             }
           </div>
         `).join('')}
       `;
     } catch (e) {
       PROGRESS.done(true);
-      resultEl.innerHTML = `<div style="color:var(--error);font-size:14px;text-align:center;padding:20px">
+      resultEl.innerHTML = `<div class="explore-message explore-message-error">
         Error de red: ${UTILS.escHtml(e.message)}
       </div>`;
     }
