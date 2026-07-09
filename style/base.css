@@ -201,6 +201,12 @@ code, pre, .mono {
 .mb-10 { margin-bottom: 10px; }
 .mb-12 { margin-bottom: 12px; }
 .mb-14 { margin-bottom: 14px; }
+.ml-8  { margin-left: 8px; }
+
+/* ── Visibilidad ────────────────────────────────────────────────────────
+   Reemplaza el patrón style="display:none" — togglear con
+   classList.add/remove('is-hidden') en vez de tocar .style directamente. */
+.is-hidden { display: none !important; }
 
 /* ── Empty state ────────────────────────────────────────────────────────── */
 .empty-state {
