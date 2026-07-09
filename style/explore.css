@@ -151,12 +151,3 @@
   color:         var(--text2);
   margin-bottom: 12px;
 }
-
-/* ── Navbar — usuario logueado ─────────────────────────────────────────── */
-.explore-nav-user {
-  display:     flex;
-  align-items: center;
-  gap:         12px;
-  font-size:   13px;
-  color:       rgba(255,255,255,0.85);
-}
