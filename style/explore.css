@@ -61,6 +61,11 @@
   margin-top:      20px;
 }
 
+.explore-examples-label {
+  font-size: 13px;
+  color:     var(--text2);
+}
+
 .explore-example-btn {
   font-size:     12px;
   padding:       4px 12px;
@@ -101,3 +106,57 @@
 
 .explore-field-key { color: var(--text2); font-family: var(--font-mono); white-space: nowrap; }
 .explore-field-val { color: var(--text);  font-family: var(--font-mono); word-break: break-word; }
+
+.explore-field-empty {
+  font-size:  12px;
+  color:      var(--text3);
+  margin-top: 6px;
+}
+
+/* ── Contenedor de resultados ─────────────────────────────────────────── */
+.explore-result {
+  margin-top:  24px;
+  max-width:   700px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.explore-result-summary {
+  font-size:     12px;
+  color:         var(--text2);
+  margin-bottom: 12px;
+  text-align:    center;
+}
+
+.explore-result-coords { font-family: var(--font-mono); }
+.explore-demo-tag      { color: var(--warning); }
+
+/* ── Mensajes de estado (error, sin datos, error de red) ──────────────── */
+.explore-message {
+  font-size:  14px;
+  text-align: center;
+  padding:    20px;
+}
+.explore-message-error { color: var(--error); }
+.explore-message-muted { color: var(--text2); }
+
+/* ── CTA de registro (modo demo) ───────────────────────────────────────── */
+.explore-cta {
+  margin-top: 32px;
+  text-align: center;
+}
+
+.explore-cta-text {
+  font-size:     14px;
+  color:         var(--text2);
+  margin-bottom: 12px;
+}
+
+/* ── Navbar — usuario logueado ─────────────────────────────────────────── */
+.explore-nav-user {
+  display:     flex;
+  align-items: center;
+  gap:         12px;
+  font-size:   13px;
+  color:       rgba(255,255,255,0.85);
+}
