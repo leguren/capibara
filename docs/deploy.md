@@ -57,6 +57,16 @@ SESSION_SECRET         (string aleatorio largo — ver abajo cómo generarlo)
 
 Para generar SESSION_SECRET: ir a generate-secret.vercel.app o usar cualquier generador de strings aleatorios de 48+ caracteres.
 
+Opcionales (tienen default razonable si no se setean — ver `api/geo/query.js`):
+
+```
+SESSION_TTL_MS              duración de la sesión en ms. Default: 7 días.
+RATE_LIMIT_KEY_PER_MIN      requests/min por API key sin límite propio. Default: 60.
+RATE_LIMIT_DEMO_PER_MIN     requests/min por IP en /api/geo/1/query/demo. Default: 20.
+RATE_LIMIT_PREVIEW_PER_MIN  requests/min por usuario en /api/geo/1/query/preview. Default: 120.
+RATE_LIMIT_WINDOW_SECONDS   tamaño de la ventana deslizante del rate limit, en segundos. Default: 60.
+```
+
 6. Redeploy desde el dashboard de Vercel (Deployments → tres puntos → Redeploy).
 
 ---
