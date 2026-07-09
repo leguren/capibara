@@ -6,17 +6,16 @@
   <title>Capibara — Explorador</title>
   <link rel="stylesheet" href="/style/base.css">
   <link rel="stylesheet" href="/style/buttons.css">
+  <link rel="stylesheet" href="/style/navbar.css">
   <link rel="stylesheet" href="/style/components.css">
   <link rel="stylesheet" href="/style/toast.css">
   <link rel="stylesheet" href="/style/explore.css">
 </head>
 <body>
 
-<nav class="navbar">
-  <a href="/" class="navbar-brand">Capibara</a>
-  <div class="navbar-spacer"></div>
-  <div id="nav-right"></div>
-</nav>
+<div id="navbar-root"></div>
+<script src="/src/navbar.js"></script>
+<script>CAPIBARA_NAVBAR.renderPublic();</script>
 
 <main class="explore-main">
 
@@ -64,6 +63,7 @@
 (async () => {
   'use strict';
   const API      = window.CAPIBARA_API;
+  const AUTH     = window.CAPIBARA_AUTH;
   const UTILS    = window.CAPIBARA_UTILS;
   const TOAST    = window.CAPIBARA_TOAST;
   const PROGRESS = window.CAPIBARA_PROGRESS;
@@ -73,16 +73,12 @@
   const { data: meData, ok: loggedIn } = await API.getMe();
   const user = loggedIn ? meData : null;
 
-  // Actualizar navbar
-  const navRight = document.getElementById('nav-right');
+  // Actualizar navbar — si hay sesión, mostrar el menú de usuario (mismo
+  // componente que usan las páginas de cliente) en vez del botón "Ingresar".
   if (user) {
-    navRight.innerHTML = `
-      <div class="explore-nav-user">
-        <span>${UTILS.escHtml(user.name || user.email)}</span>
-        <a href="/home" class="btn btn-ghost btn-sm">Mi cuenta</a>
-      </div>`;
-  } else {
-    navRight.innerHTML = `<a href="/login" class="btn btn-ghost btn-sm">Iniciar sesión</a>`;
+    document.getElementById('nav-actions').classList.add('is-hidden');
+    document.querySelector('.navbar-brand').setAttribute('href', '/home');
+    AUTH.renderNavUserMenu(document.getElementById('nav-user'), user);
   }
 
   // Badge de modo
