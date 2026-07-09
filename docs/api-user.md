@@ -9,7 +9,7 @@ POST   /api/user/keys          → crea una key nueva — devuelve el token UNA 
 PATCH  /api/user/keys?id=      → actualiza label o active
 DELETE /api/user/keys?id=      → elimina la key
 
-POST body: { label: string, type: 'rest'|'mcp' }
+POST body: { label: string } — el tipo siempre es 'rest' (único soportado hoy, ver ROADMAP.md)
 
 Response de POST:
 {
