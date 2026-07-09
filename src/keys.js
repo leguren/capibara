@@ -38,13 +38,6 @@ window.CAPIBARA_KEYS = (() => {
             <input class="input" id="key-label" placeholder="Mi aplicación, Producción…">
             <span class="form-hint">Solo para identificar la key en tu lista.</span>
           </div>
-          <div class="form-group">
-            <label class="form-label">Tipo</label>
-            <select class="select" id="key-type">
-              <option value="rest">REST — clientes HTTP estándar</option>
-              <option value="mcp">MCP — agentes IA</option>
-            </select>
-          </div>
           <div id="new-token-area" style="display:none;margin-top:16px">
             <div class="api-key-warning">⚠️ Copiá este token ahora. No se muestra de nuevo.</div>
             <div class="code-block" id="new-token-value" style="word-break:break-all"></div>
@@ -66,13 +59,12 @@ window.CAPIBARA_KEYS = (() => {
 
     overlay.querySelector('#modal-save').addEventListener('click', async () => {
       const label = overlay.querySelector('#key-label').value.trim();
-      const type  = overlay.querySelector('#key-type').value;
       if (!label) { TOAST.warn('Ingresá un nombre para la key'); return; }
 
       const btn = overlay.querySelector('#modal-save');
       btn.classList.add('btn-loading');
       PROGRESS.start();
-      const { data, ok, error } = await API.createKey({ label, type });
+      const { data, ok, error } = await API.createKey({ label, type: 'rest' });
       btn.classList.remove('btn-loading');
 
       if (!ok) { PROGRESS.done(true); TOAST.error('Error al crear key', error); return; }
