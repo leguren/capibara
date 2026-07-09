@@ -38,8 +38,10 @@ style/        CSS modular
 vocab/        Traducciones de códigos
 config/       Config del frontend
 docs/         Documentación
-migrations/   Schema SQL
 ```
+
+El schema de la base vive en `api/_db.js` (se crea solo en el primer cold start
+contra una DB vacía — no hay carpeta de migraciones separada).
 
 ## Documentación
 
