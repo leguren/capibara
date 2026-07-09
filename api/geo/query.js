@@ -9,6 +9,7 @@ const { getDb }          = require('../_turso');
 const { initSchema, getLatestPublication, logUsage } = require('../_db');
 const { requireApiKey, verifySession } = require('../_auth');
 const { getConnector }   = require('../_connectors/_registry');
+const { checkRateLimit, getClientIp } = require('../_ratelimit');
 const { safeJson }       = require('../_utils');
 
 const CACHE_TTL = {
@@ -18,20 +19,14 @@ const CACHE_TTL = {
   unknown: 6*3600, continual: 0,
 };
 
-function resolveLoadOrder(layers) {
-  const layerMap = new Map(layers.map(l => [l.id, l]));
-  const visited  = new Set();
-  const result   = [];
-  function visit(layer, chain = new Set()) {
-    if (chain.has(layer.id) || visited.has(layer.id)) return;
-    chain.add(layer.id);
-    for (const dep of (layer.dependencies || [])) { const parent = layerMap.get(dep.depends_on_id); if (parent) visit(parent, new Set(chain)); }
-    visited.add(layer.id);
-    result.push(layer);
-  }
-  for (const layer of layers) visit(layer);
-  return result;
-}
+// Rate limiting — ver api/_ratelimit.js.
+// DEFAULT_KEY_RATE_LIMIT se usa cuando la key no tiene rate_limit propio seteado
+// (hoy ninguna lo tiene — es el default del piloto hasta que se soporte
+// límites por tier desde el panel admin).
+const DEFAULT_KEY_RATE_LIMIT = 60;  // requests/min por API key
+const DEMO_RATE_LIMIT        = 20;  // requests/min por IP en /demo (público, sin key)
+const PREVIEW_RATE_LIMIT     = 120; // requests/min por usuario en /preview (dashboard propio)
+const RATE_WINDOW_SECONDS    = 60;
 
 function applyFieldAliases(feature, fields) {
   if (!feature) return null;
@@ -64,12 +59,11 @@ async function executeGeoQuery(lat, lon, layersFromPub, userId, db) {
   }
 
   const activeLayers = layersFromPub.filter(l => !excludedLayers.has(l.id));
-  const sorted       = resolveLoadOrder(activeLayers);
-  const data = [], errors = [], resolvedBy = {};
+  const data = [], errors = [];
   let minTtl = CACHE_TTL.not_planned;
 
   const bySource = new Map();
-  for (const layer of sorted) {
+  for (const layer of activeLayers) {
     if (!bySource.has(layer.source.id)) bySource.set(layer.source.id, { source: layer.source, layers: [] });
     bySource.get(layer.source.id).layers.push(layer);
   }
@@ -80,15 +74,9 @@ async function executeGeoQuery(lat, lon, layersFromPub, userId, db) {
     for (const layer of layers) {
       const layerTtl = CACHE_TTL[layer.update_frequency] ?? CACHE_TTL.unknown;
       if (layerTtl < minTtl) minTtl = layerTtl;
-      let extra = {};
-      for (const dep of (layer.dependencies || [])) {
-        const p = resolvedBy[dep.depends_on_id];
-        if (p?.[dep.input_field] !== undefined) extra[dep.output_param] = p[dep.input_field];
-      }
       try {
-        const { feature, error } = await entry.connector.getFeatureAtPoint({ ...source.connection_params, ...extra }, layer.name_source, lat, lon);
+        const { feature, error } = await entry.connector.getFeatureAtPoint(source.connection_params, layer.name_source, lat, lon);
         if (error) { errors.push({ layer_id: layer.id, layer_name: layer.name_alias || layer.name_source, error }); return; }
-        if (feature) resolvedBy[layer.id] = feature;
         const visibleFields  = (layer.fields || []).filter(f => !excludedFields.has(f.id));
         const aliasedFeature = applyFieldAliases(feature, visibleFields);
         data.push({ source_id: source.id, source_name: source.name_alias || source.name_source || source.id, layer_id: layer.id, layer_name: layer.name_alias || layer.name_source, domain: layer.domain, feature: aliasedFeature });
@@ -124,7 +112,15 @@ async function handleDemo(req, res) {
   const lat = Math.round(rawLat * 1000) / 1000;
   const lon = Math.round(rawLon * 1000) / 1000;
 
-  const db  = getDb();
+  const db = getDb();
+
+  const ip = getClientIp(req);
+  const rl = await checkRateLimit(db, `demo_ip:${ip}`, DEMO_RATE_LIMIT, RATE_WINDOW_SECONDS);
+  if (!rl.allowed) {
+    res.setHeader('Retry-After', String(rl.retryAfter));
+    return res.status(429).json({ error: 'Demasiadas consultas al demo desde esta IP. Probá de nuevo en un minuto, o creá una cuenta para acceso sin este límite.' });
+  }
+
   const pub = await getLatestPublication(db);
   if (!pub) return res.status(503).json({ error: 'No hay datos publicados aún' });
 
@@ -167,7 +163,14 @@ async function handlePreview(req, res) {
   const lon = Math.round(rawLon * 1000) / 1000;
   const domains = req.query.domain ? req.query.domain.split(',').map(d => d.trim()) : null;
 
-  const db  = getDb();
+  const db = getDb();
+
+  const rl = await checkRateLimit(db, `preview_user:${session.userId}`, PREVIEW_RATE_LIMIT, RATE_WINDOW_SECONDS);
+  if (!rl.allowed) {
+    res.setHeader('Retry-After', String(rl.retryAfter));
+    return res.status(429).json({ error: 'Demasiadas consultas de preview. Probá de nuevo en un minuto.' });
+  }
+
   const pub = await getLatestPublication(db);
   if (!pub) return res.status(503).json({ error: 'No hay datos publicados aún' });
 
@@ -206,6 +209,16 @@ module.exports = async function handler(req, res) {
   const keyInfo = await requireApiKey(req, res);
   if (!keyInfo) return;
 
+  const db = getDb();
+
+  const keyLimit = keyInfo.rateLimit || DEFAULT_KEY_RATE_LIMIT;
+  const rl = await checkRateLimit(db, `key:${keyInfo.keyId}`, keyLimit, RATE_WINDOW_SECONDS);
+  if (!rl.allowed) {
+    res.setHeader('Retry-After', String(rl.retryAfter));
+    logUsage({ keyId: keyInfo.keyId, endpoint: '/api/geo/1/query', statusCode: 429, responseMs: Date.now() - startMs });
+    return res.status(429).json({ error: `Límite de ${keyLimit} requests/min excedido para esta key.` });
+  }
+
   const rawLat   = parseFloat(req.query.lat);
   const rawLon   = parseFloat(req.query.lon);
   const precision = Math.min(Math.max(parseInt(req.query.precision || '3', 10), 1), 8);
@@ -218,7 +231,6 @@ module.exports = async function handler(req, res) {
   const lat    = Math.round(rawLat * factor) / factor;
   const lon    = Math.round(rawLon * factor) / factor;
 
-  const db = getDb();
   const pub = await getLatestPublication(db);
   if (!pub) return res.status(503).json({ error: 'No hay datos publicados aún' });
 
