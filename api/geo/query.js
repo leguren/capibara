@@ -20,13 +20,15 @@ const CACHE_TTL = {
 };
 
 // Rate limiting — ver api/_ratelimit.js.
-// DEFAULT_KEY_RATE_LIMIT se usa cuando la key no tiene rate_limit propio seteado
-// (hoy ninguna lo tiene — es el default del piloto hasta que se soporte
-// límites por tier desde el panel admin).
-const DEFAULT_KEY_RATE_LIMIT = 60;  // requests/min por API key
-const DEMO_RATE_LIMIT        = 20;  // requests/min por IP en /demo (público, sin key)
-const PREVIEW_RATE_LIMIT     = 120; // requests/min por usuario en /preview (dashboard propio)
-const RATE_WINDOW_SECONDS    = 60;
+// Todos configurables por variable de entorno (mismo patrón que SESSION_TTL_MS
+// en api/_auth.js), para no tener que redeployar para ajustar un límite.
+// RATE_LIMIT_KEY_PER_MIN se usa cuando la key no tiene rate_limit propio
+// seteado en la DB (hoy ninguna lo tiene — falta UI en el panel admin,
+// ver ROADMAP.md → "Rate limit configurable por key/tier").
+const DEFAULT_KEY_RATE_LIMIT = parseInt(process.env.RATE_LIMIT_KEY_PER_MIN     || '60',  10);
+const DEMO_RATE_LIMIT        = parseInt(process.env.RATE_LIMIT_DEMO_PER_MIN    || '20',  10);
+const PREVIEW_RATE_LIMIT     = parseInt(process.env.RATE_LIMIT_PREVIEW_PER_MIN || '120', 10);
+const RATE_WINDOW_SECONDS    = parseInt(process.env.RATE_LIMIT_WINDOW_SECONDS  || '60',  10);
 
 function applyFieldAliases(feature, fields) {
   if (!feature) return null;
