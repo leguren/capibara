@@ -50,14 +50,41 @@ A partir del catálogo publicado, generar una página de docs con:
 Implementar como una página pública (`/docs`) generada desde `getLatestPublication()`.
 
 ### Dependencias entre capas
-La tabla `layer_dependencies` existe en el schema pero no tiene UI.
-Permite que una capa enriquezca sus respuestas con datos de otra
-(ej: un punto de interés que hereda datos del municipio que lo contiene).
+Idea: permitir que una capa enriquezca sus respuestas con datos de otra
+(ej: un punto de interés que hereda datos del municipio que lo contiene,
+consultando primero el polígono y usando un campo del resultado como
+input de la segunda consulta).
 
-UI necesaria:
-- En el modal de editar capa, sección "Depende de" con selector de capas
-- En el panel, indicar visualmente qué capas tienen dependencias
-- En el query engine, resolver dependencias antes de responder
+Existió una implementación parcial (tabla `layer_dependencies` + resolución
+en el query engine) pero nunca se le agregó forma de crear la relación
+(ni UI ni endpoint), así que nunca se ejecutaba con datos reales — se sacó
+del MVP para no mantener código muerto. Si en el futuro aparece un caso de
+uso concreto, hay que reconstruir las tres partes desde cero:
+- Tabla en el schema (`api/_db.js`)
+- Resolución de orden de carga + inyección de params en `api/geo/query.js`
+  (`executeGeoQuery`)
+- UI en el panel admin: en el modal de editar capa, sección "Depende de"
+  con selector de capas; indicar visualmente qué capas tienen dependencias
+
+### Rate limit configurable por key/tier
+Hoy el rate limiting (`api/_ratelimit.js`) usa un default global fijo en
+código (`DEFAULT_KEY_RATE_LIMIT` en `api/geo/query.js`) para toda key sin
+`rate_limit` propio. Falta UI en `/admin/keys` para setear un límite
+específico por key o por tier, aprovechando la columna `rate_limit` que
+ya existe en `api_keys`.
+
+---
+
+## Integraciones
+
+### MCP para agentes IA
+Existió un endpoint `/api/mcp` (wrapper JSON-RPC-like sobre `/api/geo/1/query`,
+sin transporte MCP real — no SSE/stdio). Se sacó del MVP: agrega superficie
+de mantenimiento sobre una hipótesis de integración (clientes B2B vía
+agentes IA vs. API REST tradicional) que todavía no se validó. Retomar
+si algún cliente piloto lo pide explícitamente, evaluando en ese momento
+si conviene una integración MCP real o alcanza con documentar cómo usar
+el REST existente desde un agente.
 
 ---
 
