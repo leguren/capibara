@@ -25,9 +25,9 @@ Credenciales B2B. El token real nunca se almacena — solo su SHA-256.
 | user_id     | TEXT    | FK → users.id ON DELETE CASCADE          |
 | label       | TEXT    | Nombre descriptivo del usuario           |
 | key_hash    | TEXT    | SHA-256 del token. UNIQUE                |
-| type        | TEXT    | 'rest' o 'mcp'                           |
+| type        | TEXT    | 'rest' (único tipo soportado hoy — ver ROADMAP.md) |
 | tier        | TEXT    | Override del tier del usuario (NULL = hereda) |
-| rate_limit  | INTEGER | Requests/día. NULL = sin límite          |
+| rate_limit  | INTEGER | Requests/min. NULL = usa el default del piloto (ver api/geo/query.js) |
 | active      | INTEGER | 1 activa, 0 inactiva                     |
 | created_at  | TEXT    | ISO 8601 UTC                             |
 | last_used_at| TEXT    | Actualizado en cada request autenticado  |
@@ -85,17 +85,11 @@ Capas descubiertas dentro de cada fuente.
 | notes           | TEXT | Notas internas del admin                       |
 | discovered_at   | TEXT | ISO 8601 UTC del último discover               |
 
-### layer_dependencies
-Cadena de resolución entre capas. Una capa puede depender del resultado de otra.
-
-| Campo        | Tipo | Notas                              |
-|--------------|------|------------------------------------|
-| layer_id     | TEXT | FK → layers.id ON DELETE CASCADE   |
-| depends_on_id| TEXT | FK → layers.id ON DELETE CASCADE   |
-| input_field  | TEXT | Campo del padre que se usa como input |
-| output_param | TEXT | Parámetro que recibe la capa hija  |
-
-PK compuesto (layer_id, depends_on_id).
+> Nota: existió una tabla `layer_dependencies` (cadena de resolución entre
+> capas, donde una capa podía depender del resultado de otra) pero nunca
+> tuvo UI ni endpoint para poblarla — se sacó del schema. La idea sigue
+> documentada en `ROADMAP.md` por si en el futuro hay un caso de uso
+> concreto que la necesite.
 
 ### fields
 Campos descubiertos dentro de cada capa.
@@ -138,3 +132,11 @@ Un usuario NO puede activar capas/campos que el admin deshabilitó.
 
 ### api_usage
 Log append-only. INTEGER AUTOINCREMENT (única tabla justificada).
+
+### rate_limit_hits
+Usada por `api/_ratelimit.js` para el rate limiting de `/api/geo/1/query`,
+`/demo` y `/preview`. `bucket` identifica a quién se limita (`key:<id>`,
+`demo_ip:<ip>` o `preview_user:<id>`) — sin FK a propósito, para poder
+limitar también por IP sin una key asociada. Se auto-limpia: cada chequeo
+borra los hits vencidos de ese bucket antes de contar, así que no necesita
+un cron de mantenimiento aparte.
