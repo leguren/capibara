@@ -46,7 +46,15 @@ window.CAPIBARA_NAVBAR = (() => {
       console.error('[CAPIBARA_NAVBAR] falta <div id="navbar-root"></div> en esta página.');
       return;
     }
-    root.outerHTML = html;
+    // innerHTML (no outerHTML) — el <div id="navbar-root"> tiene que
+    // sobrevivir al mount. Con outerHTML, la primera llamada reemplaza el
+    // div entero por el <nav>, y el ancla desaparece del DOM: si una página
+    // necesita renderizar el navbar una segunda vez (ej: montar público
+    // primero y después reemplazar por el de cliente al confirmar sesión),
+    // el segundo mount() no encuentra #navbar-root y falla en silencio —
+    // esto es lo que causaba que /coverage se quedara mostrando "Ingresar"
+    // para usuarios logueados.
+    root.innerHTML = html;
   }
 
   /**
