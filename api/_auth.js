@@ -9,7 +9,7 @@
  *    - La cookie contiene un JWT firmado con SESSION_SECRET
  *    - Funciones: verifySession(req), requireAuth(req, res), requireAdmin(req, res)
  *
- * 2. API KEY (para clientes B2B — /api/geo/1/* y /api/mcp)
+ * 2. API KEY (para clientes B2B — /api/geo/1/*)
  *    - Header: Authorization: Bearer cpb_live_xK9m...
  *    - El token se hashea (SHA-256) y se busca en api_keys
  *    - Funciones: verifyApiKey(req, db)
@@ -268,7 +268,7 @@ async function verifyApiKey(req) {
 /**
  * requireApiKey(req, res) → keyInfo | null
  *
- * Middleware para endpoints /api/geo/1/* y /api/mcp.
+ * Middleware para endpoints /api/geo/1/*.
  * Si la key es inválida, escribe 401 y devuelve null.
  */
 async function requireApiKey(req, res) {
