@@ -34,7 +34,7 @@
 
   <section class="landing-example">
     <div class="landing-example-label">Así se ve una consulta</div>
-    <pre class="code-block landing-example-code">curl "https://capibara-ten.vercel.app/api/geo/1/query?lat=-34.603&amp;lon=-58.382" \
+    <pre class="code-block landing-example-code" id="landing-example-code">curl "/api/geo/1/query?lat=-34.603&amp;lon=-58.382" \
   -H "Authorization: Bearer cpb_tutoken"</pre>
   </section>
 
@@ -58,6 +58,16 @@
 <div class="landing-footer">
   <a href="/docs">Documentación</a> · <a href="/explore">Explorador</a> · <a href="/login">Ingresar</a>
 </div>
+
+<script>
+  // El ejemplo curl muestra el dominio real donde esté corriendo la página
+  // (funciona igual en producción, preview deploys o un dominio propio).
+  (function () {
+    'use strict';
+    const el = document.getElementById('landing-example-code');
+    if (el) el.textContent = el.textContent.replace('/api/geo/1/query', `${window.location.origin}/api/geo/1/query`);
+  })();
+</script>
 
 </body>
 </html>
