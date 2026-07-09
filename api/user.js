@@ -33,7 +33,7 @@ module.exports = async function handler(req, res) {
 
     if (req.method === 'POST') {
       const label = (req.body?.label || '').trim();
-      const type  = req.body?.type === 'mcp' ? 'mcp' : 'rest';
+      const type  = 'rest'; // único tipo soportado — MCP quedó fuera del MVP, ver ROADMAP.md
       if (!label) return err(res, 400, 'Se requiere un nombre (label) para la key');
       const countResult = await db.execute({ sql: 'SELECT COUNT(*) AS total FROM api_keys WHERE user_id = ? AND active = 1', args: [userId] });
       if ((countResult.rows[0]?.total || 0) >= 10) return err(res, 400, 'Límite de 10 API keys activas por usuario');
