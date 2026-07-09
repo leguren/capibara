@@ -50,10 +50,12 @@ Estrategia para mantenerse dentro del límite:
 - Endpoints de admin secundarios van en api/admin/panel.js
 - Helpers compartidos llevan prefijo _ y no cuentan como functions
 
-Funciones actuales (11/12):
+Funciones actuales (10/12):
   admin/detect.js, admin/fields.js, admin/layers.js, admin/panel.js,
   admin/publish.js, admin/sources.js, auth.js,
-  geo/catalog.js, geo/query.js, mcp.js, user.js
+  geo/catalog.js, geo/query.js, user.js
+
+(mcp.js se sacó del MVP — ver ROADMAP.md. Queda margen para 2 funciones más.)
 
 ## Panel admin — páginas
 
